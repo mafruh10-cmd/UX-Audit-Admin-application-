@@ -38,7 +38,9 @@ from openai import OpenAI as _OpenAI
 # ─── Setup ────────────────────────────────────────────────────────────────────
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"))
+app = Flask(__name__,
+            template_folder=os.path.join(BASE_DIR, "templates"),
+            static_folder=os.path.join(BASE_DIR, "static"))
 CORS(app)
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -484,6 +486,14 @@ Generate three assets. Return ONLY a valid JSON object, no markdown, no explanat
 @app.route("/")
 def index():
     return render_template("index.html", logo_dark=LOGO_DARK_B64, logo_white=LOGO_WHITE_B64)
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_file(
+        os.path.join(BASE_DIR, "static", "favicon.png"),
+        mimetype="image/png"
+    )
 
 
 @app.route("/api/health")
