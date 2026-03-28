@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jane Doe | Lead — Salesforce</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sf-blue: #0176d3;
+    --sf-blue-dark: #014486;
+    --sf-blue-link: #005fb2;      /* Fix [02]: darkened for 4.5:1 contrast */
+    --sf-nav-bg: #032d60;
+    --sf-nav-hover: #05346e;
+    --sf-header-bg: #ffffff;
+    --sf-page-bg: #f3f3f3;
+    --sf-card-bg: #ffffff;
+    --sf-border: #dddbda;
+    --sf-text-primary: #181818;
+    --sf-text-label: #595959;     /* Fix [02]: min contrast grey */
+    --sf-text-muted: #706e6b;
+    --sf-green: #2e844a;
+    --sf-green-light: #eaf5ec;
+    --sf-orange: #a96404;
+    --sf-orange-light: #fdf3e0;
+    --sf-red: #ba0517;
+    --sf-red-light: #fde8e9;
+    --sf-purple: #5a1ba9;
+    --sf-purple-light: #f3eeff;
+    --sf-teal: #0b827c;
+    --sf-teal-light: #e0f5f5;
+    --sf-unsaved-bg: #fff3cd;
+    --sf-unsaved-border: #e8a200;
+    --font: 'Salesforce Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-pill: 999px;
+    --shadow-card: 0 2px 6px rgba(0,0,0,0.10);
+    --touch-min: 44px;
+  }
+
+  html, body { height: 100%; }
+  body { font-family: var(--font); font-size: 13px; background: var(--sf-page-bg); color: var(--sf-text-primary); display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* ── GLOBAL HEADER ──────────────────────────────────────────────── */
+  .global-header {
+    background: var(--sf-header-bg);
+    border-bottom: 1px solid var(--sf-border);
+    height: 52px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+  .gh-logo { display: flex; align-items: center; gap: 8px; color: var(--sf-blue); font-size: 15px; font-weight: 700; text-decoration: none; }
+  .gh-logo svg { width: 36px; height: 36px; }
+  .gh-search {
+    flex: 1;
+    max-width: 500px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .gh-search input {
+    width: 100%;
+    height: 34px;
+    border: 1px solid var(--sf-border);
+    border-radius: var(--radius-pill);
+    padding: 0 12px 0 36px;
+    font-size: 13px;
+    background: #f3f3f3;
+    color: var(--sf-text-primary);
+    outline: none;
+  }
+  .gh-search input:focus { border-color: var(--sf-blue); background: #fff; box-shadow: 0 0 0 3px rgba(1,118,211,0.20); }
+  .gh-search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #706e6b; pointer-events: none; }
+  .gh-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+  .gh-icon-btn {
+    width: var(--touch-min); height: var(--touch-min);
+    display: flex; align-items: center; justify-content: center;
+    border-radius: var(--radius-sm);
+    background: none; border: none; cursor: pointer; color: #444;
+  }
+  .gh-icon-btn:hover { background: #f3f3f3; }
+  .gh-icon-btn:focus-visible { outline: 2px solid var(--sf-blue); outline-offset: 2px; }
+
+  /* Fix [10]: subtle trial indicator instead of intrusive banner */
+  .trial-indicator {
+    font-size: 12px;
+    color: var(--sf-text-label);
+    white-space: nowrap;
+  }
+  .trial-indicator a { color: var(--sf-blue-link); text-decoration: underline; font-weight: 600; }
+  .trial-indicator a:hover { color: var(--sf-blue-dark); }
+
+  /* ── APP LAYOUT ─────────────────────────────────────────────────── */
+  .app-shell { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── LEFT NAV ───────────────────────────────────────────────────── */
+  .left-nav {
+    width: 60px;
+    background: var(--sf-nav-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 8px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .nav-item {
+    width: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 4px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: rgba(255,255,255,0.7);
+    font-size: 10px;
+    text-align: center;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+    min-height: var(--touch-min);
+    justify-content: center;
+  }
+  .nav-item:hover { background: var(--sf-nav-hover); color: #fff; }
+  .nav-item.active { background: rgba(255,255,255,0.15); color: #fff; }
+  .nav-item svg { width: 20px; height: 20px; }
+
+  /* ── MAIN AREA ──────────────────────────────────────────────────── */
+  .main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── BREADCRUMB + TABS ──────────────────────────────────────────── */
+  .tab-bar {
+    background: var(--sf-header-bg);
+    border-bottom: 1px solid var(--sf-border);
+    padding: 0 16px;
+    display: flex;
+    align-items: flex-end;
+    gap: 0;
+    flex-shrink: 0;
+    height: 44px;
+  }
+  .breadcrumb { font-size: 12px; color: var(--sf-text-label); padding: 0 16px 0 0; display: flex; align-items: center; height: 44px; }
+  .breadcrumb a { color: var(--sf-blue-link); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb-sep { margin: 0 6px; color: var(--sf-border); }
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    height: 44px;
+    font-size: 13px;
+    color: var(--sf-text-label);
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    position: relative;
+  }
+  .tab.active { color: var(--sf-blue); border-bottom-color: var(--sf-blue); font-weight: 600; }
+  .tab-close {
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; background: none; border: none; cursor: pointer;
+    color: var(--sf-text-label);
+  }
+  .tab-close:hover { background: #f3f3f3; }
+
+  /* Fix [05]: Unsaved changes banner */
+  .unsaved-banner {
+    background: var(--sf-unsaved-bg);
+    border-bottom: 2px solid var(--sf-unsaved-border);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #5c3b00;
+    flex-shrink: 0;
+  }
+  .unsaved-banner svg { flex-shrink: 0; color: var(--sf-unsaved-border); }
+  .unsaved-banner strong { font-weight: 600; }
+  .unsaved-actions { margin-left: auto; display: flex; gap: 8px; }
+  .btn-save {
+    background: var(--sf-blue); color: #fff;
+    border: none; border-radius: var(--radius-sm);
+    padding: 6px 14px; font-size: 12px; font-weight: 600;
+    cursor: pointer; height: 30px;
+  }
+  .btn-save:hover { background: var(--sf-blue-dark); }
+  .btn-discard {
+    background: #fff; color: var(--sf-text-primary);
+    border: 1px solid var(--sf-border); border-radius: var(--radius-sm);
+    padding: 6px 14px; font-size: 12px; font-weight: 600;
+    cursor: pointer; height: 30px;
+  }
+  .btn-discard:hover { background: #f3f3f3; }
+
+  /* ── RECORD BODY ────────────────────────────────────────────────── */
+  .record-body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 320px 1fr 300px;
+    gap: 12px;
+    padding: 12px;
+    overflow: auto;
+    align-items: start;
+  }
+
+  /* ── CARDS ──────────────────────────────────────────────────────── */
+  .card {
+    background: var(--sf-card-bg);
+    border: 1px solid var(--sf-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--sf-border);
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--sf-text-primary);
+  }
+  .card-header-toggle {
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border: none; background: none; color: var(--sf-text-muted);
+    flex-shrink: 0;
+  }
+  .card-header-actions { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+
+  /* ── ABOUT PANEL ────────────────────────────────────────────────── */
+  .field-list { padding: 0 8px 12px; }
+
+  /* Fix [07] + [08]: hover-reveal pencil, 44px touch target */
+  .field-row {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 8px;
+    border-radius: var(--radius-sm);
+    position: relative;
+    transition: background 0.1s;
+    min-height: 52px;
+  }
+  .field-row:hover { background: #f8f9fb; }
+  .field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--sf-text-label);   /* Fix [02] */
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 3px;
+  }
+  .field-value {
+    font-size: 13px;
+    color: var(--sf-text-primary);
+    word-break: break-word;
+  }
+  .field-value a {
+    color: var(--sf-blue-link);    /* Fix [02] */
+    text-decoration: none;
+  }
+  .field-value a:hover { text-decoration: underline; }
+
+  /* Fix [07] + [08]: pencil only on hover, 44x44 target */
+  .field-edit-btn {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: var(--touch-min);
+    height: var(--touch-min);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--sf-blue);
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    transition: opacity 0.15s, background 0.1s;
+  }
+  .field-row:hover .field-edit-btn,
+  .field-row:focus-within .field-edit-btn { opacity: 1; }
+  .field-edit-btn:focus-visible { opacity: 1; outline: 2px solid var(--sf-blue); }
+  .field-edit-btn:hover { background: #e8f0fe; }
+
+  /* ── GET IN TOUCH ───────────────────────────────────────────────── */
+  .get-in-touch-section { border-top: 1px solid var(--sf-border); margin-top: 4px; }
+  .section-toggle-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 16px; cursor: pointer; user-select: none;
+    font-weight: 700; font-size: 14px;
+  }
+  .section-toggle-header:hover { background: #f8f9fb; }
+
+  .map-container {
+    margin: 8px 16px 12px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--sf-border);
+    height: 120px;
+    background: #e8eaed;
+    position: relative;
+  }
+  /* Inline SVG map placeholder */
+  .map-container svg { width: 100%; height: 100%; }
+  .map-link {
+    position: absolute; bottom: 6px; right: 6px;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--sf-border);
+    border-radius: var(--radius-sm);
+    padding: 3px 8px;
+    font-size: 11px; font-weight: 600;
+    color: var(--sf-blue-link);
+    text-decoration: none;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .map-link:hover { background: #fff; }
+
+  /* ── CENTRE PANEL ───────────────────────────────────────────────── */
+  /* Fix [01]: Action toolbar with labeled icon buttons */
+  .action-toolbar {
+    padding: 12px 16px 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid var(--sf-border);
+    flex-wrap: wrap;
+  }
+  .action-btn-group {
+    display: flex;
+    border: 1px solid var(--sf-border);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+    background: #fff;
+  }
+  /* Fix [01]: persistent text label beneath icon */
+  .action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--sf-text-primary);
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 64px;
+    min-height: var(--touch-min);
+    transition: background 0.12s;
+    border-right: 1px solid var(--sf-border);
+  }
+  .action-btn:last-child { border-right: none; }
+  .action-btn:hover { background: #f3f3f3; }
+  .action-btn:focus-visible { outline: 2px solid var(--sf-blue); outline-offset: -2px; }
+  .action-btn svg { color: var(--sf-blue); }
+  .action-btn-label { font-size: 11px; font-weight: 600; color: var(--sf-text-primary); }
+
+  .action-chevron {
+    display: flex; align-items: center; justify-content: center;
+    width: var(--touch-min); min-height: var(--touch-min);
+    background: none; border: none; cursor: pointer;
+    color: var(--sf-text-muted);
+    border-left: 1px solid var(--sf-border);
+    padding: 0 8px;
+  }
+  .action-chevron:hover { background: #f3f3f3; }
+  .action-chevron:focus-visible { outline: 2px solid var(--sf-blue); outline-offset: -2px; }
+
+  .toolbar-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .btn-text-link { background: none; border: none; cursor: pointer; color: var(--sf-blue-link); font-size: 13px; font-weight: 600; padding: 6px 8px; border-radius: var(--radius-sm); min-height: var(--touch-min); display: flex; align-items: center; }
+  .btn-text-link:hover { background: #f0f4ff; }
+
+  /* Fix [06]: Filter chips row */
+  .filter-row {
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--sf-border);
+    background: #f8f9fb;
+  }
+  .filter-label { font-size: 11px; font-weight: 700; color: var(--sf-text-label); text-transform: uppercase; letter-spacing: 0.04em; }
+  .filter-chip {
+    display: flex; align-items: center; gap: 5px;
+    background: #e8f0fe; color: #1a56b0;
+    border: 1px solid #b3caff;
+    border-radius: var(--radius-pill);
+    padding: 3px 10px 3px 10px;
+    font-size: 12px; font-weight: 600;
+    white-space: nowrap;
+  }
+  .filter-chip-remove {
+    display: flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px;
+    border: none; background: none; cursor: pointer;
+    color: #1a56b0; border-radius: 50%;
+    font-size: 14px; line-height: 1;
+    padding: 0;
+    min-width: 20px;
+  }
+  .filter-chip-remove:hover { background: #c5d8ff; }
+  .filter-hidden-count { font-size: 12px; color: var(--sf-text-muted); margin-left: 4px; }
+  .btn-edit-filters {
+    margin-left: auto;
+    background: none; border: 1px solid var(--sf-border);
+    border-radius: var(--radius-sm);
+    padding: 5px 12px;
+    font-size: 12px; font-weight: 600;
+    color: var(--sf-text-primary);
+    cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+    min-height: 30px;
+  }
+  .btn-edit-filters:hover { background: #f3f3f3; }
+
+  /* ── ACTIVITY TIMELINE ──────────────────────────────────────────── */
+  .activity-content { padding: 8px 0; }
+  .activity-section { margin-bottom: 0; }
+  .activity-section-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px; cursor: pointer;
+    font-weight: 700; font-size: 13px;
+    background: #f8f9fb; border-bottom: 1px solid var(--sf-border);
+    user-select: none;
+  }
+  .activity-section-header:hover { background: #f0f3f7; }
+  .activity-section-date { margin-left: auto; font-size: 12px; color: var(--sf-text-muted); font-weight: 400; }
+
+  .activity-item {
+    display: grid;
+    grid-template-columns: 44px 36px 1fr auto auto;
+    align-items: start;
+    gap: 0;
+    padding: 10px 16px 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+    position: relative;
+  }
+  .activity-item:hover { background: #f8f9fb; }
+  .activity-expand {
+    display: flex; align-items: center; justify-content: center;
+    width: var(--touch-min); height: var(--touch-min);
+    background: none; border: none; cursor: pointer;
+    color: var(--sf-text-muted); border-radius: var(--radius-sm);
+  }
+  .activity-expand:hover { background: #f0f0f0; }
+  .activity-icon-col {
+    display: flex; align-items: flex-start; justify-content: center;
+    padding-top: 6px;
+  }
+  .activity-icon {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .activity-icon.green { background: var(--sf-green); }
+  .activity-icon.teal  { background: var(--sf-teal);  }
+  .activity-icon.blue  { background: var(--sf-blue);  }
+  .activity-icon.purple{ background: var(--sf-purple);}
+
+  .activity-body { padding: 4px 8px 0 4px; }
+  .activity-title {
+    font-size: 13px; font-weight: 600;
+    color: var(--sf-blue-link); /* Fix [02] */
+    text-decoration: none;
+    display: block;
+  }
+  .activity-title:hover { text-decoration: underline; }
+
+  /* Fix [03]: subject with tooltip + expand */
+  .activity-subject-wrap { position: relative; display: inline; }
+  .activity-subject {
+    font-size: 13px; font-weight: 600;
+    color: var(--sf-blue-link);
+    text-decoration: none;
+    cursor: pointer;
+    max-width: 340px;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .activity-subject-expand {
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-left: 4px;
+    background: none; border: 1px solid var(--sf-border);
+    border-radius: var(--radius-sm);
+    padding: 1px 5px; font-size: 10px; font-weight: 700;
+    color: var(--sf-blue-link); cursor: pointer;
+    vertical-align: middle;
+  }
+  .activity-subject-expand:hover { background: #e8f0fe; }
+  .activity-subject-full {
+    display: none;
+    font-size: 13px; font-weight: 600;
+    color: var(--sf-blue-link);
+  }
+  .subject-expanded .activity-subject { display: none; }
+  .subject-expanded .activity-subject-full { display: inline; }
+  .subject-expanded .activity-subject-expand { display: none; }
+
+  /* tooltip */
+  .activity-subject-wrap .tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 400;
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 50;
+    max-width: 340px;
+  }
+  .activity-subject-wrap:hover .tooltip { display: block; }
+
+  .activity-meta { font-size: 12px; color: var(--sf-text-muted); margin-top: 2px; }
+  .activity-meta a { color: var(--sf-blue-link); text-decoration: none; }
+  .activity-meta a:hover { text-decoration: underline; }
+
+  /* Fix [03]: status badge with color + text pattern, not just color */
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    border-radius: var(--radius-pill);
+    padding: 2px 8px;
+    font-size: 11px; font-weight: 700;
+    margin-top: 4px;
+    border: 2px solid transparent;
+  }
+  .status-badge.unopened {
+    background: var(--sf-orange-light);
+    color: var(--sf-orange);
+    border-color: var(--sf-orange);
+    border-style: dashed;         /* distinct pattern */
+  }
+  .status-badge.opened {
+    background: var(--sf-green-light);
+    color: var(--sf-green);
+    border-color: var(--sf-green);
+    border-style: solid;
+  }
+  .status-badge.bounced {
+    background: var(--sf-red-light);
+    color: var(--sf-red);
+    border-color: var(--sf-red);
+    border-style: dotted;
+  }
+  .status-badge svg { width: 12px; height: 12px; }
+
+  .activity-time { font-size: 11px; color: var(--sf-text-muted); padding-top: 6px; white-space: nowrap; padding-right: 6px; }
+
+  /* Fix [08]: dropdown chevron 44x44 */
+  .activity-chevron {
+    width: var(--touch-min); height: var(--touch-min);
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer;
+    color: var(--sf-text-muted); border-radius: var(--radius-sm);
+    flex-shrink: 0;
+  }
+  .activity-chevron:hover { background: #f0f0f0; }
+  .activity-chevron:focus-visible { outline: 2px solid var(--sf-blue); }
+
+  /* filter-hint */
+  .filter-hint {
+    margin: 12px 16px;
+    background: #f0f4ff;
+    border: 1px solid #b3caff;
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #1a56b0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-show-all {
+    display: flex; align-items: center; justify-content: center;
+    margin: 12px auto;
+    background: var(--sf-blue); color: #fff;
+    border: none; border-radius: var(--radius-pill);
+    padding: 9px 24px; font-size: 13px; font-weight: 600;
+    cursor: pointer; gap: 6px;
+  }
+  .btn-show-all:hover { background: var(--sf-blue-dark); }
+
+  /* ── RIGHT PANEL — SLACK (Fix [04]: collapsed widget) ──────────── */
+  .slack-panel { }
+  .slack-widget-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--sf-border);
+    cursor: pointer;
+    user-select: none;
+  }
+  .slack-widget-header:hover { background: #f8f9fb; }
+  .slack-title { font-weight: 700; font-size: 14px; flex: 1; }
+  .slack-collapsed-hint { font-size: 11px; color: var(--sf-text-muted); }
+  .slack-expand-btn {
+    width: var(--touch-min); height: var(--touch-min);
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer;
+    color: var(--sf-text-muted); border-radius: var(--radius-sm);
+  }
+  .slack-expand-btn:hover { background: #f0f0f0; }
+
+  /* Slack collapsed composer (only visible thing by default) */
+  .slack-composer {
+    padding: 12px 16px;
+  }
+  .slack-composer-box {
+    border: 1px solid var(--sf-border);
+    border-radius: var(--radius-md);
+    background: #fff;
+    overflow: hidden;
+  }
+  .slack-composer-textarea {
+    width: 100%; min-height: 72px;
+    border: none; padding: 10px 12px;
+    font-size: 13px; font-family: var(--font);
+    color: var(--sf-text-primary); resize: none; outline: none;
+    color: var(--sf-text-muted);
+  }
+  .slack-composer-toolbar {
+    padding: 6px 10px;
+    display: flex; align-items: center; gap: 6px;
+    border-top: 1px solid var(--sf-border);
+  }
+  .slack-toolbar-btn {
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer; color: var(--sf-text-muted);
+    border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 700;
+  }
+  .slack-toolbar-btn:hover { background: #f3f3f3; }
+  .slack-send-btn {
+    margin-left: auto;
+    width: 32px; height: 32px;
+    background: var(--sf-blue); border: none; border-radius: var(--radius-sm);
+    color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .slack-send-btn:hover { background: var(--sf-blue-dark); }
+
+  .slack-expand-content { display: none; padding: 0 16px 12px; }
+  .slack-expanded .slack-expand-content { display: block; }
+  .slack-promo {
+    text-align: center; padding: 16px 8px 8px;
+    border: 1px solid var(--sf-border); border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+  }
+  .slack-promo-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .slack-promo-text { font-size: 12px; color: var(--sf-text-muted); line-height: 1.5; }
+  .slack-promo-text a { color: var(--sf-blue-link); }
+  .slack-link-existing {
+    font-size: 12px; color: var(--sf-text-muted); text-align: center; display: block;
+  }
+  .slack-link-existing a { color: var(--sf-blue-link); }
+
+  /* Duplicate alert */
+  .duplicate-alert {
+    margin: 0 16px 12px;
+    background: #f8f9fb;
+    border: 1px solid var(--sf-border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 13px;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .duplicate-icon {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #f05a28; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 14px; font-weight: 700;
+  }
+
+  /* ── TIMELINE CONNECTOR ─────────────────────────────────────────── */
+  .timeline-connector { display: flex; flex-direction: column; align-items: center; }
+  .tc-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--sf-border); flex-shrink: 0; margin-top: 14px; }
+  .tc-line { width: 2px; background: var(--sf-border); flex: 1; min-height: 20px; margin-top: 4px; }
+
+  /* ── FOOTER ─────────────────────────────────────────────────────── */
+  .bottom-bar {
+    background: var(--sf-header-bg);
+    border-top: 1px solid var(--sf-border);
+    height: 36px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 12px;
+    color: var(--sf-text-label);
+    flex-shrink: 0;
+    gap: 8px;
+  }
+  .bottom-bar svg { width: 14px; height: 14px; }
+
+  /* ── UTILS ──────────────────────────────────────────────────────── */
+  .divider { border: none; border-top: 1px solid var(--sf-border); }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     GLOBAL HEADER
+══════════════════════════════════════════════════════════ -->
+<header class="global-header" role="banner">
+  <a href="#" class="gh-logo" aria-label="Salesforce Home">
+    <!-- Salesforce cloud logo inline SVG -->
+    <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M20 8c-3.3 0-6.2 1.7-7.9 4.3C11.1 12.1 10 12 9 12c-3.9 0-7 3.1-7 7 0 3.6 2.7 6.5 6.2 6.9C8.1 27.6 9 29.7 9 32c0 4.4 3.6 8 8 8 1.5 0 2.9-.4 4.1-1.1C22.5 40.9 24.2 42 26 42c2.5 0 4.7-1.5 5.7-3.7.6.1 1.2.2 1.8.2 4.1 0 7.4-3.3 7.4-7.4 0-.5-.1-1-.2-1.5C42.6 28.5 44 26 44 23c0-4.6-3.4-8.4-7.8-9-.8-3.4-3.9-6-7.6-6-1.6 0-3.1.5-4.4 1.3C22.9 8.5 21.5 8 20 8z" fill="#1589EE"/>
+    </svg>
+  </a>
+
+  <div class="gh-search" role="search">
+    <span class="gh-search-icon" aria-hidden="true">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      </svg>
+    </span>
+    <input type="search" placeholder="Search…" aria-label="Global search"/>
+  </div>
+
+  <!-- Fix [10]: trial as subtle inline indicator only -->
+  <span class="trial-indicator" aria-label="Trial status">27 days left · <a href="#">Upgrade</a></span>
+
+  <nav class="gh-actions" aria-label="Header actions">
+    <button class="gh-icon-btn" aria-label="Help">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+    <button class="gh-icon-btn" aria-label="Setup">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </button>
+    <button class="gh-icon-btn" aria-label="Notifications">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+    </button>
+    <button class="gh-icon-btn" aria-label="User profile: Alex Smith">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </button>
+  </nav>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════
+     APP SHELL
+══════════════════════════════════════════════════════════ -->
+<div class="app-shell">
+
+  <!-- ── LEFT NAV ──────────────────────────────────────────────── -->
+  <nav class="left-nav" aria-label="App navigation">
+    <a href="#" class="nav-item active" aria-label="Home" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      Home
+    </a>
+    <a href="#" class="nav-item" aria-label="Contacts">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Contacts
+    </a>
+    <a href="#" class="nav-item" aria-label="Accounts">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+      Accounts
+    </a>
+    <a href="#" class="nav-item" aria-label="Sales">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Sales
+    </a>
+    <a href="#" class="nav-item" aria-label="Service">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+      Service
+    </a>
+    <a href="#" class="nav-item" aria-label="Marketing">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+      Marketing
+    </a>
+    <a href="#" class="nav-item" aria-label="Commerce">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.97-1.67l1.38-7.33H6"/></svg>
+      Commerce
+    </a>
+  </nav>
+
+  <!-- ── MAIN AREA ──────────────────────────────────────────────── -->
+  <main class="main-area" id="main-content">
+
+    <!-- Breadcrumb + Tab bar -->
+    <div class="tab-bar" role="navigation" aria-label="Record tabs">
+      <span class="breadcrumb">
+        <a href="#">Home</a>
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+        <span>Leads</span>
+      </span>
+      <a href="#" class="tab" aria-label="Home tab">Home</a>
+      <a href="#" class="tab active" aria-label="Jane Doe Lead record — has unsaved changes" aria-current="true">
+        Jane Doe | Lead
+      </a>
+      <button class="tab-close" aria-label="Close Jane Doe Lead tab">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Fix [05]: Prominent unsaved changes banner -->
+    <div class="unsaved-banner" role="alert" aria-live="polite" id="unsaved-banner">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span><strong>Unsaved changes</strong> — This record has edits that haven't been saved yet.</span>
+      <div class="unsaved-actions">
+        <button class="btn-discard" onclick="dismissUnsaved()">Discard</button>
+        <button class="btn-save" onclick="dismissUnsaved()">Save</button>
+      </div>
+    </div>
+
+    <!-- Record body: 3 columns -->
+    <div class="record-body">
+
+      <!-- ══════════════════════
+           LEFT: ABOUT PANEL
+      ══════════════════════ -->
+      <div>
+        <!-- About card -->
+        <div class="card" aria-label="About Jane Doe">
+          <div class="card-header">
+            <button class="card-header-toggle" aria-expanded="true" aria-controls="about-body" aria-label="Collapse About section">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            About
+            <div class="card-header-actions">
+              <button style="background:none;border:1px solid var(--sf-border);border-radius:4px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--sf-text-primary);min-height:30px;" aria-label="Edit all fields in About section">Edit</button>
+            </div>
+          </div>
+
+          <div id="about-body">
+            <ul class="field-list" role="list" aria-label="Lead details">
+
+              <li class="field-row" role="listitem">
+                <span class="field-label">Name</span>
+                <span class="field-value">Ms. Jane Doe</span>
+                <button class="field-edit-btn" aria-label="Edit Name">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+              </li>
+
+              <li class="field-row" role="listitem">
+                <span class="field-label">Company</span>
+                <span class="field-value">M Company</span>
+                <button class="field-edit-btn" aria-label="Edit Company">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+              </li>
+
+              <li class="field-row" role="listitem">
+                <span class="field-label">Title</span>
+                <span class="field-value">VP of Product</span>
+                <button class="field-edit-btn" aria-label="Edit Title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+              </li>
+
+              <li class="field-row" role="listitem">
+                <span class="field-label">Website</span>
+                <span class="field-value"><a href="#" aria-label="Visit content-dummy.vercel.app">content-dummy.vercel.app</a></span>
+                <button class="field-edit-btn" aria-label="Edit Website">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+              </li>
+
+              <li class="field-row" role="listitem">
+                <span class="field-label">Description</span>
+                <span class="field-value">Jane Doe, VP of Product at M Company. Initial lead added for potential collaboration or project discussion.</span>
+                <button class="field-edit-btn" aria-label="Edit Description">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+              </li>
+
+              <li class="field-row" role="listitem">
+                <span class="field-label">Lead Status</span>
+                <span class="field-value">New</span>
+                <button class="field-edit-btn" aria-label="Edit Lead Status">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+              </li>
+
+              <li class="field-row" role="listitem">
+                <span class="field-label">Lead Owner</span>
+                <span class="field-value"><a href="#" aria-label="View Alex Smith's profile">Alex Smith</a></span>
+                <button class="field-edit-btn" aria-label="Edit Lead Owner">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+              </li>
+
+            </ul>
+
+            <!-- Get in Touch sub-section -->
+            <div class="get-in-touch-section">
+              <button class="section-toggle-header" aria-expanded="true" aria-controls="get-in-touch-body" style="width:100%;text-align:left;border:none;background:none;font-family:inherit;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                Get in Touch
+              </button>
+
+              <div id="get-in-touch-body">
+                <ul class="field-list" role="list" aria-label="Contact information">
+
+                  <li class="field-row" role="listitem">
+                    <span class="field-label">Phone</span>
+                    <span class="field-value"><a href="tel:+16502137552" aria-label="Call 1 650 213 7552">1 650 213 7552</a></span>
+                    <button class="field-edit-btn" aria-label="Edit Phone">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                  </li>
+
+                  <li class="field-row" role="listitem">
+                    <span class="field-label">Email</span>
+                    <span class="field-value"><a href="mailto:jdoe.mobbin@gmail.com">jdoe.mobbin@gmail.com</a></span>
+                    <button class="field-edit-btn" aria-label="Edit Email">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                  </li>
+
+                  <li class="field-row" role="listitem">
+                    <span class="field-label">Address</span>
+                    <span class="field-value">
+                      <a href="#" aria-label="View map for 26 Dr University, Menlo Park, California 94025, United States">
+                        26 Dr University<br>Menlo Park, California 94025<br>United States
+                      </a>
+                    </span>
+                    <button class="field-edit-btn" aria-label="Edit Address">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                  </li>
+                </ul>
+
+                <!-- Fix [09]: map with descriptive alt, linked to mapping app -->
+                <div class="map-container">
+                  <!-- Inline SVG map placeholder representing Menlo Park area -->
+                  <svg viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg"
+                       role="img"
+                       aria-label="Street map centred on 26 Dr University, Menlo Park, California 94025, United States">
+                    <rect width="300" height="120" fill="#e8eaed"/>
+                    <!-- Roads -->
+                    <rect x="0" y="48" width="300" height="6" fill="#fff" opacity="0.9"/>
+                    <rect x="0" y="72" width="300" height="4" fill="#fff" opacity="0.7"/>
+                    <rect x="110" y="0" width="5" height="120" fill="#fff" opacity="0.8"/>
+                    <rect x="180" y="0" width="4" height="120" fill="#fff" opacity="0.7"/>
+                    <rect x="60" y="0" width="3" height="120" fill="#fff" opacity="0.6"/>
+                    <!-- Park area -->
+                    <rect x="62" y="30" width="45" height="35" rx="4" fill="#c8e6c9" opacity="0.8"/>
+                    <text x="69" y="52" font-size="7" fill="#4a7c59" font-family="sans-serif">Nealon Park</text>
+                    <!-- Road labels -->
+                    <text x="4" y="44" font-size="7" fill="#555" font-family="sans-serif">El Camino Real</text>
+                    <text x="4" y="68" font-size="7" fill="#555" font-family="sans-serif">University Ave</text>
+                    <!-- Pin -->
+                    <circle cx="150" cy="58" r="8" fill="#ea4335"/>
+                    <circle cx="150" cy="58" r="4" fill="#fff"/>
+                  </svg>
+                  <a href="https://maps.google.com/?q=26+Dr+University,+Menlo+Park,+CA+94025" class="map-link" target="_blank" rel="noopener" aria-label="Open 26 Dr University in Google Maps">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    Open map
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /left -->
+
+      <!-- ══════════════════════
+           CENTRE: ACTIVITY
+      ══════════════════════ -->
+      <div>
+        <div class="card">
+
+          <!-- Fix [01]: labeled action buttons -->
+          <div class="action-toolbar" role="toolbar" aria-label="Activity actions">
+
+            <!-- Email group -->
+            <div class="action-btn-group" role="group" aria-label="Email actions">
+              <button class="action-btn" aria-label="Compose email">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                <span class="action-btn-label">Email</span>
+              </button>
+              <button class="action-chevron" aria-label="More email options" aria-haspopup="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+            </div>
+
+            <!-- Schedule group -->
+            <div class="action-btn-group" role="group" aria-label="Schedule actions">
+              <button class="action-btn" aria-label="Schedule a meeting or event">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span class="action-btn-label">Schedule</span>
+              </button>
+              <button class="action-chevron" aria-label="More schedule options" aria-haspopup="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+            </div>
+
+            <!-- Call group -->
+            <div class="action-btn-group" role="group" aria-label="Call actions">
+              <button class="action-btn" aria-label="Log a call">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.06 1.22 2 2 0 012 .06h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                <span class="action-btn-label">Call</span>
+              </button>
+              <button class="action-chevron" aria-label="More call options" aria-haspopup="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+            </div>
+
+            <!-- Task group -->
+            <div class="action-btn-group" role="group" aria-label="Task actions">
+              <button class="action-btn" aria-label="Create a new task">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                <span class="action-btn-label">Task</span>
+              </button>
+              <button class="action-chevron" aria-label="More task options" aria-haspopup="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+            </div>
+
+            <div class="toolbar-right">
+              <button class="btn-text-link" aria-label="Refresh activity list">Refresh</button>
+              <button class="btn-text-link" aria-label="Expand all activity items">Expand All</button>
+            </div>
+          </div>
+
+          <!-- Fix [06]: Filter chips row -->
+          <div class="filter-row" role="group" aria-label="Active activity filters">
+            <span class="filter-label" id="filter-row-label">Filters</span>
+            <div role="list" aria-labelledby="filter-row-label" style="display:flex;gap:6px;flex-wrap:wrap;">
+              <div class="filter-chip" role="listitem">
+                Within 2 months
+                <button class="filter-chip-remove" aria-label="Remove Within 2 months filter" onclick="removeChip(this)">×</button>
+              </div>
+              <div class="filter-chip" role="listitem">
+                All activities
+                <button class="filter-chip-remove" aria-label="Remove All activities filter" onclick="removeChip(this)">×</button>
+              </div>
+              <div class="filter-chip" role="listitem">
+                All types
+                <button class="filter-chip-remove" aria-label="Remove All types filter" onclick="removeChip(this)">×</button>
+              </div>
+            </div>
+            <span class="filter-hidden-count" aria-live="polite" id="hidden-count">14 older activities hidden</span>
+            <button class="btn-edit-filters" aria-label="Edit activity filters">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+              Edit Filters
+            </button>
+          </div>
+
+          <!-- Activity list -->
+          <div class="activity-content" role="feed" aria-label="Activity timeline">
+
+            <!-- Upcoming & Overdue section -->
+            <div class="activity-section">
+              <div class="activity-section-header" role="heading" aria-level="3"
+                   tabindex="0" aria-expanded="true"
+                   onclick="toggleSection(this)"
+                   onkeydown="if(event.key==='Enter'||event.key===' ')toggleSection(this)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                Upcoming &amp; Overdue
+              </div>
+
+              <!-- Activity: Introductory call -->
+              <article class="activity-item" aria-label="Introductory call scheduled for 1:30 PM, February 16">
+                <button class="activity-expand" aria-label="Expand introductory call details" aria-expanded="false">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <div class="activity-icon-col">
+                  <div class="activity-icon green" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  </div>
+                </div>
+                <div class="activity-body">
+                  <a href="#" class="activity-title">Introductory call</a>
+                  <p class="activity-meta">You have an upcoming event</p>
+                </div>
+                <span class="activity-time">1:30 PM | Feb 16</span>
+                <button class="activity-chevron" aria-label="More options for Introductory call" aria-haspopup="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+              </article>
+            </div>
+
+            <!-- February 2026 section -->
+            <div class="activity-section">
+              <div class="activity-section-header" role="heading" aria-level="3"
+                   tabindex="0" aria-expanded="true"
+                   onclick="toggleSection(this)"
+                   onkeydown="if(event.key==='Enter'||event.key===' ')toggleSection(this)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                February · 2026
+                <span class="activity-section-date">This Month</span>
+              </div>
+
+              <!-- Activity: Call -->
+              <article class="activity-item" aria-label="Call logged today">
+                <button class="activity-expand" aria-label="Expand call details" aria-expanded="false">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <div class="activity-icon-col">
+                  <div class="activity-icon green" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.06 1.22 2 2 0 012 .06h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                  </div>
+                </div>
+                <div class="activity-body">
+                  <a href="#" class="activity-title">Call</a>
+                  <p class="activity-meta">You logged a call</p>
+                </div>
+                <span class="activity-time">Today</span>
+                <button class="activity-chevron" aria-label="More options for Call" aria-haspopup="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+              </article>
+
+              <!-- Activity: Send Letter -->
+              <article class="activity-item" aria-label="Send Letter task logged today">
+                <button class="activity-expand" aria-label="Expand Send Letter details" aria-expanded="false">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <div class="activity-icon-col">
+                  <div class="activity-icon teal" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                  </div>
+                </div>
+                <div class="activity-body">
+                  <a href="#" class="activity-title">Send Letter</a>
+                  <p class="activity-meta">You had a task</p>
+                </div>
+                <span class="activity-time">Today</span>
+                <button class="activity-chevron" aria-label="More options for Send Letter" aria-haspopup="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+              </article>
+
+              <!-- Fix [03]: Email with proper status badge + expandable subject + tooltip -->
+              <article class="activity-item" aria-label="Email — Introduction and potential collaboration — SLMobbin — status: Unopened, sent today">
+                <button class="activity-expand" aria-label="Expand email details" aria-expanded="false">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <div class="activity-icon-col">
+                  <div class="activity-icon blue" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  </div>
+                </div>
+                <div class="activity-body">
+                  <!-- Fix [03]: truncated subject with tooltip and expand affordance -->
+                  <div class="activity-subject-wrap" id="subject-wrap-1">
+                    <span class="tooltip" role="tooltip">Introduction and potential collaboration – SLMobbin</span>
+                    <a href="#" class="activity-subject" aria-label="Introduction and potential collaboration – SLMob… (truncated — click Expand to read full subject)">
+                      Introduction and potential collaboration – SLMob…
+                    </a>
+                    <span class="activity-subject-full" aria-hidden="true">Introduction and potential collaboration – SLMobbin</span>
+                    <button class="activity-subject-expand"
+                            aria-label="Expand full email subject"
+                            onclick="expandSubject('subject-wrap-1')">
+                      Expand
+                    </button>
+                  </div>
+                  <p class="activity-meta">
+                    You sent an email to <a href="#">Jane Doe</a> and 1 other
+                  </p>
+                  <!-- Fix [03]: badge with color + distinct pattern + text label -->
+                  <div>
+                    <span class="status-badge unopened" role="status" aria-label="Email status: Unopened — recipient has not opened this email">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                      Unopened — not yet read
+                    </span>
+                  </div>
+                </div>
+                <span class="activity-time">1:12 AM | Today</span>
+                <button class="activity-chevron" aria-label="More options for this email" aria-haspopup="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+              </article>
+
+            </div><!-- /February section -->
+
+            <!-- Filter hint -->
+            <div class="filter-hint" role="note">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span><strong>14 older activities are hidden</strong> by the active filters. Change filters above to see more.</span>
+            </div>
+
+            <button class="btn-show-all" aria-label="Show all activities, removing date filter">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              Show All Activities
+            </button>
+
+          </div><!-- /activity-content -->
+        </div><!-- /card -->
+      </div><!-- /centre -->
+
+      <!-- ══════════════════════
+           RIGHT: SLACK (collapsed)
+           Fix [04]
+      ══════════════════════ -->
+      <div>
+        <!-- Fix [04]: Slack collapsed widget -->
+        <div class="card slack-panel" id="slack-panel">
+          <div class="slack-widget-header"
+               onclick="toggleSlack()"
+               onkeydown="if(event.key==='Enter'||event.key===' ')toggleSlack()"
+               tabindex="0"
+               role="button"
+               aria-expanded="false"
+               aria-controls="slack-expand-content"
+               aria-label="Slack Channel — click to expand">
+            <!-- Slack logo -->
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M5.042 15.165a2.528 2.528 0 01-2.52 2.523A2.528 2.528 0 010 15.165a2.527 2.527 0 012.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 012.521-2.52 2.527 2.527 0 012.521 2.52v6.313A2.528 2.528 0 018.834 24a2.528 2.528 0 01-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 01-2.521-2.52A2.528 2.528 0 018.834 0a2.528 2.528 0 012.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 012.521 2.521 2.528 2.528 0 01-2.521 2.521H2.522A2.528 2.528 0 010 8.834a2.528 2.528 0 012.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 012.522-2.521A2.528 2.528 0 0124 8.834a2.528 2.528 0 01-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 01-2.523 2.521 2.527 2.527 0 01-2.52-2.521V2.522A2.527 2.527 0 0115.165 0a2.528 2.528 0 012.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 012.523 2.522A2.528 2.528 0 0115.165 24a2.527 2.527 0 01-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 01-2.52-2.523 2.526 2.526 0 012.52-2.52h6.313A2.527 2.527 0 0124 15.165a2.528 2.528 0 01-2.522 2.523h-6.313z" fill="#E01E5A"/>
+            </svg>
+            <span class="slack-title">Slack Channel</span>
+            <span class="slack-collapsed-hint" id="slack-hint">Collapsed — click to expand</span>
+            <button class="slack-expand-btn" aria-hidden="true" tabindex="-1">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="slack-chevron"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+          </div>
+
+          <!-- Slack composer always visible (primary CTA) -->
+          <div class="slack-composer">
+            <div class="slack-composer-box">
+              <textarea class="slack-composer-textarea"
+                        placeholder="Post an update on this lead or @mention someone to start the conversation."
+                        aria-label="Compose Slack message for this lead"
+                        rows="3"></textarea>
+              <div class="slack-composer-toolbar">
+                <button class="slack-toolbar-btn" aria-label="Bold text" style="font-weight:700;">B</button>
+                <button class="slack-toolbar-btn" aria-label="Italic text" style="font-style:italic;">I</button>
+                <button class="slack-toolbar-btn" aria-label="Strikethrough text" style="text-decoration:line-through;">S</button>
+                <button class="slack-toolbar-btn" aria-label="Insert link">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                </button>
+                <button class="slack-toolbar-btn" aria-label="Insert emoji">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                </button>
+                <button class="slack-toolbar-btn" aria-label="Mention a person">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-3.92 7.94"/></svg>
+                </button>
+                <button class="slack-send-btn" aria-label="Send Slack message">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+              </div>
+            </div>
+            <p style="font-size:11px;color:var(--sf-text-muted);margin-top:7px;text-align:center;">
+              Already using Slack? <a href="#" style="color:var(--sf-blue-link);">Link an existing channel</a>
+            </p>
+          </div>
+
+          <!-- Expanded content (promo illustration + copy) — hidden by default -->
+          <div id="slack-expand-content" class="slack-expand-content" aria-hidden="true">
+            <div class="slack-promo">
+              <div style="font-size:32px;margin-bottom:8px;" aria-hidden="true">💬</div>
+              <p class="slack-promo-title">Better collaboration with Slack</p>
+              <p class="slack-promo-text">Slack Channels in Salesforce are a place to collaborate and talk about your work. Anyone can follow the conversation here or in the Slack app. <a href="#">Learn more about Slack</a></p>
+            </div>
+          </div>
+
+        </div><!-- /slack-panel card -->
+
+        <!-- Duplicate alert -->
+        <div class="duplicate-alert" style="margin-top:12px;" role="status" aria-live="polite">
+          <div class="duplicate-icon" aria-hidden="true">!</div>
+          <p style="font-size:13px;">We found no potential duplicates of this Lead.</p>
+        </div>
+
+      </div><!-- /right -->
+
+    </div><!-- /record-body -->
+
+    <!-- Bottom bar -->
+    <div class="bottom-bar" role="contentinfo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      To Do List
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     INLINE JAVASCRIPT (interactions)
+══════════════════════════════════════════════════════════ -->
+<script>
+  // Fix [05]: dismiss unsaved banner after save/discard
+  function dismissUnsaved() {
+    var banner = document.getElementById('unsaved-banner');
+    if (banner) banner.style.display = 'none';
+  }
+
+  // Fix [06]: remove filter chip
+  function removeChip(btn) {
+    var chip = btn.closest('.filter-chip');
+    if (chip) chip.remove();
+  }
+
+  // Fix [03]: expand truncated subject
+  function expandSubject(id) {
+    var wrap = document.getElementById(id);
+    if (wrap) wrap.classList.toggle('subject-expanded');
+  }
+
+  // Fix [04]: toggle Slack panel expanded state
+  function toggleSlack() {
+    var panel = document.getElementById('slack-panel');
+    var content = document.getElementById('slack-expand-content');
+    var hint = document.getElementById('slack-hint');
+    var chevron = document.getElementById('slack-chevron');
+    var header = panel.querySelector('.slack-widget-header');
+    var expanded = panel.classList.toggle('slack-expanded');
+    content.hidden = !expanded;
+    content.setAttribute('aria-hidden', String(!expanded));
+    header.setAttribute('aria-expanded', String(expanded));
+    hint.textContent = expanded ? 'Click to collapse' : 'Collapsed — click to expand';
+    chevron.setAttribute('points', expanded ? '6 15 12 9 18 15' : '6 9 12 15 18 9');
+  }
+
+  // Collapsible sections
+  function toggleSection(el) {
+    var expanded = el.getAttribute('aria-expanded') !== 'false';
+    el.setAttribute('aria-expanded', String(!expanded));
+    var section = el.closest('.activity-section');
+    var items = section.querySelectorAll('.activity-item');
+    items.forEach(function(item) { item.style.display = expanded ? 'none' : ''; });
+  }
+
+  // init: hide slack expanded content
+  document.getElementById('slack-expand-content').hidden = true;
+</script>
+
+</body>
+</html>
