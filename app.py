@@ -1082,31 +1082,72 @@ def _build_redesign_prompt(analysis):
     m = sum(1 for i in issues if i.get("severity") == "Medium")
     l = sum(1 for i in issues if i.get("severity") == "Low")
 
+    high_issues   = [i for i in issues if i.get("severity") == "High"]
+    medium_issues = [i for i in issues if i.get("severity") == "Medium"]
+    low_issues    = [i for i in issues if i.get("severity") == "Low"]
+
     lines = [
         "You are a senior UI/UX designer and expert frontend developer.",
         "",
-        "I am giving you a screenshot of a UI screen. Your task is to redesign it as a",
-        "complete, self-contained HTML file (version 2) that does two things:",
-        "",
-        "  1. FIXES every issue listed in the audit below — implement every",
-        "     recommendation exactly as described.",
-        "",
-        "  2. PRESERVES the entire visual identity of the original with pixel-perfect fidelity:",
-        "       - Colors: every background, text, brand, accent, and surface color",
-        "         (reproduce exact hex values by inspecting the screenshot)",
-        "       - Typography: font families, sizes, weights, line-heights, letter-spacing",
-        "       - Spacing: margin, padding, and gap values — use the same scale",
-        "       - Shapes: border-radius, border styles, shadows, and elevation levels",
-        "       - Icons: style, weight, size, and placement",
-        "       - Layout: grid structure, column widths, sidebar/topbar/content positioning",
-        "       - Components: card designs, button styles, badge styles, input styles, tables",
-        "",
-        "The output should feel like a version 2 of the original — same brand, better UX.",
-        "Do not invent a new visual style. Carry everything over and only change what",
-        "the audit findings require.",
+        "I am giving you a screenshot of a UI screen and a detailed UX audit report.",
+        "Your task is to produce a complete, self-contained HTML redesign (version 2)",
+        "that resolves every issue in the audit while preserving the original visual identity.",
         "",
         "=" * 68,
-        f"AUDIT REPORT  —  {screen_name}",
+        "MANDATORY FIX CHECKLIST  —  VERIFY EACH BEFORE WRITING A SINGLE LINE OF HTML",
+        "=" * 68,
+        "",
+        "Before you write the HTML, mentally confirm that your design addresses EVERY item",
+        "in this list. If your HTML does not contain a concrete, visible solution for a",
+        "High or Medium issue, your response is incomplete — revise it until it does.",
+        "",
+    ]
+
+    if high_issues:
+        lines.append("HIGH PRIORITY  (must be resolved — zero exceptions):")
+        for iss in high_issues:
+            lines.append(f"  [{iss.get('id','?')}] {iss.get('title','')}")
+            lines.append(f"       What to implement: {iss.get('recommendation','')}")
+            lines.append(f"       Affects: {iss.get('location','')}")
+            if iss.get("wcag_criterion"):
+                lines.append(f"       WCAG: {iss['wcag_criterion']} Level {iss.get('wcag_level','')}")
+            lines.append("")
+
+    if medium_issues:
+        lines.append("MEDIUM PRIORITY  (must be resolved — no exceptions):")
+        for iss in medium_issues:
+            lines.append(f"  [{iss.get('id','?')}] {iss.get('title','')}")
+            lines.append(f"       What to implement: {iss.get('recommendation','')}")
+            lines.append(f"       Affects: {iss.get('location','')}")
+            if iss.get("wcag_criterion"):
+                lines.append(f"       WCAG: {iss['wcag_criterion']} Level {iss.get('wcag_level','')}")
+            lines.append("")
+
+    if low_issues:
+        lines.append("LOW PRIORITY  (implement where possible):")
+        for iss in low_issues:
+            lines.append(f"  [{iss.get('id','?')}] {iss.get('title','')} — {iss.get('recommendation','')}")
+        lines.append("")
+
+    lines += [
+        "=" * 68,
+        "VISUAL IDENTITY CONSTRAINTS  (change ONLY what the audit requires)",
+        "=" * 68,
+        "",
+        "Preserve with pixel-perfect fidelity:",
+        "  - Colors: every background, text, brand, accent, and surface hex value",
+        "  - Typography: font families, sizes, weights, line-heights, letter-spacing",
+        "  - Spacing: margin, padding, and gap values — use the same scale",
+        "  - Shapes: border-radius, border styles, shadows, elevation",
+        "  - Icons: style, weight, size, and placement",
+        "  - Layout: grid structure, column widths, sidebar/topbar/content positioning",
+        "  - Components: card designs, button styles, badge styles, input styles",
+        "",
+        "The output must feel like a version 2 of the original — same brand, better UX.",
+        "Do not invent a new visual style. Only change what the audit findings require.",
+        "",
+        "=" * 68,
+        f"FULL AUDIT REPORT  —  {screen_name}",
         "=" * 68,
         f"Overall Score:        {score}/10  —  {score_label}",
         f"Accessibility Score:  {a_score}/10  (WCAG 2.2 AA)",
@@ -1115,31 +1156,36 @@ def _build_redesign_prompt(analysis):
         "EXECUTIVE SUMMARY",
         summary,
         "",
-        "=" * 68,
-        "ISSUES TO FIX  (all issues must be addressed — ordered by severity)",
-        "=" * 68,
+        "ALL ISSUES  (full detail for reference):",
         "",
     ]
 
     for iss in issues:
         sev   = iss.get("severity", "")
-        title = iss.get("title", "")
-        lines.append(f"[{iss.get('id','??')}] {sev.upper()}  —  {title}")
-        lines.append(f"     Location:       {iss.get('location', '')}")
-        lines.append(f"     Problem:        {iss.get('problem', '')}")
-        lines.append(f"     Fix:            {iss.get('recommendation', '')}")
-        ref = iss.get("reference", "")
-        if ref:
-            lines.append(f"     Reference:      {ref}")
-        criterion  = iss.get("wcag_criterion", "")
-        wcag_level = iss.get("wcag_level", "")
-        if criterion:
-            lines.append(f"     WCAG:           {criterion}  —  Level {wcag_level}")
+        lines.append(f"[{iss.get('id','??')}] {sev.upper()}  —  {iss.get('title','')}")
+        lines.append(f"     Location:  {iss.get('location','')}")
+        lines.append(f"     Problem:   {iss.get('problem','')}")
+        lines.append(f"     Fix:       {iss.get('recommendation','')}")
+        if iss.get("reference"):
+            lines.append(f"     Source:    {iss['reference']}")
+        if iss.get("wcag_criterion"):
+            lines.append(f"     WCAG:      {iss['wcag_criterion']}  Level {iss.get('wcag_level','')}")
         lines.append("")
 
     lines += [
         "=" * 68,
-        "OUTPUT REQUIREMENTS — PART 1: HTML",
+        "SELF-CHECK — RUN THIS BEFORE OUTPUTTING THE HTML",
+        "=" * 68,
+        "",
+    ]
+    for iss in high_issues + medium_issues:
+        lines.append(f"  [ ] [{iss.get('id','?')}] {iss.get('title','')} — is the fix visible and functional in the HTML?")
+    lines += [
+        "",
+        "If any checkbox above cannot be ticked, revise your HTML before outputting it.",
+        "",
+        "=" * 68,
+        "OUTPUT REQUIREMENTS",
         "=" * 68,
         "",
         "- Output a single, complete, self-contained HTML file.",
@@ -1149,11 +1195,11 @@ def _build_redesign_prompt(analysis):
         "- Every piece of text, every label, every UI element visible in the screenshot",
         "  must appear in the redesign. Do not remove any content.",
         "- Do NOT add features, sections, or content not present in the original.",
-        "- JavaScript is allowed only for interactions that are clearly present in the",
-        "  original (e.g. dropdowns, modals, tabs). Keep it minimal and inline.",
+        "- JavaScript is allowed only for interactions clearly present in the original.",
+        "  Keep it minimal and inline.",
         "- The file must open in a browser as a fully working static page.",
         "- Start your response with <!DOCTYPE html> and end the HTML with </html>.",
-        "- Do NOT reference Mobbin or any third-party design gallery. If citing a pattern source, use Saasfactor.",
+        "- Do NOT reference Mobbin or any third-party design gallery. Use Saasfactor if needed.",
     ]
 
     return "\n".join(lines)
