@@ -448,7 +448,7 @@ def _build_youtube_script(analysis):
 
     client = _OpenAI(api_key=ANTHROPIC_API_KEY, base_url="https://openrouter.ai/api/v1")
     msg = client.chat.completions.create(
-        model="anthropic/claude-sonnet-4-6",
+        model="anthropic/claude-sonnet-4.5",
         max_tokens=2000,
         messages=[{"role": "user", "content": user_prompt}],
         timeout=60,
@@ -500,7 +500,7 @@ Generate three assets. Return ONLY a valid JSON object, no markdown, no explanat
 
     client = _OpenAI(api_key=ANTHROPIC_API_KEY, base_url="https://openrouter.ai/api/v1")
     msg = client.chat.completions.create(
-        model="anthropic/claude-sonnet-4-6",
+        model="anthropic/claude-sonnet-4.5",
         max_tokens=1500,
         messages=[{"role": "user", "content": prompt}],
         timeout=60,
@@ -637,10 +637,16 @@ def audit_stream(sid):
                 for attempt in range(2):
                     try:
                         msg = client.chat.completions.create(
-                            model="anthropic/claude-sonnet-4-6",
-                            max_tokens=8192,
+                            model="anthropic/claude-sonnet-4.5",
+                            max_tokens=12000,
                             messages=messages,
-                            timeout=90,
+                            timeout=150,
+                            extra_body={
+                                "thinking": {
+                                    "type": "enabled",
+                                    "budget_tokens": 8000,
+                                }
+                            },
                         )
                         result_box[0] = msg.choices[0].message.content
                         return
@@ -648,7 +654,7 @@ def audit_stream(sid):
                         last_exc = exc
                         err_str = str(exc)
                         print(f"[api] Error (attempt {attempt+1}/2): {err_str[:200]}")
-                        if any(k in err_str.lower() for k in ("502", "bad gateway", "529", "overload", "rate limit", "too many")):
+                        if any(k in err_str.lower() for k in ("500", "502", "bad gateway", "529", "overload", "rate limit", "too many", "internal server")):
                             wait = 8 * (attempt + 1)
                             print(f"[retry] API busy, waiting {wait}s")
                             time.sleep(wait)
