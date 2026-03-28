@@ -80,6 +80,7 @@ def _save_audit_meta(sid):
     meta = {
         "sid": sid,
         "date": s.get("date", datetime.utcnow().isoformat()),
+        "product_name": analysis.get("product_name", ""),
         "screen_name": analysis.get("screen_name", s.get("filename", "Unknown")),
         "overall_score": analysis.get("overall_score", 0),
         "score_label": analysis.get("score_label", ""),
@@ -249,6 +250,7 @@ For any finding that also violates a WCAG 2.2 criterion, add "wcag_criterion" an
 
 Return ONLY a valid JSON object — no markdown fences, no explanation, no extra text:
 {
+  "product_name": "The actual brand/product name as it appears in the UI or website (e.g. 'Sana AI', 'Linear', 'Notion'). Not a generic description.",
   "screen_name": "Short descriptive screen name (e.g. Dashboard, Login, Onboarding Step 2)",
   "overall_score": 7.2,
   "score_label": "Good",
@@ -422,31 +424,43 @@ def _build_youtube_script(analysis):
 # ─── Dribbble shot details generation ────────────────────────────────────────
 
 def _build_dribbble_details(analysis):
-    screen_name = analysis.get("screen_name", "Screen")
-    summary     = analysis.get("summary", "")
-    issues      = analysis.get("issues", [])
+    product_name = analysis.get("product_name", "") or analysis.get("screen_name", "the product")
+    screen_name  = analysis.get("screen_name", "Screen")
+    summary      = analysis.get("summary", "")
+    issues       = analysis.get("issues", [])
 
     issues_text = ""
+    references  = []
     for iss in issues[:6]:
         issues_text += (
             f"\n[{iss.get('severity','?')}] {iss.get('title','')}\n"
             f"  Problem: {iss.get('problem','')}\n"
             f"  Recommendation: {iss.get('recommendation','')}\n"
+            f"  Source: {iss.get('reference','')}\n"
         )
+        ref = iss.get("reference", "").strip()
+        if ref and ref not in references:
+            references.append(ref)
+
+    references_text = "\n".join(f"- {r}" for r in references)
 
     prompt = f"""You are writing Dribbble shot metadata for a UX redesign case study.
 
 AUDIT CONTEXT:
+Product name: {product_name}
 Screen: {screen_name}
 Summary: {summary}
 Issues:{issues_text}
 
+SOURCES FROM AUDIT (cite these explicitly in the description — use the exact names):
+{references_text}
+
 Generate three assets. Return ONLY a valid JSON object, no markdown, no explanation:
 
 {{
-  "title": "string — max 80 characters including spaces. Must include the product name, the word 'Redesign', and the word 'UX'. Punchy, specific, no filler words.",
-  "description": "string — 1500 to 2000 characters. Rich text using markdown headings (# ## ###). Structure: # opening hook sentence about the product. ## The Problem (2-3 sentences on the core UX issue and its user impact). ## What We Changed (bullet points of each fix — use - for bullets). ## The Result (1-2 sentences on the outcome). SEO-optimised, natural language, no corporate jargon. Do NOT use em-dashes.",
-  "tags": "string — exactly 10 tags separated by commas, no # symbol. Mix of: product-specific tags, AI, SaaS, UX design, UI design, web app design, product design, interaction design, usability, accessibility."
+  "title": "string — max 80 characters including spaces. Must use '{product_name}' as the product name (not a generic description). Must include the word 'Redesign' and the word 'UX'. Punchy, specific, no filler words.",
+  "description": "string — 1500 to 2000 characters. Rich text using markdown headings (# ## ###). Structure: # Opening hook (one sentence naming {product_name} and the core issue). ## The Problem (2-3 sentences on the UX friction — cite at least 2 specific sources from the list above by name, e.g. 'Steve Krug in Don't Make Me Think calls this...' or 'Don Norman's concept of the missing signifier...'). ## Impact on Users (1-2 sentences on the real cost to users). ## What We Changed (bullet points — each fix tied back to a principle or source). ## The Result (1-2 sentences). SEO-optimised, natural language, no corporate jargon, no em-dashes.",
+  "tags": "string — exactly 10 tags separated by commas, no # symbol. Mix of: {product_name.lower().replace(' ', '-')}, product-specific tags, AI, SaaS, UX design, UI design, web app design, product design, interaction design, usability, accessibility."
 }}"""
 
     client = _OpenAI(api_key=ANTHROPIC_API_KEY, base_url="https://openrouter.ai/api/v1")
@@ -903,6 +917,25 @@ def generate_dribbble(sid):
     analysis = sessions[sid].get("analysis")
     if not analysis:
         return jsonify({"error": "No analysis data — run the audit first"}), 400
+
+    # Enrich analysis with product_name from meta.json if not already set
+    if not analysis.get("product_name"):
+        meta_path = os.path.join(_audit_dir(sid), "meta.json")
+        if os.path.exists(meta_path):
+            with open(meta_path, encoding="utf-8") as f:
+                meta = json.load(f)
+            # Use stored product_name or derive from website domain
+            product_name = meta.get("product_name", "")
+            if not product_name:
+                url = meta.get("website_url", "")
+                if url:
+                    from urllib.parse import urlparse
+                    host = urlparse(url).hostname or ""
+                    # Strip www. and TLD — e.g. "sanalabs.com" → "Sana"
+                    brand = host.replace("www.", "").split(".")[0]
+                    product_name = brand.capitalize()
+            analysis["product_name"] = product_name
+
     try:
         data = _build_dribbble_details(analysis)
     except Exception as exc:
