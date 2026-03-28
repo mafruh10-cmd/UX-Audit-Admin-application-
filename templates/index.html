@@ -124,6 +124,8 @@ body{
 }
 .card-body{padding:16px 16px 12px;flex:1;}
 .card-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;line-height:1.3;}
+.card-url{display:block;font-size:11px;color:var(--primary);text-decoration:none;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.card-url:hover{text-decoration:underline;}
 .card-date{font-size:11px;color:var(--label);margin-bottom:10px;}
 .card-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .score-dot{
@@ -960,14 +962,20 @@ function buildAuditCard(a) {
     a.low    ? `<span class="chip chip-l">${a.low} L</span>` : '',
   ].join('');
 
-  const dateStr = relativeDate(a.date);
-  const name    = escHtml(a.screen_name || a.filename || 'Untitled');
+  const dateStr  = relativeDate(a.date);
+  const name     = escHtml(a.screen_name || a.filename || 'Untitled');
+  const rawUrl   = a.website_url || '';
+  const dispUrl  = rawUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const urlHtml  = rawUrl
+    ? `<a class="card-url" href="${escHtml(rawUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${escHtml(dispUrl)}</a>`
+    : '';
 
   return `
     <div class="audit-card" data-sid="${escHtml(a.sid)}">
       ${thumbHtml}
       <div class="card-body">
         <div class="card-name">${name}</div>
+        ${urlHtml}
         <div class="card-date">${dateStr}</div>
         <div class="card-meta">
           ${scoreDot}
