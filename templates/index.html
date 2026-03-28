@@ -786,6 +786,17 @@ body{
         </div>
         <div class="detail-score-row" id="detailScoreRow"></div>
         <div class="detail-summary" id="detailSummary"></div>
+        <!-- Shareable report link -->
+        <div id="reportShareRow" style="display:none;margin-bottom:20px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--label);margin-bottom:6px;">Shareable Report Link</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div id="reportShareUrl" style="flex:1;font-size:12px;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:monospace;"></div>
+            <button class="btn btn-ghost btn-sm" onclick="copyShareLink('report')" id="copyReportLinkBtn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy Link
+            </button>
+          </div>
+        </div>
         <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--label);margin-bottom:12px;">Issues at a Glance</div>
         <div class="issues-list" id="detailIssuesList"></div>
       </div>
@@ -805,6 +816,41 @@ body{
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Download .txt
           </button>
+        </div>
+
+        <!-- Redesign HTML upload -->
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--label);margin-bottom:10px;">Upload Redesign HTML</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">Paste the HTML Claude generated into a file and upload it here. It will be stored in GitHub and you'll get a shareable preview link.</div>
+
+          <div id="redesignDropArea" onclick="document.getElementById('redesignFileInput').click()"
+               style="border:2px dashed var(--border);border-radius:10px;padding:28px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;"
+               ondragover="event.preventDefault();this.style.borderColor='var(--cyan)';this.style.background='var(--cyan-light)'"
+               ondragleave="this.style.borderColor='';this.style.background=''"
+               ondrop="event.preventDefault();this.style.borderColor='';this.style.background='';handleRedesignUpload(event.dataTransfer.files[0])">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" style="margin:0 auto 8px;display:block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">Drop .html file here</div>
+            <div style="font-size:12px;color:var(--muted);">or click to choose file</div>
+          </div>
+          <input type="file" id="redesignFileInput" accept=".html" style="display:none;" onchange="handleRedesignUpload(this.files[0])">
+
+          <!-- Upload progress -->
+          <div id="redesignUploading" style="display:none;text-align:center;padding:16px;font-size:13px;color:var(--muted);">
+            <div class="spinner" style="margin:0 auto 8px;"></div>
+            Uploading and pushing to GitHub…
+          </div>
+
+          <!-- Share link after upload -->
+          <div id="redesignShareRow" style="display:none;margin-top:14px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--label);margin-bottom:6px;">Shareable Redesign Link</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div id="redesignShareUrl" style="flex:1;font-size:12px;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:monospace;"></div>
+              <button class="btn btn-ghost btn-sm" onclick="copyShareLink('redesign')" id="copyRedesignLinkBtn">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copy Link
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1535,6 +1581,28 @@ function populateDetailModal(d) {
     document.getElementById('drbContent').style.display = 'none';
     document.getElementById('drbSpinner').classList.remove('show');
   }
+
+  // Report share link (Overview tab)
+  const reportShareRow = document.getElementById('reportShareRow');
+  if (d.report_url) {
+    document.getElementById('reportShareUrl').textContent = d.report_url;
+    reportShareRow.style.display = 'block';
+  } else {
+    reportShareRow.style.display = 'none';
+  }
+
+  // Redesign share link (Prompt tab) — show if already uploaded
+  const redesignShareRow = document.getElementById('redesignShareRow');
+  const redesignDrop = document.getElementById('redesignDropArea');
+  if (d.redesign_url) {
+    document.getElementById('redesignShareUrl').textContent = d.redesign_url;
+    redesignShareRow.style.display = 'block';
+    redesignDrop.querySelector('div[style*="font-weight:600"]').textContent = 'Replace redesign file';
+  } else {
+    redesignShareRow.style.display = 'none';
+  }
+  document.getElementById('redesignUploading').style.display = 'none';
+  document.getElementById('redesignFileInput').value = '';
 }
 
 function switchTab(name) {
@@ -1573,6 +1641,51 @@ function _downloadBlob(text, mime, filename) {
   const a    = document.createElement('a');
   a.href = url; a.download = filename; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function copyShareLink(type) {
+  const elId = type === 'report' ? 'reportShareUrl' : 'redesignShareUrl';
+  const btnId = type === 'report' ? 'copyReportLinkBtn' : 'copyRedesignLinkBtn';
+  const url = document.getElementById(elId).textContent.trim();
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById(btnId);
+    const orig = btn.innerHTML;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.innerHTML = orig; }, 1800);
+  }).catch(() => {});
+}
+
+async function handleRedesignUpload(file) {
+  if (!file || !detailSid) return;
+  if (!file.name.toLowerCase().endsWith('.html')) {
+    alert('Only .html files are accepted.');
+    return;
+  }
+
+  document.getElementById('redesignDropArea').style.display = 'none';
+  document.getElementById('redesignUploading').style.display = 'block';
+  document.getElementById('redesignShareRow').style.display = 'none';
+
+  const form = new FormData();
+  form.append('file', file);
+
+  try {
+    const res = await fetch(`/api/audits/${detailSid}/upload-redesign`, { method: 'POST', body: form });
+    const data = await res.json();
+    document.getElementById('redesignUploading').style.display = 'none';
+    document.getElementById('redesignDropArea').style.display = 'block';
+    if (data.ok && data.redesign_url) {
+      document.getElementById('redesignShareUrl').textContent = data.redesign_url;
+      document.getElementById('redesignShareRow').style.display = 'block';
+      document.getElementById('redesignDropArea').querySelector('[style*="font-weight:600"]').textContent = 'Replace redesign file';
+    } else {
+      alert(data.error || 'Upload failed.');
+    }
+  } catch (e) {
+    document.getElementById('redesignUploading').style.display = 'none';
+    document.getElementById('redesignDropArea').style.display = 'block';
+    alert('Upload failed: ' + e.message);
+  }
 }
 
 // ─── Script generation ────────────────────────────────────────────────────────

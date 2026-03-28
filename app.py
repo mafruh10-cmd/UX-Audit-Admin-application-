@@ -7,6 +7,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import threading
 import time
 import uuid
@@ -70,6 +71,13 @@ AUDIT_STEPS = [
 AUDITS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "audits")
 os.makedirs(AUDITS_DIR, exist_ok=True)
 
+GITHUB_REPO   = "mafruh10-cmd/UX-Audit-Admin-application-"
+GITHUB_BRANCH = "main"
+
+def _github_preview_url(sid, filename):
+    raw = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/audits/{sid}/{filename}"
+    return f"https://htmlpreview.github.io/?{raw}"
+
 def _audit_dir(sid):
     return os.path.join(AUDITS_DIR, sid)
 
@@ -95,6 +103,7 @@ def _save_audit_meta(sid):
         "total_issues": len(issues),
         "has_script":    os.path.exists(os.path.join(d, "youtube_script.txt")),
         "has_dribbble":  os.path.exists(os.path.join(d, "dribbble.json")),
+        "has_redesign":  os.path.exists(os.path.join(d, "redesign.html")),
         "status": s.get("status", "uploaded"),
     }
     with open(os.path.join(d, "meta.json"), "w", encoding="utf-8") as f:
@@ -873,6 +882,11 @@ def get_audit_detail(sid):
                 break
             except Exception:
                 pass
+    # Shareable GitHub preview URLs
+    if os.path.exists(os.path.join(d, "report.html")):
+        result["report_url"] = _github_preview_url(sid, "report.html")
+    if os.path.exists(os.path.join(d, "redesign.html")):
+        result["redesign_url"] = _github_preview_url(sid, "redesign.html")
     return jsonify(result)
 
 
@@ -957,6 +971,41 @@ def generate_dribbble(sid):
         json.dump(data, f, indent=2)
     _save_audit_meta(sid)
     return jsonify(data)
+
+
+@app.route("/api/audits/<sid>/upload-redesign", methods=["POST"])
+def upload_redesign(sid):
+    """Accept an HTML redesign file, save it, push to GitHub, return shareable URL."""
+    d = _audit_dir(sid)
+    if not os.path.exists(d):
+        return jsonify({"error": "Audit not found"}), 404
+
+    if "file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    uploaded = request.files["file"]
+    if not uploaded.filename.lower().endswith(".html"):
+        return jsonify({"error": "Only .html files are accepted"}), 400
+
+    dest = os.path.join(d, "redesign.html")
+    uploaded.save(dest)
+
+    # Commit + push to GitHub so the preview URL is live
+    rel_path = os.path.relpath(dest, BASE_DIR)
+    try:
+        subprocess.run(["git", "add", rel_path], cwd=BASE_DIR, check=True, capture_output=True)
+        result = subprocess.run(
+            ["git", "commit", "-m", f"Add redesign HTML for audit {sid[:8]}"],
+            cwd=BASE_DIR, capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            subprocess.run(["git", "push", "origin", GITHUB_BRANCH], cwd=BASE_DIR, capture_output=True)
+    except Exception as exc:
+        print(f"[upload-redesign] git error: {exc}")
+
+    _save_audit_meta(sid)
+    redesign_url = _github_preview_url(sid, "redesign.html")
+    return jsonify({"ok": True, "redesign_url": redesign_url})
 
 
 @app.route("/api/audits/<sid>/report")
