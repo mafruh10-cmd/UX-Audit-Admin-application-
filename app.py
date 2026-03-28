@@ -17,7 +17,7 @@ import urllib.request as _urllib_req
 import urllib.parse as _urllib_parse
 from html.parser import HTMLParser
 
-from flask import Flask, Response, jsonify, render_template, request, stream_with_context
+from flask import Flask, Response, jsonify, render_template, request, send_file, stream_with_context
 from flask_cors import CORS
 
 try:
@@ -733,6 +733,18 @@ def download_prompt(sid):
 
 # ─── Audit history CRUD ───────────────────────────────────────────────────────
 
+@app.route("/api/audits/<sid>/thumb")
+def audit_thumb(sid):
+    """Serve the screenshot/annotated image for a given audit."""
+    d = _audit_dir(sid)
+    for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
+        p = os.path.join(d, fname)
+        if os.path.exists(p):
+            mime = "image/jpeg" if fname.endswith(".jpg") else "image/png"
+            return send_file(p, mimetype=mime)
+    return ("", 404)
+
+
 @app.route("/api/audits")
 def list_audits():
     result = []
@@ -743,7 +755,14 @@ def list_audits():
         if os.path.exists(meta_path):
             try:
                 with open(meta_path, encoding="utf-8") as f:
-                    result.append(json.load(f))
+                    meta = json.load(f)
+                # Add thumb_url so the card can load it directly
+                d = _audit_dir(sid)
+                for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
+                    if os.path.exists(os.path.join(d, fname)):
+                        meta["thumb_url"] = f"/api/audits/{sid}/thumb"
+                        break
+                result.append(meta)
             except Exception:
                 pass
     result.sort(key=lambda x: x.get("date", ""), reverse=True)
