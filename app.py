@@ -90,7 +90,8 @@ def _save_audit_meta(sid):
         "medium": sum(1 for i in issues if i.get("severity") == "Medium"),
         "low": sum(1 for i in issues if i.get("severity") == "Low"),
         "total_issues": len(issues),
-        "has_script": os.path.exists(os.path.join(d, "youtube_script.txt")),
+        "has_script":    os.path.exists(os.path.join(d, "youtube_script.txt")),
+        "has_dribbble":  os.path.exists(os.path.join(d, "dribbble.json")),
         "status": s.get("status", "uploaded"),
     }
     with open(os.path.join(d, "meta.json"), "w", encoding="utf-8") as f:
@@ -416,6 +417,52 @@ def _build_youtube_script(analysis):
         timeout=60,
     )
     return msg.choices[0].message.content.strip()
+
+
+# ─── Dribbble shot details generation ────────────────────────────────────────
+
+def _build_dribbble_details(analysis):
+    screen_name = analysis.get("screen_name", "Screen")
+    summary     = analysis.get("summary", "")
+    issues      = analysis.get("issues", [])
+
+    issues_text = ""
+    for iss in issues[:6]:
+        issues_text += (
+            f"\n[{iss.get('severity','?')}] {iss.get('title','')}\n"
+            f"  Problem: {iss.get('problem','')}\n"
+            f"  Recommendation: {iss.get('recommendation','')}\n"
+        )
+
+    prompt = f"""You are writing Dribbble shot metadata for a UX redesign case study.
+
+AUDIT CONTEXT:
+Screen: {screen_name}
+Summary: {summary}
+Issues:{issues_text}
+
+Generate three assets. Return ONLY a valid JSON object, no markdown, no explanation:
+
+{{
+  "title": "string — max 80 characters including spaces. Must include the product name, the word 'Redesign', and the word 'UX'. Punchy, specific, no filler words.",
+  "description": "string — 1500 to 2000 characters. Rich text using markdown headings (# ## ###). Structure: # opening hook sentence about the product. ## The Problem (2-3 sentences on the core UX issue and its user impact). ## What We Changed (bullet points of each fix — use - for bullets). ## The Result (1-2 sentences on the outcome). SEO-optimised, natural language, no corporate jargon. Do NOT use em-dashes.",
+  "tags": "string — exactly 10 tags separated by commas, no # symbol. Mix of: product-specific tags, AI, SaaS, UX design, UI design, web app design, product design, interaction design, usability, accessibility."
+}}"""
+
+    client = _OpenAI(api_key=ANTHROPIC_API_KEY, base_url="https://openrouter.ai/api/v1")
+    msg = client.chat.completions.create(
+        model="anthropic/claude-sonnet-4-6",
+        max_tokens=1500,
+        messages=[{"role": "user", "content": prompt}],
+        timeout=60,
+    )
+    raw = msg.choices[0].message.content.strip()
+    # Strip markdown fences if present
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    return json.loads(raw.strip())
 
 
 # ─── Routes ───────────────────────────────────────────────────────────────────
@@ -776,7 +823,8 @@ def get_audit_detail(sid):
         return jsonify({"error": "Audit not found"}), 404
     result = {}
     for fname, key in [("meta.json", None), ("audit_data.json", "analysis"),
-                        ("youtube_script.txt", "youtube_script"), ("claude_prompt.txt", "claude_prompt")]:
+                        ("youtube_script.txt", "youtube_script"), ("claude_prompt.txt", "claude_prompt"),
+                        ("dribbble.json", "dribbble")]:
         p = os.path.join(d, fname)
         if not os.path.exists(p):
             continue
@@ -841,6 +889,30 @@ def generate_script(sid):
         f.write(script)
     _save_audit_meta(sid)
     return jsonify({"script": script})
+
+
+@app.route("/api/dribbble/<sid>", methods=["POST"])
+def generate_dribbble(sid):
+    if sid not in sessions:
+        data_path = os.path.join(_audit_dir(sid), "audit_data.json")
+        if os.path.exists(data_path):
+            with open(data_path, encoding="utf-8") as f:
+                sessions[sid] = {"analysis": json.load(f), "status": "ready"}
+        else:
+            return jsonify({"error": "Session not found"}), 404
+    analysis = sessions[sid].get("analysis")
+    if not analysis:
+        return jsonify({"error": "No analysis data — run the audit first"}), 400
+    try:
+        data = _build_dribbble_details(analysis)
+    except Exception as exc:
+        return jsonify({"error": f"Dribbble generation failed: {exc}"}), 500
+    d = _audit_dir(sid)
+    os.makedirs(d, exist_ok=True)
+    with open(os.path.join(d, "dribbble.json"), "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+    _save_audit_meta(sid)
+    return jsonify(data)
 
 
 @app.route("/api/audits/<sid>/report")

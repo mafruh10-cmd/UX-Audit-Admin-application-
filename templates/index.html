@@ -462,6 +462,26 @@ body{
 .script-spinner{display:none;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
 .script-spinner.show{display:flex;}
 
+/* ── Dribbble tab ── */
+.drb-empty{text-align:center;padding:40px 24px;background:var(--bg);border-radius:12px;border:1px solid var(--border);}
+.drb-empty p{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.6;}
+.drb-section{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:14px;}
+.drb-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.drb-section-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--label);}
+.drb-title-text{font-size:15px;font-weight:700;color:var(--text);line-height:1.4;}
+.drb-char-count{font-size:11px;color:var(--muted);margin-top:6px;}
+.drb-desc{font-size:13px;color:var(--text);line-height:1.75;white-space:pre-wrap;word-break:break-word;}
+.drb-desc h1,.drb-desc h2,.drb-desc h3{font-family:inherit;margin:0 0 6px;}
+.drb-desc h1{font-size:15px;font-weight:800;}
+.drb-desc h2{font-size:13px;font-weight:700;color:var(--cyan);margin-top:14px;}
+.drb-desc h3{font-size:12px;font-weight:600;color:var(--label);}
+.drb-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.drb-tag{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:#F3F4F6;color:var(--muted);border:1px solid var(--border);}
+.drb-spinner{display:none;align-items:center;justify-content:center;gap:10px;padding:40px;font-size:13px;color:var(--muted);}
+.drb-spinner.show{display:flex;}
+.drb-spinner .spinner{width:18px;height:18px;border-width:2px;}
+@keyframes drbDot{0%,80%,100%{transform:scale(.6);opacity:.4;}40%{transform:scale(1);opacity:1;}}
+
 /* ── Confirm modal ── */
 .confirm-modal{
   background:var(--card);border-radius:16px;
@@ -740,6 +760,7 @@ body{
         <button class="tab-btn" onclick="switchTab('prompt')">Claude Prompt</button>
         <button class="tab-btn" onclick="switchTab('script')">YouTube Script</button>
         <button class="tab-btn" onclick="switchTab('report')">Report</button>
+        <button class="tab-btn" onclick="switchTab('dribbble')">Dribbble Shot</button>
       </nav>
     </div>
     <div class="detail-modal-body">
@@ -824,6 +845,70 @@ body{
             Download Report (.html)
           </button>
         </div>
+      </div>
+
+      <!-- Dribbble Shot tab -->
+      <div class="tab-panel" id="tab-dribbble">
+
+        <!-- Spinner shown while generating -->
+        <div class="drb-spinner" id="drbSpinner">
+          <div class="spinner"></div>
+          Generating Dribbble details…
+        </div>
+
+        <!-- Empty state -->
+        <div class="drb-empty" id="drbEmpty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" style="margin:0 auto 12px;display:block;">
+            <circle cx="12" cy="12" r="10"/><path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72m2.54-15.38c-3.72 4.35-8.94 5.66-16.88 5.85m19.5 1.9c-3.5-.93-6.63-.82-8.94 0-2.58.92-5.01 2.86-7.44 6.32"/>
+          </svg>
+          <p>No Dribbble shot details yet.<br>Generate a title, description, and tags in one click.</p>
+          <button class="btn btn-primary" onclick="generateDribbble()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Generate Dribbble Shot Details
+          </button>
+        </div>
+
+        <!-- Content — shown once generated -->
+        <div id="drbContent" style="display:none;">
+
+          <!-- Regenerate button -->
+          <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+            <button class="btn btn-ghost btn-sm" onclick="generateDribbble()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Regenerate
+            </button>
+          </div>
+
+          <!-- Title -->
+          <div class="drb-section">
+            <div class="drb-section-header">
+              <span class="drb-section-label">Title</span>
+              <button class="btn btn-ghost btn-sm" onclick="copyDrb('title',this)">Copy</button>
+            </div>
+            <div class="drb-title-text" id="drbTitle"></div>
+            <div class="drb-char-count" id="drbTitleCount"></div>
+          </div>
+
+          <!-- Description -->
+          <div class="drb-section">
+            <div class="drb-section-header">
+              <span class="drb-section-label">Description</span>
+              <button class="btn btn-ghost btn-sm" onclick="copyDrb('description',this)">Copy</button>
+            </div>
+            <div class="drb-desc" id="drbDesc"></div>
+            <div class="drb-char-count" id="drbDescCount"></div>
+          </div>
+
+          <!-- Tags -->
+          <div class="drb-section">
+            <div class="drb-section-header">
+              <span class="drb-section-label">Tags</span>
+              <button class="btn btn-ghost btn-sm" onclick="copyDrb('tags',this)">Copy All</button>
+            </div>
+            <div class="drb-tags" id="drbTags"></div>
+          </div>
+
+        </div><!-- /drbContent -->
       </div>
 
     </div><!-- /detail-modal-body -->
@@ -1435,6 +1520,15 @@ function populateDetailModal(d) {
     document.getElementById('detailScriptText').style.display = 'none';
     document.getElementById('scriptActions').style.display = 'none';
   }
+
+  // Dribbble tab
+  if (d.dribbble) {
+    _populateDribbble(d.dribbble);
+  } else {
+    document.getElementById('drbEmpty').style.display = 'block';
+    document.getElementById('drbContent').style.display = 'none';
+    document.getElementById('drbSpinner').classList.remove('show');
+  }
 }
 
 function switchTab(name) {
@@ -1442,7 +1536,7 @@ function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   const tabs = document.querySelectorAll('.tab-btn');
-  const map  = { overview: 0, prompt: 1, script: 2, report: 3 };
+  const map  = { overview: 0, prompt: 1, script: 2, report: 3, dribbble: 4 };
   if (map[name] !== undefined) tabs[map[name]].classList.add('active');
 }
 
@@ -1576,6 +1670,75 @@ function copyScriptViewer() {
 
 function downloadScriptViewer() {
   _downloadBlob(_scriptViewerText, 'text/plain', `youtube_script_${(_scriptViewerSid||'').slice(0,8)}.txt`);
+}
+
+// ─── Dribbble shot generation ─────────────────────────────────────────────────
+
+let _drbData = {};
+
+async function generateDribbble() {
+  if (!detailSid) return;
+  document.getElementById('drbEmpty').style.display    = 'none';
+  document.getElementById('drbContent').style.display  = 'none';
+  document.getElementById('drbSpinner').classList.add('show');
+
+  try {
+    const res = await fetch(`/api/dribbble/${detailSid}`, { method: 'POST' });
+    const j   = await res.json();
+    if (!res.ok) throw new Error(j.error || 'Generation failed');
+    _populateDribbble(j);
+  } catch (e) {
+    document.getElementById('drbEmpty').style.display = 'block';
+    alert('Dribbble generation failed: ' + e.message);
+  } finally {
+    document.getElementById('drbSpinner').classList.remove('show');
+  }
+}
+
+function _populateDribbble(data) {
+  _drbData = data;
+
+  // Title
+  const title = data.title || '';
+  document.getElementById('drbTitle').textContent     = title;
+  document.getElementById('drbTitleCount').textContent = `${title.length} / 80 characters`;
+
+  // Description — render markdown headings
+  const raw  = data.description || '';
+  const html = raw
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,  '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,   '<h1>$1</h1>')
+    .replace(/^- (.+)$/gm,   '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/gs, m => `<ul style="margin:6px 0 10px 16px;padding:0;">${m}</ul>`)
+    .replace(/\n{2,}/g, '<br><br>')
+    .replace(/\n/g, '<br>');
+  document.getElementById('drbDesc').innerHTML          = html;
+  document.getElementById('drbDescCount').textContent   = `${raw.length} characters`;
+
+  // Tags
+  const tagsEl = document.getElementById('drbTags');
+  tagsEl.innerHTML = '';
+  (data.tags || '').split(',').map(t => t.trim()).filter(Boolean).forEach(tag => {
+    const span = document.createElement('span');
+    span.className   = 'drb-tag';
+    span.textContent = tag;
+    tagsEl.appendChild(span);
+  });
+
+  document.getElementById('drbContent').style.display = 'block';
+  document.getElementById('drbEmpty').style.display   = 'none';
+}
+
+function copyDrb(field, btn) {
+  let text = '';
+  if (field === 'title')            text = _drbData.title || '';
+  else if (field === 'description') text = _drbData.description || '';
+  else if (field === 'tags')        text = _drbData.tags || '';
+
+  navigator.clipboard.writeText(text).then(() => {
+    if (btn) { const o = btn.textContent; btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = o, 1500); }
+  }).catch(() => {});
 }
 
 // ─── Delete flow ──────────────────────────────────────────────────────────────
