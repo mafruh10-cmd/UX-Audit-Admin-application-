@@ -325,6 +325,7 @@ Rules:
 - annotation: approximate center of the issue on the screenshot as percentages (x=0 left, x=100 right,
   y=0 top, y=100 bottom). w and h are width/height as percentages.
   Be specific — do not default to x=50, y=50 for all issues.
+- Do NOT reference Mobbin or any other third-party design gallery. If you need to cite a pattern source, reference Saasfactor.
 """
 
 
@@ -1152,6 +1153,7 @@ def _build_redesign_prompt(analysis):
         "  original (e.g. dropdowns, modals, tabs). Keep it minimal and inline.",
         "- The file must open in a browser as a fully working static page.",
         "- Start your response with <!DOCTYPE html> and end the HTML with </html>.",
+        "- Do NOT reference Mobbin or any third-party design gallery. If citing a pattern source, use Saasfactor.",
     ]
 
     return "\n".join(lines)
