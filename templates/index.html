@@ -1730,10 +1730,25 @@ function _populateDribbble(data) {
   document.getElementById('drbEmpty').style.display   = 'none';
 }
 
+function _markdownToPlain(md) {
+  return md
+    // H1 → ALL CAPS line with blank line after
+    .replace(/^# (.+)$/gm, (_, t) => t.toUpperCase())
+    // H2 → bold-style plain text heading with blank line before
+    .replace(/^## (.+)$/gm, (_, t) => '\n' + t.toUpperCase())
+    // H3 → plain heading
+    .replace(/^### (.+)$/gm, (_, t) => '\n' + t)
+    // Bullets → unicode bullet
+    .replace(/^- (.+)$/gm, '• $1')
+    // Collapse 3+ newlines to 2
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function copyDrb(field, btn) {
   let text = '';
   if (field === 'title')            text = _drbData.title || '';
-  else if (field === 'description') text = _drbData.description || '';
+  else if (field === 'description') text = _markdownToPlain(_drbData.description || '');
   else if (field === 'tags')        text = _drbData.tags || '';
 
   navigator.clipboard.writeText(text).then(() => {
