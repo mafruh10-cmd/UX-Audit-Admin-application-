@@ -1,0 +1,162 @@
+{
+  "product_name": "HubSpot",
+  "screen_name": "Contact Record — Overview",
+  "overall_score": 6.4,
+  "score_label": "Good",
+  "summary": "The HubSpot Contact Record overview delivers a dense, information-rich layout that supports power users but imposes significant cognitive load on casual users through competing visual hierarchies, ambiguous icon-only actions, and insufficient contrast in secondary text. Accessibility gaps — particularly around icon-only controls, overdue-state color coding, and low-contrast metadata — risk excluding keyboard and low-vision users. Information architecture improvements and clearer status communication would meaningfully elevate both usability and WCAG 2.2 compliance.",
+  "accessibility_score": 5.2,
+  "issues": [
+    {
+      "id": "01",
+      "title": "Overdue task status communicated by color alone",
+      "severity": "High",
+      "location": "Recent activities — Task card 'Overdue: Aug 1, 2025 at 3:57 PM GMT+7' label",
+      "problem": "The overdue state of the task is signaled exclusively by an orange circular clock icon and the word 'Overdue' rendered in what appears to be an orange/amber tint — without any non-color reinforcement such as a bold label, warning icon with accessible text, or distinct typographic treatment. Users with color vision deficiencies cannot distinguish this critical alert from a normal state, and screen readers receive no semantic role indicating urgency.",
+      "critical_reason": "WCAG 2.2 Success Criterion 1.4.1 (Use of Color, Level A) explicitly prohibits using color as the only visual means of conveying information; this directly blocks access for the estimated 8% of male users with color blindness.",
+      "recommendation": "Augment the overdue indicator with a text label styled in bold (e.g., '⚠ Overdue') independent of color, add an accessible aria-label such as 'Task overdue' to the icon element, and pair the color with a distinct icon shape (e.g., exclamation triangle) so the state is perceivable through at least two non-color channels.",
+      "reference": "WCAG 2.2 — 1.4.1 Use of Color (A): color must not be the only visual means of conveying information",
+      "wcag_criterion": "1.4.1",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 56,
+        "y": 58,
+        "w": 38,
+        "h": 6
+      }
+    },
+    {
+      "id": "02",
+      "title": "Icon-only action buttons lack accessible text labels",
+      "severity": "High",
+      "location": "Contact action bar — Note, Email, Call, Task, Meeting, More icons beneath contact name",
+      "problem": "The six quick-action buttons (Note, Email, Call, Task, Meeting, More) are represented as small icons with small text labels underneath; however, the icons themselves carry no aria-label or title attributes visible from inspection, and the text labels are extremely small (~10–11px rendered size) falling below legible thresholds. Keyboard-only and screen reader users navigating via Tab will encounter these controls without sufficient programmatic labeling, and motor-impaired users face very small touch targets.",
+      "critical_reason": "WCAG 2.2 SC 2.5.8 (Target Size Minimum, AA) requires interactive targets to be at least 24×24 CSS pixels, and SC 4.1.2 (Name, Role, Value) requires all UI components to have programmatically determinable names — both are violated here, creating a gulf of execution for assistive technology users per Norman's framework.",
+      "recommendation": "Ensure each button has an explicit aria-label (e.g., aria-label='Create note'), increase the tap/click target to a minimum 44×44px clickable area (with padding), and retain visible text labels at a minimum 12px rendered size with sufficient contrast against the white background.",
+      "reference": "WCAG 2.2 — 4.1.2 Name, Role, Value (A) and 2.5.8 Target Size Minimum (AA); The Design of Everyday Things (Norman) — Gulf of Execution: user cannot figure out how to do what they want",
+      "wcag_criterion": "4.1.2",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 28,
+        "y": 33,
+        "w": 46,
+        "h": 8
+      }
+    },
+    {
+      "id": "03",
+      "title": "Low-contrast secondary metadata text fails minimum contrast ratio",
+      "severity": "High",
+      "location": "Data highlights section — 'CREATE DATE', 'LIFECYCLE STAGE', 'LAST ACTIVITY DATE' labels and their values",
+      "problem": "The uppercase category labels ('CREATE DATE', 'LIFECYCLE STAGE', 'LAST ACTIVITY DATE') and their corresponding value text appear in a light grey color rendered on a white/near-white background. The estimated contrast ratio of these grey label strings is likely below the 4.5:1 threshold required for normal-weight text at this size, making them difficult to read for low-vision users and failing WCAG AA.",
+      "critical_reason": "WCAG 2.2 SC 1.4.3 (Contrast Minimum, AA) mandates a 4.5:1 contrast ratio for normal text; small grey-on-white labels are a textbook failure pattern that disproportionately impacts the 246 million people globally living with moderate-to-severe vision impairment.",
+      "recommendation": "Darken the label text to achieve at least a 4.5:1 contrast ratio against the background (approximately #767676 on white is the minimum safe grey); use a tool such as the WebAIM Contrast Checker to validate all text tokens, and establish a design token system ensuring secondary labels always meet contrast requirements.",
+      "reference": "WCAG 2.2 — 1.4.3 Contrast Minimum (AA): normal text requires 4.5:1 contrast ratio",
+      "wcag_criterion": "1.4.3",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 55,
+        "y": 22,
+        "w": 50,
+        "h": 10
+      }
+    },
+    {
+      "id": "04",
+      "title": "Trial expiry banner competes with primary task context",
+      "severity": "High",
+      "location": "Global top banner — 'Your Service Hub Enterprise trial has ended'",
+      "problem": "The full-width dark teal trial-ended banner permanently occupies the topmost viewport real estate, drawing immediate pre-attentive attention away from the user's primary task of reviewing a contact record. This persistent interruption increases cognitive load and forces users to consciously suppress a high-contrast, motion-capable element on every page view, creating unnecessary friction during active workflows.",
+      "critical_reason": "The Aesthetic-Usability Effect and Signal-to-Noise Ratio principle establish that extraneous high-salience elements degrade perceived usability and mask relevant content; the banner represents irrelevant noise for users actively working within the trial period's remaining capabilities.",
+      "recommendation": "Allow users to dismiss the banner with a persistent preference stored in their session/account, reduce the banner's visual weight by using a less saturated background or reducing its height, and relocate the upsell CTA to a less intrusive location such as the sidebar or a settings notification badge.",
+      "reference": "Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter",
+      "annotation": {
+        "x": 50,
+        "y": 2,
+        "w": 90,
+        "h": 5
+      }
+    },
+    {
+      "id": "05",
+      "title": "Ambiguous 'More' overflow button conceals unknown actions",
+      "severity": "Medium",
+      "location": "Contact action bar — '••• More' button at far right of quick-action row",
+      "problem": "The 'More' button uses a horizontal ellipsis icon that provides no affordance about what additional actions it contains, forcing users to click and explore to discover functionality. This violates progressive disclosure best practice by hiding actions without any hint of their nature or count, increasing the number of exploratory interactions required.",
+      "critical_reason": "Hick's Law states that decision time increases with uncertainty; when users cannot predict what 'More' contains, they experience choice anxiety and may avoid the control entirely, causing feature discoverability to plummet — a finding consistently cited in interaction design research.",
+      "recommendation": "Replace or augment the ellipsis with a labeled dropdown (e.g., 'More actions ▾') and consider surfacing the two most-used hidden actions directly in the toolbar if space allows; alternatively, show a tooltip on hover listing the hidden actions so users can predict the menu contents before clicking.",
+      "reference": "Psychology of Design — Hick's Law: too many choices slows decisions; Universal Principles of Design — Progressive Disclosure: show only what is needed at each step",
+      "annotation": {
+        "x": 39,
+        "y": 33,
+        "w": 10,
+        "h": 8
+      }
+    },
+    {
+      "id": "06",
+      "title": "Activity feed filter state is visually ambiguous",
+      "severity": "Medium",
+      "location": "Recent activities — '(5) Activity ✕' filter chip and 'All time so far' button",
+      "problem": "The active filter chip '(5) Activity' uses a subtle pill style that does not strongly differentiate from an unselected state, and the 'All time so far' button appears as a bordered rectangle with no clear indication whether it is a dropdown, a toggle, or an informational label. Users may not understand that the activity count is filtered or that time range is adjustable, leading to missed context.",
+      "critical_reason": "Don't Make Me Think (Krug) — users should be able to identify interactive controls and their current state without cognitive effort; ambiguous control states force users to re-examine and re-interpret UI elements, adding unnecessary cognitive load during time-sensitive CRM workflows.",
+      "recommendation": "Use a distinctly styled active-filter chip (e.g., filled background with high-contrast text and a clear '×' dismiss affordance) and explicitly label the time-range control as a dropdown with a chevron icon and the label 'Time range: All time' to communicate its interactivity and current state.",
+      "reference": "Don't Make Me Think (Krug) — Billboard Design 101: users scan, not read; The Design of Everyday Things (Norman) — Signifier: visible cues must indicate where to act",
+      "annotation": {
+        "x": 55,
+        "y": 43,
+        "w": 55,
+        "h": 7
+      }
+    },
+    {
+      "id": "07",
+      "title": "Breeze AI summary panel creates excessive right-panel cognitive split",
+      "severity": "Medium",
+      "location": "Right sidebar — 'Breeze record summary' / Contact summary panel",
+      "problem": "The AI-generated contact summary panel occupies a large portion of the right sidebar with dense paragraph text, requiring users to context-switch between the activity feed on the left and the narrative summary on the right simultaneously. The two panels present overlapping information (both describe the Aug 1 call and meeting) without clear delineation of which is authoritative, increasing working memory load.",
+      "critical_reason": "Working memory research (Miller's Law) shows humans can hold only 4±1 chunks of information simultaneously; presenting redundant information across spatially separated panels forces users to mentally reconcile two sources, degrading comprehension speed and accuracy.",
+      "recommendation": "Differentiate the AI summary's role with a clearer heading such as 'AI-generated snapshot — not a record of activity' and visually distinguish it from factual activity logs using a subtle background tint or italics; consider collapsing the panel by default and letting users expand it on demand to reduce split-attention load.",
+      "reference": "Universal Principles of Design — Progressive Disclosure: show only what is needed at each step; Psych 101 (Kleinman) — Working Memory: users can hold limited information chunks simultaneously",
+      "annotation": {
+        "x": 85,
+        "y": 40,
+        "w": 28,
+        "h": 45
+      }
+    },
+    {
+      "id": "08",
+      "title": "Search activities field lacks a visible accessible label",
+      "severity": "Medium",
+      "location": "Recent activities — 'Search activities' text input field",
+      "problem": "The search input within the activities section uses placeholder text 'Search activities' as its only label. Placeholder text disappears as soon as a user begins typing, leaving users with no persistent label to remind them of the field's purpose, and screen readers that rely on accessible labels may only announce the placeholder — which is not a substitute for a programmatic label element.",
+      "critical_reason": "WCAG 2.2 SC 3.3.2 (Labels or Instructions, A) requires that input fields have descriptive labels; relying solely on placeholder text fails this criterion and additionally burdens users with cognitive disabilities who need persistent context cues while typing.",
+      "recommendation": "Add a visually persistent label above or beside the input (e.g., 'Search activities') associated via a for/id pairing or aria-label attribute; if screen real estate is constrained, use aria-label='Search activities' on the input element and ensure placeholder text is retained as supplementary hint text only.",
+      "reference": "WCAG 2.2 — 3.3.2 Labels or Instructions (A): inputs must have descriptive labels",
+      "wcag_criterion": "3.3.2",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 52,
+        "y": 37,
+        "w": 40,
+        "h": 6
+      }
+    },
+    {
+      "id": "09",
+      "title": "Navigation sidebar icons lack visible text labels",
+      "severity": "Low",
+      "location": "Left global navigation — vertical icon strip (contacts, reports, settings, etc.)",
+      "problem": "The collapsed left sidebar presents navigation icons without persistent text labels, requiring users to rely on hover tooltips or prior learned knowledge to identify each section. New users or infrequent visitors face a steep learning curve and cannot efficiently scan available sections at a glance.",
+      "critical_reason": "The Design of Everyday Things (Norman) — Signifier principle holds that controls must display visible cues about their function; icon-only navigation without labels is a well-documented source of discoverability failure, particularly for enterprise tools with complex information architectures.",
+      "recommendation": "Provide an expanded sidebar state (either persistent or on hover) that shows text labels alongside icons; at minimum, ensure each icon has a visible tooltip that appears within 300ms of hover and is accessible via keyboard focus, with matching aria-label attributes for screen readers.",
+      "reference": "The Design of Everyday Things (Norman) — Signifier: visible cues must indicate where to act; Universal Principles of Design — Visibility: system status and available actions must be visible",
+      "annotation": {
+        "x": 3,
+        "y": 50,
+        "w": 5,
+        "h": 50
+      }
+    }
+  ]
+}

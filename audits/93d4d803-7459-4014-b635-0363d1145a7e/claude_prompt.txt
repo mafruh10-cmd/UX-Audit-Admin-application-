@@ -1,0 +1,109 @@
+You are a senior UI/UX designer and expert frontend developer.
+
+I am giving you a screenshot of a UI screen. Your task is to redesign it as a
+complete, self-contained HTML file (version 2) that does two things:
+
+  1. FIXES every issue listed in the audit below — implement every
+     recommendation exactly as described.
+
+  2. PRESERVES the entire visual identity of the original with pixel-perfect fidelity:
+       - Colors: every background, text, brand, accent, and surface color
+         (reproduce exact hex values by inspecting the screenshot)
+       - Typography: font families, sizes, weights, line-heights, letter-spacing
+       - Spacing: margin, padding, and gap values — use the same scale
+       - Shapes: border-radius, border styles, shadows, and elevation levels
+       - Icons: style, weight, size, and placement
+       - Layout: grid structure, column widths, sidebar/topbar/content positioning
+       - Components: card designs, button styles, badge styles, input styles, tables
+
+The output should feel like a version 2 of the original — same brand, better UX.
+Do not invent a new visual style. Carry everything over and only change what
+the audit findings require.
+
+====================================================================
+AUDIT REPORT  —  Contact Record — Overview
+====================================================================
+Overall Score:        6.4/10  —  Good
+Accessibility Score:  5.2/10  (WCAG 2.2 AA)
+Issues Found:         9  (4 High · 4 Medium · 1 Low)
+
+EXECUTIVE SUMMARY
+The HubSpot Contact Record overview delivers a dense, information-rich layout that supports power users but imposes significant cognitive load on casual users through competing visual hierarchies, ambiguous icon-only actions, and insufficient contrast in secondary text. Accessibility gaps — particularly around icon-only controls, overdue-state color coding, and low-contrast metadata — risk excluding keyboard and low-vision users. Information architecture improvements and clearer status communication would meaningfully elevate both usability and WCAG 2.2 compliance.
+
+====================================================================
+ISSUES TO FIX  (all issues must be addressed — ordered by severity)
+====================================================================
+
+[01] HIGH  —  Overdue task status communicated by color alone
+     Location:       Recent activities — Task card 'Overdue: Aug 1, 2025 at 3:57 PM GMT+7' label
+     Problem:        The overdue state of the task is signaled exclusively by an orange circular clock icon and the word 'Overdue' rendered in what appears to be an orange/amber tint — without any non-color reinforcement such as a bold label, warning icon with accessible text, or distinct typographic treatment. Users with color vision deficiencies cannot distinguish this critical alert from a normal state, and screen readers receive no semantic role indicating urgency.
+     Fix:            Augment the overdue indicator with a text label styled in bold (e.g., '⚠ Overdue') independent of color, add an accessible aria-label such as 'Task overdue' to the icon element, and pair the color with a distinct icon shape (e.g., exclamation triangle) so the state is perceivable through at least two non-color channels.
+     Reference:      WCAG 2.2 — 1.4.1 Use of Color (A): color must not be the only visual means of conveying information
+     WCAG:           1.4.1  —  Level A
+
+[02] HIGH  —  Icon-only action buttons lack accessible text labels
+     Location:       Contact action bar — Note, Email, Call, Task, Meeting, More icons beneath contact name
+     Problem:        The six quick-action buttons (Note, Email, Call, Task, Meeting, More) are represented as small icons with small text labels underneath; however, the icons themselves carry no aria-label or title attributes visible from inspection, and the text labels are extremely small (~10–11px rendered size) falling below legible thresholds. Keyboard-only and screen reader users navigating via Tab will encounter these controls without sufficient programmatic labeling, and motor-impaired users face very small touch targets.
+     Fix:            Ensure each button has an explicit aria-label (e.g., aria-label='Create note'), increase the tap/click target to a minimum 44×44px clickable area (with padding), and retain visible text labels at a minimum 12px rendered size with sufficient contrast against the white background.
+     Reference:      WCAG 2.2 — 4.1.2 Name, Role, Value (A) and 2.5.8 Target Size Minimum (AA); The Design of Everyday Things (Norman) — Gulf of Execution: user cannot figure out how to do what they want
+     WCAG:           4.1.2  —  Level A
+
+[03] HIGH  —  Low-contrast secondary metadata text fails minimum contrast ratio
+     Location:       Data highlights section — 'CREATE DATE', 'LIFECYCLE STAGE', 'LAST ACTIVITY DATE' labels and their values
+     Problem:        The uppercase category labels ('CREATE DATE', 'LIFECYCLE STAGE', 'LAST ACTIVITY DATE') and their corresponding value text appear in a light grey color rendered on a white/near-white background. The estimated contrast ratio of these grey label strings is likely below the 4.5:1 threshold required for normal-weight text at this size, making them difficult to read for low-vision users and failing WCAG AA.
+     Fix:            Darken the label text to achieve at least a 4.5:1 contrast ratio against the background (approximately #767676 on white is the minimum safe grey); use a tool such as the WebAIM Contrast Checker to validate all text tokens, and establish a design token system ensuring secondary labels always meet contrast requirements.
+     Reference:      WCAG 2.2 — 1.4.3 Contrast Minimum (AA): normal text requires 4.5:1 contrast ratio
+     WCAG:           1.4.3  —  Level AA
+
+[04] HIGH  —  Trial expiry banner competes with primary task context
+     Location:       Global top banner — 'Your Service Hub Enterprise trial has ended'
+     Problem:        The full-width dark teal trial-ended banner permanently occupies the topmost viewport real estate, drawing immediate pre-attentive attention away from the user's primary task of reviewing a contact record. This persistent interruption increases cognitive load and forces users to consciously suppress a high-contrast, motion-capable element on every page view, creating unnecessary friction during active workflows.
+     Fix:            Allow users to dismiss the banner with a persistent preference stored in their session/account, reduce the banner's visual weight by using a less saturated background or reducing its height, and relocate the upsell CTA to a less intrusive location such as the sidebar or a settings notification badge.
+     Reference:      Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter
+
+[05] MEDIUM  —  Ambiguous 'More' overflow button conceals unknown actions
+     Location:       Contact action bar — '••• More' button at far right of quick-action row
+     Problem:        The 'More' button uses a horizontal ellipsis icon that provides no affordance about what additional actions it contains, forcing users to click and explore to discover functionality. This violates progressive disclosure best practice by hiding actions without any hint of their nature or count, increasing the number of exploratory interactions required.
+     Fix:            Replace or augment the ellipsis with a labeled dropdown (e.g., 'More actions ▾') and consider surfacing the two most-used hidden actions directly in the toolbar if space allows; alternatively, show a tooltip on hover listing the hidden actions so users can predict the menu contents before clicking.
+     Reference:      Psychology of Design — Hick's Law: too many choices slows decisions; Universal Principles of Design — Progressive Disclosure: show only what is needed at each step
+
+[06] MEDIUM  —  Activity feed filter state is visually ambiguous
+     Location:       Recent activities — '(5) Activity ✕' filter chip and 'All time so far' button
+     Problem:        The active filter chip '(5) Activity' uses a subtle pill style that does not strongly differentiate from an unselected state, and the 'All time so far' button appears as a bordered rectangle with no clear indication whether it is a dropdown, a toggle, or an informational label. Users may not understand that the activity count is filtered or that time range is adjustable, leading to missed context.
+     Fix:            Use a distinctly styled active-filter chip (e.g., filled background with high-contrast text and a clear '×' dismiss affordance) and explicitly label the time-range control as a dropdown with a chevron icon and the label 'Time range: All time' to communicate its interactivity and current state.
+     Reference:      Don't Make Me Think (Krug) — Billboard Design 101: users scan, not read; The Design of Everyday Things (Norman) — Signifier: visible cues must indicate where to act
+
+[07] MEDIUM  —  Breeze AI summary panel creates excessive right-panel cognitive split
+     Location:       Right sidebar — 'Breeze record summary' / Contact summary panel
+     Problem:        The AI-generated contact summary panel occupies a large portion of the right sidebar with dense paragraph text, requiring users to context-switch between the activity feed on the left and the narrative summary on the right simultaneously. The two panels present overlapping information (both describe the Aug 1 call and meeting) without clear delineation of which is authoritative, increasing working memory load.
+     Fix:            Differentiate the AI summary's role with a clearer heading such as 'AI-generated snapshot — not a record of activity' and visually distinguish it from factual activity logs using a subtle background tint or italics; consider collapsing the panel by default and letting users expand it on demand to reduce split-attention load.
+     Reference:      Universal Principles of Design — Progressive Disclosure: show only what is needed at each step; Psych 101 (Kleinman) — Working Memory: users can hold limited information chunks simultaneously
+
+[08] MEDIUM  —  Search activities field lacks a visible accessible label
+     Location:       Recent activities — 'Search activities' text input field
+     Problem:        The search input within the activities section uses placeholder text 'Search activities' as its only label. Placeholder text disappears as soon as a user begins typing, leaving users with no persistent label to remind them of the field's purpose, and screen readers that rely on accessible labels may only announce the placeholder — which is not a substitute for a programmatic label element.
+     Fix:            Add a visually persistent label above or beside the input (e.g., 'Search activities') associated via a for/id pairing or aria-label attribute; if screen real estate is constrained, use aria-label='Search activities' on the input element and ensure placeholder text is retained as supplementary hint text only.
+     Reference:      WCAG 2.2 — 3.3.2 Labels or Instructions (A): inputs must have descriptive labels
+     WCAG:           3.3.2  —  Level A
+
+[09] LOW  —  Navigation sidebar icons lack visible text labels
+     Location:       Left global navigation — vertical icon strip (contacts, reports, settings, etc.)
+     Problem:        The collapsed left sidebar presents navigation icons without persistent text labels, requiring users to rely on hover tooltips or prior learned knowledge to identify each section. New users or infrequent visitors face a steep learning curve and cannot efficiently scan available sections at a glance.
+     Fix:            Provide an expanded sidebar state (either persistent or on hover) that shows text labels alongside icons; at minimum, ensure each icon has a visible tooltip that appears within 300ms of hover and is accessible via keyboard focus, with matching aria-label attributes for screen readers.
+     Reference:      The Design of Everyday Things (Norman) — Signifier: visible cues must indicate where to act; Universal Principles of Design — Visibility: system status and available actions must be visible
+
+====================================================================
+OUTPUT REQUIREMENTS — PART 1: HTML
+====================================================================
+
+- Output a single, complete, self-contained HTML file.
+- All CSS must be in a <style> block in the <head> — no external stylesheets.
+- No CDN links, no JavaScript frameworks, no external images.
+  Use inline SVG for icons. Use data URIs only if absolutely necessary.
+- Every piece of text, every label, every UI element visible in the screenshot
+  must appear in the redesign. Do not remove any content.
+- Do NOT add features, sections, or content not present in the original.
+- JavaScript is allowed only for interactions that are clearly present in the
+  original (e.g. dropdowns, modals, tabs). Keep it minimal and inline.
+- The file must open in a browser as a fully working static page.
+- Start your response with <!DOCTYPE html> and end the HTML with </html>.

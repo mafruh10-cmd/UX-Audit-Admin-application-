@@ -1,0 +1,110 @@
+You are a senior UI/UX designer and expert frontend developer.
+
+I am giving you a screenshot of a UI screen. Your task is to redesign it as a
+complete, self-contained HTML file (version 2) that does two things:
+
+  1. FIXES every issue listed in the audit below — implement every
+     recommendation exactly as described.
+
+  2. PRESERVES the entire visual identity of the original with pixel-perfect fidelity:
+       - Colors: every background, text, brand, accent, and surface color
+         (reproduce exact hex values by inspecting the screenshot)
+       - Typography: font families, sizes, weights, line-heights, letter-spacing
+       - Spacing: margin, padding, and gap values — use the same scale
+       - Shapes: border-radius, border styles, shadows, and elevation levels
+       - Icons: style, weight, size, and placement
+       - Layout: grid structure, column widths, sidebar/topbar/content positioning
+       - Components: card designs, button styles, badge styles, input styles, tables
+
+The output should feel like a version 2 of the original — same brand, better UX.
+Do not invent a new visual style. Carry everything over and only change what
+the audit findings require.
+
+====================================================================
+AUDIT REPORT  —  Lead Detail — Jane Doe
+====================================================================
+Overall Score:        6.4/10  —  Good
+Accessibility Score:  5.4/10  (WCAG 2.2 AA)
+Issues Found:         9  (4 High · 4 Medium · 1 Low)
+
+EXECUTIVE SUMMARY
+The Lead Detail screen provides a reasonable information architecture across three columns — About, Activity Timeline, and Slack Channel — but suffers from significant visual noise, inconsistent iconography, and several accessibility violations that impede efficient use. The activity timeline toolbar presents too many unlabelled icon-only action buttons, increasing cognitive load and excluding keyboard and screen-reader users. Color contrast issues in secondary text and link elements, combined with absent visible focus indicators, reduce the screen's WCAG 2.2 compliance meaningfully.
+
+====================================================================
+ISSUES TO FIX  (all issues must be addressed — ordered by severity)
+====================================================================
+
+[01] HIGH  —  Icon-only action buttons in activity toolbar have no accessible labels
+     Location:       Activity timeline toolbar — four grouped icon buttons (email, calendar, phone, list) with dropdown chevrons
+     Problem:        The four primary action buttons in the activity bar (email, event, call, task) are rendered as icons only, with no visible text label or discernible accessible name visible. Screen-reader users cannot determine the purpose of each button, and sighted users must rely on prior knowledge of Salesforce conventions to interpret them. This creates a complete gulf of execution for new or assistive-technology users.
+     Fix:            Add visible text labels beneath or beside each icon button (e.g. 'Email', 'Event', 'Call', 'Task') and ensure each button has an aria-label attribute matching the visible label. Use the split-button pattern only after the primary action is clearly labelled.
+     Reference:      WCAG 2.2 — 1.1.1 Non-text Content (A): all non-text controls must have a text alternative; The Design of Everyday Things (Norman) — Gulf of Execution: user cannot figure out how to do what they want
+     WCAG:           1.1.1  —  Level A
+
+[02] HIGH  —  Low-contrast secondary and metadata text throughout activity timeline
+     Location:       Activity timeline — event subtitles ('You have an upcoming event', 'You logged a call', 'You had a task') and date/time stamps
+     Problem:        The secondary descriptive text beneath each activity item and the timestamp values appear in a light grey (~#8A8A8A on white), which fails the WCAG 4.5:1 minimum contrast ratio for normal-sized text. Users with low vision or situational impairments (bright ambient light) will struggle to read these details. This directly undermines the core purpose of the timeline — communicating what happened and when.
+     Fix:            Increase secondary text color to at least #767676 on white (4.5:1) or preferably #595959 for comfortable reading. Audit all grey text tokens across the component system and replace sub-threshold values with accessible equivalents.
+     Reference:      WCAG 2.2 — 1.4.3 Contrast Minimum (AA): normal text requires 4.5:1 contrast ratio; Designing User Interfaces (Malewicz) — Contrast and visual hierarchy
+     WCAG:           1.4.3  —  Level AA
+
+[03] HIGH  —  No visible focus indicator present on any interactive element
+     Location:       Entire screen — navigation icons, form edit pencil icons, activity buttons, links
+     Problem:        There is no evidence of a visible keyboard focus ring on any interactive element in the screenshot. Keyboard-only users and switch-device users cannot determine which element is currently focused, making the entire page effectively unusable without a pointing device. This is a critical blocker for users who rely on sequential keyboard navigation.
+     Fix:            Restore the browser default focus outline or implement a custom 2px solid focus ring with at least 3:1 contrast against adjacent colors on all interactive elements. Never suppress :focus-visible styles globally in the stylesheet.
+     Reference:      WCAG 2.2 — 2.4.7 Focus Visible (AA): keyboard focus indicator must be visible
+     WCAG:           2.4.7  —  Level AA
+
+[04] HIGH  —  Hick's Law violation: excessive simultaneous choices in the toolbar with no hierarchy
+     Location:       Activity timeline toolbar — four split-button action groups rendered at equal visual weight
+     Problem:        Four equal-weight split-button controls are presented simultaneously with no primary action distinction, forcing users to evaluate all options before acting. Combined with unlabelled icons, the decision time is significantly increased. This is especially damaging for new users who have not memorized the icon vocabulary.
+     Fix:            Identify the single most common action (likely 'Log a Call' or 'New Email') and elevate it as a primary CTA button with a text label; demote secondary actions into a single 'More' dropdown. This reduces the initial choice set from 8+ options to 2.
+     Reference:      Psychology of Design — Hick's Law: too many choices slows decisions; Universal Principles of Design — Progressive Disclosure: show only what is needed at each step
+
+[05] MEDIUM  —  Truncated email subject line loses critical context without recovery path
+     Location:       Activity timeline — email item 'Introduction and potential collaboration - SLMob...'
+     Problem:        The email subject line is truncated mid-word with an ellipsis ('SLMob...') and there is no tooltip, expand control, or hover affordance that clearly reveals the full text. Users cannot determine the full subject without clicking into the record, adding an unnecessary navigation step. This is especially problematic in a sales context where subject line recognition drives action decisions.
+     Fix:            Show the full subject line on hover via a native title attribute tooltip or a custom tooltip component. Alternatively, widen the timeline column or use a two-line text block to display the full subject without truncation.
+     Reference:      Don't Make Me Think (Krug) — Billboard Design 101: users scan, not read; Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter
+
+[06] MEDIUM  —  Trial expiry banner lacks urgency hierarchy and action proximity
+     Location:       Top navigation bar — 'Days left in Starter trial: 27' with 'Buy Now' button
+     Problem:        The trial countdown banner uses a muted dark-navy background that blends into the top bar, reducing the perceived urgency of a business-critical conversion prompt. The '27 days' figure and 'Buy Now' CTA are visually subordinate to the Salesforce logo and search bar. Users at risk of service interruption may not register the urgency until it is too late.
+     Fix:            Use a high-contrast warning color (amber or red) for the trial bar background as days decrease below a threshold (e.g. <7 days). Make the 'Buy Now' button a filled primary style and increase font weight on the countdown number to draw the eye.
+     Reference:      Psychology of Design — Loss Aversion: people are more motivated by potential loss than equivalent gain; Refactoring UI — Use color to support hierarchy, not communicate it alone
+
+[07] MEDIUM  —  Edit affordance uses low-visibility pencil icons with undersized touch targets
+     Location:       About panel — pencil/edit icons at the right edge of each field row (Name, Company, Title, etc.)
+     Problem:        Each field in the About section has a small pencil icon as the sole edit affordance, appearing only on hover (implied by their static low-opacity rendering). The touch target appears to be approximately 16–20px, well below the WCAG 2.2 recommended 24×24px minimum and far below the 44×44px target for mobile comfort. Mobile or motor-impaired users will struggle to reliably activate these controls.
+     Fix:            Increase the clickable area of each edit icon to a minimum 44×44px transparent hit area using padding. Consider switching to an inline-edit pattern where clicking the field value itself activates editing, removing the need for a separate small icon entirely.
+     Reference:      WCAG 2.2 — 2.5.8 Target Size Minimum (AA): targets must be at least 24×24 CSS pixels; Universal Principles of Design — Fitts' Law: larger and closer targets are faster to click
+     WCAG:           2.5.8  —  Level AA
+
+[08] MEDIUM  —  Slack Channel panel competes visually with primary lead data at equal weight
+     Location:       Right-hand Slack Channel panel — full-height promotional illustration and text block
+     Problem:        The Slack Channel panel occupies the same visual tier as the core lead data (About) and the activity timeline, despite being a secondary integration upsell. The large illustration and bold 'Better collaboration with Slack' heading draw the eye away from actionable lead information. This creates a false equivalence in the information hierarchy that can slow primary task completion.
+     Fix:            Reduce the Slack panel to a collapsed or subdued state by default (smaller heading, no illustration, subtle background tint). Allow users to expand it on demand, following the Progressive Disclosure principle so primary sales tasks are not visually contested.
+     Reference:      Psych 101 (Kleinman) — Gestalt: Law of Figure-Ground; Universal Principles of Design — Progressive Disclosure: show only what is needed at each step
+
+[09] LOW  —  Unsaved changes indicator ('*') on tab lacks explanatory text for all users
+     Location:       Tab bar — '* Jane Doe | Lead' tab with asterisk prefix
+     Problem:        The asterisk before 'Jane Doe | Lead' is the only signal that the record has unsaved changes, relying entirely on a visual convention that is not universally understood and provides no accessible text alternative. Screen-reader users will hear the tab announced as 'asterisk Jane Doe Lead' with no explanation of its meaning. New users may also not recognize the asterisk as an unsaved state indicator.
+     Fix:            Replace or supplement the asterisk with an aria-label on the tab reading 'Jane Doe, Lead – unsaved changes'. Add a visible tooltip on hover with the text 'You have unsaved changes' and consider adding a subtle colored dot indicator alongside the asterisk for sighted users.
+     Reference:      WCAG 2.2 — 1.3.3 Sensory Characteristics (A): instructions must not rely solely on sensory or symbolic cues; The Design of Everyday Things (Norman) — Feedback: every action must produce an immediate, clear response
+     WCAG:           1.3.3  —  Level A
+
+====================================================================
+OUTPUT REQUIREMENTS — PART 1: HTML
+====================================================================
+
+- Output a single, complete, self-contained HTML file.
+- All CSS must be in a <style> block in the <head> — no external stylesheets.
+- No CDN links, no JavaScript frameworks, no external images.
+  Use inline SVG for icons. Use data URIs only if absolutely necessary.
+- Every piece of text, every label, every UI element visible in the screenshot
+  must appear in the redesign. Do not remove any content.
+- Do NOT add features, sections, or content not present in the original.
+- JavaScript is allowed only for interactions that are clearly present in the
+  original (e.g. dropdowns, modals, tabs). Keep it minimal and inline.
+- The file must open in a browser as a fully working static page.
+- Start your response with <!DOCTYPE html> and end the HTML with </html>.
