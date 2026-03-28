@@ -1731,10 +1731,11 @@ function _populateDribbble(data) {
 }
 
 function _markdownToPlain(md) {
+  const toTitleCase = s => s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
   const lines = md.split('\n').map(line => {
-    if (line.startsWith('### ')) return line.slice(4);
-    if (line.startsWith('## '))  return '\n' + line.slice(3).toUpperCase();
-    if (line.startsWith('# '))   return line.slice(2).toUpperCase();
+    if (line.startsWith('### ')) return toTitleCase(line.slice(4));
+    if (line.startsWith('## '))  return '\n' + toTitleCase(line.slice(3));
+    if (line.startsWith('# '))   return toTitleCase(line.slice(2));
     if (line.startsWith('- '))   return '\u2022 ' + line.slice(2);
     // Strip **bold** and *italic*
     return line.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1');
