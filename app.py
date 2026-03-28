@@ -1093,6 +1093,13 @@ def _build_redesign_prompt(analysis):
         "Your task is to produce a complete, self-contained HTML redesign (version 2)",
         "that resolves every issue in the audit while preserving the original visual identity.",
         "",
+        "CRITICAL RULE — READ BEFORE ANYTHING ELSE:",
+        "Fixing an issue takes absolute priority over preserving layout or placement.",
+        "If a fix requires moving an element, restructuring a section, hiding a component,",
+        "or changing how content is presented — DO IT. The audit findings are non-negotiable.",
+        "Preservation means keeping the brand identity (colors, typography, component style).",
+        "It does NOT mean keeping broken elements in the same broken position.",
+        "",
         "=" * 68,
         "MANDATORY FIX CHECKLIST  —  VERIFY EACH BEFORE WRITING A SINGLE LINE OF HTML",
         "=" * 68,
@@ -1100,27 +1107,36 @@ def _build_redesign_prompt(analysis):
         "Before you write the HTML, mentally confirm that your design addresses EVERY item",
         "in this list. If your HTML does not contain a concrete, visible solution for a",
         "High or Medium issue, your response is incomplete — revise it until it does.",
+        "Some fixes require structural changes (relocating, collapsing, or restructuring",
+        "UI elements). Make those structural changes — do not style over them.",
         "",
     ]
 
     if high_issues:
         lines.append("HIGH PRIORITY  (must be resolved — zero exceptions):")
+        lines.append("  NOTE: 'fixing' means the issue is GONE from the redesign — not styled differently.")
+        lines.append("  If the fix says to move, collapse, or restructure something, do exactly that.")
+        lines.append("")
         for iss in high_issues:
             lines.append(f"  [{iss.get('id','?')}] {iss.get('title','')}")
+            lines.append(f"       Problem:          {iss.get('problem','')}")
             lines.append(f"       What to implement: {iss.get('recommendation','')}")
-            lines.append(f"       Affects: {iss.get('location','')}")
+            lines.append(f"       Affects:          {iss.get('location','')}")
             if iss.get("wcag_criterion"):
-                lines.append(f"       WCAG: {iss['wcag_criterion']} Level {iss.get('wcag_level','')}")
+                lines.append(f"       WCAG:             {iss['wcag_criterion']} Level {iss.get('wcag_level','')}")
             lines.append("")
 
     if medium_issues:
         lines.append("MEDIUM PRIORITY  (must be resolved — no exceptions):")
+        lines.append("  NOTE: Same rule — fix means the issue does not exist in the output HTML.")
+        lines.append("")
         for iss in medium_issues:
             lines.append(f"  [{iss.get('id','?')}] {iss.get('title','')}")
+            lines.append(f"       Problem:          {iss.get('problem','')}")
             lines.append(f"       What to implement: {iss.get('recommendation','')}")
-            lines.append(f"       Affects: {iss.get('location','')}")
+            lines.append(f"       Affects:          {iss.get('location','')}")
             if iss.get("wcag_criterion"):
-                lines.append(f"       WCAG: {iss['wcag_criterion']} Level {iss.get('wcag_level','')}")
+                lines.append(f"       WCAG:             {iss['wcag_criterion']} Level {iss.get('wcag_level','')}")
             lines.append("")
 
     if low_issues:
@@ -1192,9 +1208,11 @@ def _build_redesign_prompt(analysis):
         "- All CSS must be in a <style> block in the <head> — no external stylesheets.",
         "- No CDN links, no JavaScript frameworks, no external images.",
         "  Use inline SVG for icons. Use data URIs only if absolutely necessary.",
-        "- Every piece of text, every label, every UI element visible in the screenshot",
-        "  must appear in the redesign. Do not remove any content.",
-        "- Do NOT add features, sections, or content not present in the original.",
+        "- Preserve all informational content (text, labels, data). Do not silently drop",
+        "  information the user needs. However: if a fix requires relocating, collapsing,",
+        "  or restructuring a UI element, you MUST do so — placing it in a better position",
+        "  is not removing it. The audit fix always wins over original placement.",
+        "- Do NOT add new features, sections, or content not present in the original.",
         "- JavaScript is allowed only for interactions clearly present in the original.",
         "  Keep it minimal and inline.",
         "- The file must open in a browser as a fully working static page.",
