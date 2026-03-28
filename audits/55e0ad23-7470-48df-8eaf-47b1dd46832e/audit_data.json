@@ -1,0 +1,161 @@
+{
+  "screen_name": "All Workflows — HR Agent Library",
+  "overall_score": 6.1,
+  "score_label": "Good",
+  "summary": "The Workflows screen provides a structured library of HR automation prompts with a clean two-column grid layout. However, it suffers from significant accessibility gaps including low-contrast secondary text, icon-only workflow thumbnails with no alternative text, and no visible keyboard focus indicators. Usability is further weakened by truncated workflow descriptions, an under-explained filter system, and a persistent upgrade upsell that competes with primary content.",
+  "accessibility_score": 4.8,
+  "issues": [
+    {
+      "id": "01",
+      "title": "Workflow icons are purely decorative lightning-bolt graphics with no accessible label",
+      "severity": "High",
+      "location": "Circular grey icon thumbnails on every workflow card (left column and right column throughout)",
+      "problem": "Every workflow card uses an identical grey lightning-bolt icon with no visible label differentiation and no discernible alt text or ARIA label. Screen reader users cannot distinguish one workflow from another via the icon, and sighted users gain no categorical meaning from the uniform symbol.",
+      "critical_reason": "WCAG 1.1.1 requires all non-text content that conveys information to have a text alternative. Because the icons are the primary visual anchor of each card, their lack of differentiation also increases cognitive load by failing to leverage icon-as-category signifier.",
+      "recommendation": "Assign unique ARIA labels to each icon element (e.g. aria-label='Policy workflow') or replace with categorically distinct icons per workflow type. At minimum, mark purely decorative instances with aria-hidden='true' and ensure the card title alone is the accessible name for the interactive element.",
+      "reference": "WCAG 2.2 — 1.1.1 Non-text Content (A): all non-text content must have a text alternative",
+      "wcag_criterion": "1.1.1",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 22,
+        "y": 45,
+        "w": 8,
+        "h": 55
+      }
+    },
+    {
+      "id": "02",
+      "title": "Secondary metadata text ('Used 0 times · HR') has critically insufficient contrast",
+      "severity": "High",
+      "location": "'Used 0 times' and 'HR' tag text beneath every workflow card description",
+      "problem": "The light grey metadata text rendered against the white card background appears to fall well below the 4.5:1 contrast ratio required for normal-sized text at AA level. Users with low vision or in bright ambient environments will struggle or be unable to read this information.",
+      "critical_reason": "WCAG 1.4.3 mandates a minimum 4.5:1 contrast ratio for normal text. This metadata, while secondary, conveys functional information (usage frequency and category tag) that informs workflow selection decisions.",
+      "recommendation": "Darken the metadata text to at least #767676 on white (meeting 4.5:1) or preferably #595959 for comfortable reading. Run all text instances through a contrast checker tool such as WebAIM Contrast Checker before release.",
+      "reference": "WCAG 2.2 — 1.4.3 Contrast Minimum (AA): normal text requires 4.5:1 contrast ratio",
+      "wcag_criterion": "1.4.3",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 47,
+        "y": 38,
+        "w": 25,
+        "h": 4
+      }
+    },
+    {
+      "id": "03",
+      "title": "No visible keyboard focus indicator on interactive elements",
+      "severity": "High",
+      "location": "Workflow cards, filter dropdowns ('HR', 'HR agent'), 'Clear' button, and sidebar navigation items",
+      "problem": "There is no visible focus ring or outline on any interactive element in the screenshot. Keyboard-only users and switch-access users cannot determine which element is currently focused, making the entire page effectively unusable without a pointer device.",
+      "critical_reason": "WCAG 2.4.11 (Focus Appearance, AA in WCAG 2.2) requires focus indicators to meet minimum size and contrast thresholds. Loss of focus visibility is a complete blocker for keyboard navigation — violating the principle that system status must always be perceivable.",
+      "recommendation": "Apply a high-contrast focus outline (e.g. 3px solid #005FCC offset 2px) to all interactive elements via CSS :focus-visible. Test the entire page using Tab-key navigation and verify every focusable element is clearly distinguishable.",
+      "reference": "WCAG 2.2 — 2.4.11 Focus Appearance (AA): focus indicator must have sufficient size and contrast",
+      "wcag_criterion": "2.4.11",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 62,
+        "y": 12,
+        "w": 30,
+        "h": 8
+      }
+    },
+    {
+      "id": "04",
+      "title": "Workflow descriptions are truncated with no mechanism to preview full content",
+      "severity": "High",
+      "location": "Description text on all workflow cards, e.g. 'Summarize key points from an interview — I've hosted the following interview…'",
+      "problem": "Every description is cut off mid-sentence with an ellipsis, giving users only partial information to decide whether a workflow meets their need. There is no tooltip, expand affordance, or preview panel to reveal the full prompt without opening the workflow entirely.",
+      "critical_reason": "Progressive Disclosure requires that enough information is surfaced at each decision point to allow informed action. Forcing users to open each workflow to read its full description adds unnecessary navigation steps and increases cognitive load, violating Miller's Law by fragmenting the information needed to compare options.",
+      "recommendation": "Add a hover/focus tooltip or an inline 'expand' toggle that reveals the full prompt text without leaving the list view. Alternatively, redesign the card to show 3–4 lines of description and use a 'Read more' link for anything beyond that.",
+      "reference": "Universal Principles of Design — Progressive Disclosure: show only what is needed at each step",
+      "annotation": {
+        "x": 72,
+        "y": 28,
+        "w": 38,
+        "h": 10
+      }
+    },
+    {
+      "id": "05",
+      "title": "Filter dropdowns use ambiguous double-filter pattern with no explanation of difference",
+      "severity": "Medium",
+      "location": "'HR' and 'HR agent' filter dropdown buttons in the top-right of the content area",
+      "problem": "Two filter controls are shown side by side — 'HR' and 'HR agent' — with no labels or tooltips explaining what dimension each filters by (category vs. agent type vs. tag). The visual distinction between them is only their label text, which appears nearly identical in meaning to a first-time user.",
+      "critical_reason": "Hick's Law states that decision time increases with the number and complexity of choices. When two options appear semantically similar without contextual explanation, users experience decision paralysis and may abandon filtering altogether.",
+      "recommendation": "Add a visible label above or beside the filter group (e.g. 'Filter by:') and use distinct placeholder labels such as 'Category: HR' and 'Agent: HR agent'. Include a brief tooltip on each dropdown explaining what it filters.",
+      "reference": "Psychology of Design — Hick's Law: too many choices slows decisions",
+      "annotation": {
+        "x": 80,
+        "y": 11,
+        "w": 22,
+        "h": 7
+      }
+    },
+    {
+      "id": "06",
+      "title": "'Used 0 times' counter provides no value and damages perceived product quality",
+      "severity": "Medium",
+      "location": "'Used 0 times' label beneath every single workflow card on the screen",
+      "problem": "Every workflow displays 'Used 0 times', which communicates that none of the workflows have ever been used. This creates a negative social proof signal — implying the features are untested or untrustworthy — which can deter adoption among new users.",
+      "critical_reason": "Social proof is a primary driver of trust in digital products. Displaying zero usage counts is the inverse of social proof (negative proof), which according to Cialdini's persuasion principles actively reduces user confidence and willingness to engage with a feature.",
+      "recommendation": "Hide the usage counter until it reaches a meaningful threshold (e.g. display only when count ≥ 1, or show 'New' badge instead). Alternatively, seed curated workflows with aggregate org-level usage data or remove the metric entirely from the card surface.",
+      "reference": "Designing User Interfaces (Malewicz) — Social proof and trust signals in UI",
+      "annotation": {
+        "x": 35,
+        "y": 36,
+        "w": 20,
+        "h": 4
+      }
+    },
+    {
+      "id": "07",
+      "title": "Upgrade upsell banner competes with primary content using high-contrast dark styling",
+      "severity": "Medium",
+      "location": "Bottom-left sidebar — '7 meetings and 20 messages left this month / Upgrade for unlimited use / Upgrade button'",
+      "problem": "The black 'Upgrade' CTA button and bold limitation text in the sidebar draw visual attention away from the main workflow content. It creates a persistent anxiety-inducing message about resource scarcity that competes with the task the user is trying to perform.",
+      "critical_reason": "Loss aversion (Kahneman) means that scarcity messaging creates disproportionate psychological discomfort. Placing it permanently in the primary navigation sidebar — in the highest-contrast element on the page — ensures it constantly interrupts the user's task focus.",
+      "recommendation": "Relocate the upgrade prompt to a dismissible banner at the top of the content area, triggered only when the user is near the limit threshold. Reduce the visual weight by using a secondary button style and softer colours that do not compete with the active navigation.",
+      "reference": "Psych 101 (Kleinman) — Loss aversion: people are more motivated by avoiding loss than achieving gain",
+      "annotation": {
+        "x": 8,
+        "y": 82,
+        "w": 16,
+        "h": 12
+      }
+    },
+    {
+      "id": "08",
+      "title": "Search field lacks a visible label, relying solely on placeholder text",
+      "severity": "Medium",
+      "location": "Search workflows input field at the top of the content area",
+      "problem": "The search input has no persistent visible label — only the placeholder text 'Search workflows' inside the field. Once a user begins typing, the label disappears, leaving no contextual reminder of the field's purpose, and screen readers may not reliably announce placeholder text as a label.",
+      "critical_reason": "WCAG 1.3.5 and 3.3.2 require that inputs have descriptive labels that persist during interaction. Placeholder-only fields also violate the principle that form context should be maintained (Don't Make Me Think — Krug) to reduce working memory burden.",
+      "recommendation": "Add a visually hidden <label> element associated with the input via 'for/id' pairing, or include a visible label above the field. Retain the placeholder as supplementary hint text only.",
+      "reference": "WCAG 2.2 — 3.3.2 Labels or Instructions (A): inputs must have labels that persist",
+      "wcag_criterion": "3.3.2",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 38,
+        "y": 11,
+        "w": 28,
+        "h": 7
+      }
+    },
+    {
+      "id": "09",
+      "title": "Two-column grid collapses workflow titles inconsistently — no visual rhythm or alignment",
+      "severity": "Low",
+      "location": "'Clarify tax responsibilities for hiring a specific country' card title — left column, fourth row",
+      "problem": "This card title wraps to two lines while all surrounding titles remain single-line, causing the card body to be taller than its row partner and breaking the visual grid rhythm. This inconsistency disrupts the Gestalt principle of continuity and makes the layout feel unpolished.",
+      "critical_reason": "Gestalt Law of Continuity and Similarity requires that repeating elements maintain consistent visual weight. Inconsistent card heights signal lack of design polish, which the Aesthetic-Usability Effect shows directly reduces perceived trustworthiness.",
+      "recommendation": "Set a fixed card height with overflow handled by clamping the title to one line (using CSS text-overflow: ellipsis) or constrain titles to a character limit. Ensure the grid uses CSS Grid with align-items: start to maintain consistent row alignment.",
+      "reference": "Psych 101 (Kleinman) — Gestalt: Law of Similarity and Continuity",
+      "annotation": {
+        "x": 22,
+        "y": 72,
+        "w": 38,
+        "h": 10
+      }
+    }
+  ]
+}

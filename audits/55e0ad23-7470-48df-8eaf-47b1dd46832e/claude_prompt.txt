@@ -1,0 +1,183 @@
+You are a senior UI/UX designer and expert frontend developer.
+
+I am giving you a screenshot of a UI screen. Your task is to redesign it as a
+complete, self-contained HTML file (version 2) that does two things:
+
+  1. FIXES every issue listed in the audit below — implement every
+     recommendation exactly as described.
+
+  2. PRESERVES the entire visual identity of the original with pixel-perfect fidelity:
+       - Colors: every background, text, brand, accent, and surface color
+         (reproduce exact hex values by inspecting the screenshot)
+       - Typography: font families, sizes, weights, line-heights, letter-spacing
+       - Spacing: margin, padding, and gap values — use the same scale
+       - Shapes: border-radius, border styles, shadows, and elevation levels
+       - Icons: style, weight, size, and placement
+       - Layout: grid structure, column widths, sidebar/topbar/content positioning
+       - Components: card designs, button styles, badge styles, input styles, tables
+
+The output should feel like a version 2 of the original — same brand, better UX.
+Do not invent a new visual style. Carry everything over and only change what
+the audit findings require.
+
+====================================================================
+AUDIT REPORT  —  All Workflows — HR Agent Library
+====================================================================
+Overall Score:        6.1/10  —  Good
+Accessibility Score:  4.8/10  (WCAG 2.2 AA)
+Issues Found:         9  (4 High · 4 Medium · 1 Low)
+
+EXECUTIVE SUMMARY
+The Workflows screen provides a structured library of HR automation prompts with a clean two-column grid layout. However, it suffers from significant accessibility gaps including low-contrast secondary text, icon-only workflow thumbnails with no alternative text, and no visible keyboard focus indicators. Usability is further weakened by truncated workflow descriptions, an under-explained filter system, and a persistent upgrade upsell that competes with primary content.
+
+====================================================================
+ISSUES TO FIX  (all issues must be addressed — ordered by severity)
+====================================================================
+
+[01] HIGH  —  Workflow icons are purely decorative lightning-bolt graphics with no accessible label
+     Location:       Circular grey icon thumbnails on every workflow card (left column and right column throughout)
+     Problem:        Every workflow card uses an identical grey lightning-bolt icon with no visible label differentiation and no discernible alt text or ARIA label. Screen reader users cannot distinguish one workflow from another via the icon, and sighted users gain no categorical meaning from the uniform symbol.
+     Fix:            Assign unique ARIA labels to each icon element (e.g. aria-label='Policy workflow') or replace with categorically distinct icons per workflow type. At minimum, mark purely decorative instances with aria-hidden='true' and ensure the card title alone is the accessible name for the interactive element.
+     Reference:      WCAG 2.2 — 1.1.1 Non-text Content (A): all non-text content must have a text alternative
+     WCAG:           1.1.1  —  Level A
+
+[02] HIGH  —  Secondary metadata text ('Used 0 times · HR') has critically insufficient contrast
+     Location:       'Used 0 times' and 'HR' tag text beneath every workflow card description
+     Problem:        The light grey metadata text rendered against the white card background appears to fall well below the 4.5:1 contrast ratio required for normal-sized text at AA level. Users with low vision or in bright ambient environments will struggle or be unable to read this information.
+     Fix:            Darken the metadata text to at least #767676 on white (meeting 4.5:1) or preferably #595959 for comfortable reading. Run all text instances through a contrast checker tool such as WebAIM Contrast Checker before release.
+     Reference:      WCAG 2.2 — 1.4.3 Contrast Minimum (AA): normal text requires 4.5:1 contrast ratio
+     WCAG:           1.4.3  —  Level AA
+
+[03] HIGH  —  No visible keyboard focus indicator on interactive elements
+     Location:       Workflow cards, filter dropdowns ('HR', 'HR agent'), 'Clear' button, and sidebar navigation items
+     Problem:        There is no visible focus ring or outline on any interactive element in the screenshot. Keyboard-only users and switch-access users cannot determine which element is currently focused, making the entire page effectively unusable without a pointer device.
+     Fix:            Apply a high-contrast focus outline (e.g. 3px solid #005FCC offset 2px) to all interactive elements via CSS :focus-visible. Test the entire page using Tab-key navigation and verify every focusable element is clearly distinguishable.
+     Reference:      WCAG 2.2 — 2.4.11 Focus Appearance (AA): focus indicator must have sufficient size and contrast
+     WCAG:           2.4.11  —  Level AA
+
+[04] HIGH  —  Workflow descriptions are truncated with no mechanism to preview full content
+     Location:       Description text on all workflow cards, e.g. 'Summarize key points from an interview — I've hosted the following interview…'
+     Problem:        Every description is cut off mid-sentence with an ellipsis, giving users only partial information to decide whether a workflow meets their need. There is no tooltip, expand affordance, or preview panel to reveal the full prompt without opening the workflow entirely.
+     Fix:            Add a hover/focus tooltip or an inline 'expand' toggle that reveals the full prompt text without leaving the list view. Alternatively, redesign the card to show 3–4 lines of description and use a 'Read more' link for anything beyond that.
+     Reference:      Universal Principles of Design — Progressive Disclosure: show only what is needed at each step
+
+[05] MEDIUM  —  Filter dropdowns use ambiguous double-filter pattern with no explanation of difference
+     Location:       'HR' and 'HR agent' filter dropdown buttons in the top-right of the content area
+     Problem:        Two filter controls are shown side by side — 'HR' and 'HR agent' — with no labels or tooltips explaining what dimension each filters by (category vs. agent type vs. tag). The visual distinction between them is only their label text, which appears nearly identical in meaning to a first-time user.
+     Fix:            Add a visible label above or beside the filter group (e.g. 'Filter by:') and use distinct placeholder labels such as 'Category: HR' and 'Agent: HR agent'. Include a brief tooltip on each dropdown explaining what it filters.
+     Reference:      Psychology of Design — Hick's Law: too many choices slows decisions
+
+[06] MEDIUM  —  'Used 0 times' counter provides no value and damages perceived product quality
+     Location:       'Used 0 times' label beneath every single workflow card on the screen
+     Problem:        Every workflow displays 'Used 0 times', which communicates that none of the workflows have ever been used. This creates a negative social proof signal — implying the features are untested or untrustworthy — which can deter adoption among new users.
+     Fix:            Hide the usage counter until it reaches a meaningful threshold (e.g. display only when count ≥ 1, or show 'New' badge instead). Alternatively, seed curated workflows with aggregate org-level usage data or remove the metric entirely from the card surface.
+     Reference:      Designing User Interfaces (Malewicz) — Social proof and trust signals in UI
+
+[07] MEDIUM  —  Upgrade upsell banner competes with primary content using high-contrast dark styling
+     Location:       Bottom-left sidebar — '7 meetings and 20 messages left this month / Upgrade for unlimited use / Upgrade button'
+     Problem:        The black 'Upgrade' CTA button and bold limitation text in the sidebar draw visual attention away from the main workflow content. It creates a persistent anxiety-inducing message about resource scarcity that competes with the task the user is trying to perform.
+     Fix:            Relocate the upgrade prompt to a dismissible banner at the top of the content area, triggered only when the user is near the limit threshold. Reduce the visual weight by using a secondary button style and softer colours that do not compete with the active navigation.
+     Reference:      Psych 101 (Kleinman) — Loss aversion: people are more motivated by avoiding loss than achieving gain
+
+[08] MEDIUM  —  Search field lacks a visible label, relying solely on placeholder text
+     Location:       Search workflows input field at the top of the content area
+     Problem:        The search input has no persistent visible label — only the placeholder text 'Search workflows' inside the field. Once a user begins typing, the label disappears, leaving no contextual reminder of the field's purpose, and screen readers may not reliably announce placeholder text as a label.
+     Fix:            Add a visually hidden <label> element associated with the input via 'for/id' pairing, or include a visible label above the field. Retain the placeholder as supplementary hint text only.
+     Reference:      WCAG 2.2 — 3.3.2 Labels or Instructions (A): inputs must have labels that persist
+     WCAG:           3.3.2  —  Level A
+
+[09] LOW  —  Two-column grid collapses workflow titles inconsistently — no visual rhythm or alignment
+     Location:       'Clarify tax responsibilities for hiring a specific country' card title — left column, fourth row
+     Problem:        This card title wraps to two lines while all surrounding titles remain single-line, causing the card body to be taller than its row partner and breaking the visual grid rhythm. This inconsistency disrupts the Gestalt principle of continuity and makes the layout feel unpolished.
+     Fix:            Set a fixed card height with overflow handled by clamping the title to one line (using CSS text-overflow: ellipsis) or constrain titles to a character limit. Ensure the grid uses CSS Grid with align-items: start to maintain consistent row alignment.
+     Reference:      Psych 101 (Kleinman) — Gestalt: Law of Similarity and Continuity
+
+====================================================================
+OUTPUT REQUIREMENTS — PART 1: HTML
+====================================================================
+
+- Output a single, complete, self-contained HTML file.
+- All CSS must be in a <style> block in the <head> — no external stylesheets.
+- No CDN links, no JavaScript frameworks, no external images.
+  Use inline SVG for icons. Use data URIs only if absolutely necessary.
+- Every piece of text, every label, every UI element visible in the screenshot
+  must appear in the redesign. Do not remove any content.
+- Do NOT add features, sections, or content not present in the original.
+- JavaScript is allowed only for interactions that are clearly present in the
+  original (e.g. dropdowns, modals, tabs). Keep it minimal and inline.
+- The file must open in a browser as a fully working static page.
+- Start your response with <!DOCTYPE html> and end the HTML with </html>.
+
+====================================================================
+OUTPUT REQUIREMENTS — PART 2: FIGMA JSON
+====================================================================
+
+Immediately after </html>, output a Figma design spec in this exact format:
+
+```figma-json
+{ your JSON here }
+```
+
+The JSON describes the same redesigned screen as a recursive Figma node tree.
+A Figma plugin will read it and build editable layers directly on the canvas.
+
+SCHEMA — four node types only: FRAME | TEXT | RECT | ELLIPSE
+
+Top-level wrapper:
+  { "meta": { "name": "<screen name>", "width": 1440 }, "root": <node> }
+
+FRAME node (container with optional auto-layout):
+  { "type": "FRAME", "name": "...",
+    "width": <px | "FILL" | "HUG">,   // FILL = stretch; HUG = shrink to children
+    "height": <px | "FILL" | "HUG">,
+    "layout": "VERTICAL" | "HORIZONTAL" | "NONE",
+    "gap": <px>,
+    "padding": [top, right, bottom, left],
+    "align": "START" | "CENTER" | "END" | "SPACE_BETWEEN",   // primary axis
+    "crossAlign": "START" | "CENTER" | "END",                // cross axis
+    "background": "#RRGGBB" | "transparent",
+    "radius": <px> | [topLeft, topRight, bottomRight, bottomLeft],
+    "border": { "color": "#RRGGBB", "width": <px>, "sides": ["top","right","bottom","left"] },
+    "shadow": { "color": "#RRGGBBAA", "x": 0, "y": 2, "blur": 8, "spread": 0 },
+    "opacity": 0–1,
+    "clip": true,
+    "children": [ <node>, ... ] }
+
+TEXT node:
+  { "type": "TEXT", "name": "...", "content": "visible text string",
+    "width": <px | "FILL" | "HUG">,
+    "fontSize": <px>, "fontWeight": 300|400|500|600|700|800|900,
+    "color": "#RRGGBB",
+    "lineHeight": <px>, "letterSpacing": <percent>,
+    "textAlign": "LEFT" | "CENTER" | "RIGHT",
+    "textCase": "UPPER" | "LOWER",
+    "textDecoration": "UNDERLINE" | "STRIKETHROUGH",
+    "opacity": 0–1 }
+
+RECT node (divider, image placeholder, colored block):
+  { "type": "RECT", "name": "...",
+    "width": <px | "FILL">, "height": <px | "FILL">,
+    "background": "#RRGGBB", "radius": <px>,
+    "border": { ... }, "shadow": { ... }, "opacity": 0–1 }
+
+ELLIPSE node (avatar, dot, circular badge):
+  { "type": "ELLIPSE", "name": "...",
+    "width": <px>, "height": <px>,
+    "background": "#RRGGBB", "border": { ... }, "opacity": 0–1 }
+
+SIZING RULES:
+  FILL  → the node expands to fill its parent axis (layoutGrow / layoutAlign:STRETCH)
+  HUG   → the node shrinks to fit its children (AUTO sizing mode)
+  <px>  → fixed pixel size
+
+GUIDELINES for the JSON:
+  - Mirror the HTML layout exactly — same sections, same order.
+  - Top-level root frame: width=1440, height='HUG', layout='VERTICAL'.
+  - Use VERTICAL layout for stacked sections, HORIZONTAL for rows/columns.
+  - Match all hex colors exactly from the HTML.
+  - Every visible text string needs its own TEXT node.
+  - Use RECT for horizontal dividers (height:1), image placeholders, solid blocks.
+  - Use ELLIPSE for avatars and circular elements.
+  - Keep names short and descriptive (e.g. 'Nav Bar', 'Hero Title', 'CTA Button').
+  - Include shadow and border only where present in the HTML.
+  - Do not include empty children arrays — omit 'children' for leaf nodes.

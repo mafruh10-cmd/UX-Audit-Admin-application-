@@ -18,9 +18,6 @@ assets/.icon_applied
 assets/app_icon.icns
 assets/app_icon.png
 
-# Audit output data (stored locally on desktop)
-# ~/Desktop/ux-audits/ is outside this repo
-
 # IDE
 .vscode/
 .idea/

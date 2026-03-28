@@ -65,7 +65,7 @@ AUDIT_STEPS = [
 
 # ─── Persistent audit storage ─────────────────────────────────────────────────
 
-AUDITS_DIR = os.path.expanduser("~/Desktop/ux-audits")
+AUDITS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "audits")
 os.makedirs(AUDITS_DIR, exist_ok=True)
 
 def _audit_dir(sid):
