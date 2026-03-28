@@ -1731,18 +1731,15 @@ function _populateDribbble(data) {
 }
 
 function _markdownToPlain(md) {
-  return md
-    // H1 → ALL CAPS line with blank line after
-    .replace(/^# (.+)$/gm, (_, t) => t.toUpperCase())
-    // H2 → bold-style plain text heading with blank line before
-    .replace(/^## (.+)$/gm, (_, t) => '\n' + t.toUpperCase())
-    // H3 → plain heading
-    .replace(/^### (.+)$/gm, (_, t) => '\n' + t)
-    // Bullets → unicode bullet
-    .replace(/^- (.+)$/gm, '• $1')
-    // Collapse 3+ newlines to 2
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  const lines = md.split('\n').map(line => {
+    if (line.startsWith('### ')) return line.slice(4);
+    if (line.startsWith('## '))  return '\n' + line.slice(3).toUpperCase();
+    if (line.startsWith('# '))   return line.slice(2).toUpperCase();
+    if (line.startsWith('- '))   return '\u2022 ' + line.slice(2);
+    // Strip **bold** and *italic*
+    return line.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1');
+  });
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 function copyDrb(field, btn) {
