@@ -431,21 +431,26 @@ body{
   font-size:13px;color:#4B5563;line-height:1.7;
   margin-bottom:20px;
 }
-.issues-list{display:flex;flex-direction:column;gap:12px;}
-.issue-row{
-  background:#FAFAFA;border:1px solid var(--border);
-  border-radius:10px;padding:14px 16px;
-  border-left:4px solid #E0E1E4;
+.issues-list{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+@media(max-width:900px){.issues-list{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:560px){.issues-list{grid-template-columns:1fr;}}
+.issue-card{
+  background:#fff;border:1px solid var(--border);
+  border-radius:12px;padding:16px;
+  border-top:3px solid #E0E1E4;
+  display:flex;flex-direction:column;gap:10px;
 }
-.issue-row.sev-high{border-left-color:#DC2626;}
-.issue-row.sev-medium{border-left-color:#D97706;}
-.issue-row.sev-low{border-left-color:#9CA3AF;}
-.issue-row-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px;}
-.issue-row-title{font-size:13px;font-weight:700;color:var(--text);}
-.issue-id{font-size:10px;font-weight:700;color:var(--label);letter-spacing:.08em;text-transform:uppercase;}
-.issue-problem{font-size:12px;color:#4B5563;line-height:1.6;margin-bottom:6px;}
-.issue-rec{font-size:12px;color:#166534;line-height:1.6;background:#F0FDF4;border-radius:6px;padding:8px 10px;}
-.issue-ref{font-size:11px;color:#6B7280;margin-top:6px;font-style:italic;}
+.issue-card.sev-high{border-top-color:#DC2626;}
+.issue-card.sev-medium{border-top-color:#D97706;}
+.issue-card.sev-low{border-top-color:#9CA3AF;}
+.issue-card-top{display:flex;align-items:center;gap:6px;}
+.issue-num{font-size:11px;font-weight:700;color:#9CA3AF;letter-spacing:.04em;}
+.issue-wcag{background:#EDE9FE;color:#6D28D9;font-size:9px;font-weight:800;padding:2px 7px;border-radius:20px;letter-spacing:.04em;white-space:nowrap;}
+.issue-card-title{font-size:13px;font-weight:700;color:var(--text);line-height:1.45;flex:1;}
+.issue-sev-chip{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.04em;margin-top:auto;}
+.issue-sev-chip.sev-high{background:#FEE2E2;color:#DC2626;}
+.issue-sev-chip.sev-medium{background:#FEF3C7;color:#D97706;}
+.issue-sev-chip.sev-low{background:#F3F4F6;color:#6B7280;border:1px solid #E5E7EB;}
 
 /* ── Code block ── */
 .code-block{
@@ -781,7 +786,7 @@ body{
         </div>
         <div class="detail-score-row" id="detailScoreRow"></div>
         <div class="detail-summary" id="detailSummary"></div>
-        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--label);margin-bottom:10px;">Issues</div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--label);margin-bottom:12px;">Issues at a Glance</div>
         <div class="issues-list" id="detailIssuesList"></div>
       </div>
 
@@ -1489,21 +1494,19 @@ function populateDetailModal(d) {
   if (!issues.length) {
     issuesEl.innerHTML = '<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px;">No issues data available.</div>';
   } else {
-    issuesEl.innerHTML = issues.map(iss => {
-      const sev = (iss.severity || '').toLowerCase();
-      const crit = iss.wcag_criterion ? `<span style="background:#EDE9FE;color:#6D28D9;font-size:9px;font-weight:800;padding:1px 6px;border-radius:20px;letter-spacing:.04em;margin-left:5px;">WCAG ${iss.wcag_criterion}</span>` : '';
+    issuesEl.innerHTML = issues.map((iss, i) => {
+      const sev  = (iss.severity || '').toLowerCase();
+      const num  = String(i + 1).padStart(2, '0');
+      const wcag = iss.wcag_criterion
+        ? `<span class="issue-wcag">WCAG ${escHtml(iss.wcag_criterion)}</span>` : '';
       return `
-        <div class="issue-row sev-${sev}">
-          <div class="issue-row-header">
-            <div>
-              <span class="issue-id">#${escHtml(iss.id || '')}${crit}</span>
-              <div class="issue-row-title">${escHtml(iss.title || '')}</div>
-            </div>
-            <span class="chip chip-${sev.charAt(0)}">${escHtml(iss.severity || '')}</span>
+        <div class="issue-card sev-${sev}">
+          <div class="issue-card-top">
+            <span class="issue-num">${num}</span>
+            ${wcag}
           </div>
-          <div class="issue-problem">${escHtml(iss.problem || '')}</div>
-          ${iss.recommendation ? `<div class="issue-rec">${escHtml(iss.recommendation)}</div>` : ''}
-          ${iss.reference ? `<div class="issue-ref">${escHtml(iss.reference)}</div>` : ''}
+          <div class="issue-card-title">${escHtml(iss.title || '')}</div>
+          <span class="issue-sev-chip sev-${sev}">${escHtml(iss.severity || '')}</span>
         </div>`;
     }).join('');
   }
