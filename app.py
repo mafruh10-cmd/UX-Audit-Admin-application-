@@ -71,6 +71,29 @@ AUDIT_STEPS = [
 AUDITS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "audits")
 os.makedirs(AUDITS_DIR, exist_ok=True)
 
+def _fix_json_escapes(text):
+    # Valid JSON escapes: \" \\ \/ \b \f \n \r \t \uXXXX
+    # Everything else (e.g. \s \e \p from CSS/regex in LLM output) is invalid.
+    # Double the offending backslash so it becomes a literal backslash char.
+    _valid = set('"\\/' + 'bfnrtu')
+    out = []
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        if ch == '\\' and i + 1 < len(text):
+            nxt = text[i + 1]
+            if nxt in _valid:
+                out.append(ch)
+                out.append(nxt)
+                i += 2
+            else:
+                out.append('\\\\')   # escape the stray backslash
+                i += 1
+        else:
+            out.append(ch)
+            i += 1
+    return ''.join(out)
+
 GITHUB_REPO   = "mafruh10-cmd/UX-Audit-Admin-application-"
 GITHUB_BRANCH = "main"
 
@@ -682,7 +705,7 @@ def audit_stream(sid):
             end   = text.rfind("}")
             if start != -1 and end != -1 and end > start:
                 text = text[start:end + 1]
-            analysis = json.loads(text)
+            analysis = json.loads(_fix_json_escapes(text))
 
             issues = analysis.get("issues", [])
 
@@ -725,7 +748,7 @@ def audit_stream(sid):
                 open_braces   = fixed.count('{') - fixed.count('}')
                 open_brackets = fixed.count('[') - fixed.count(']')
                 fixed += ']' * open_brackets + '}' * open_braces
-                analysis = json.loads(fixed)
+                analysis = json.loads(_fix_json_escapes(fixed))
                 issues = analysis.get("issues", [])
                 ann_b64, ann_type = annotate_image(
                     session.get("image_b64", ""),
