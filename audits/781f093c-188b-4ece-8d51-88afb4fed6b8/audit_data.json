@@ -1,0 +1,178 @@
+{
+  "product_name": "Mixpanel",
+  "screen_name": "Insights Query Builder",
+  "overall_score": 6.4,
+  "score_label": "Fair",
+  "summary": "The Mixpanel Insights screen presents a complex analytics query builder with a dense information layout. While it provides powerful configuration options, it suffers from low contrast text, truncated labels, color-only data differentiation in the chart, and cognitive overload from simultaneously visible query panels, chart, and data table. Several accessibility concerns exist around color reliance and text legibility.",
+  "accessibility_score": 5.2,
+  "issues": [
+    {
+      "id": "01",
+      "title": "Chart relies solely on color to distinguish data series",
+      "severity": "High",
+      "location": "Line chart area — blue line (A) vs red/orange line (B)",
+      "problem": "The two data series in the chart are differentiated only by color (blue vs red/orange). Users with color vision deficiencies cannot distinguish between the 'Uniques of All Events' and 'Total Events of meaningful interaction' lines. The legend also uses color-only indicators.",
+      "critical_reason": "WCAG 1.4.1 requires that color is not used as the only visual means of conveying information. Approximately 8% of males have some form of color vision deficiency, making this a significant accessibility barrier.",
+      "recommendation": "Add distinct line patterns (dashed, dotted), different marker shapes (circles, squares, triangles) on data points, or direct labels on each line. Update the legend to include pattern/shape indicators alongside color swatches.",
+      "reference": "WCAG 2.2 — 1.4.1 Use of Color (A): information must not be conveyed by color alone",
+      "wcag_criterion": "1.4.1",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 55,
+        "y": 28,
+        "w": 55,
+        "h": 30
+      }
+    },
+    {
+      "id": "02",
+      "title": "Low contrast on axis labels and data table values",
+      "severity": "High",
+      "location": "Y-axis labels (E0, E10, E20, etc.), X-axis dates, and table cells showing '0'",
+      "problem": "The axis labels on the chart and the zero values in the data table appear in light gray against a white background. This likely fails the 4.5:1 minimum contrast ratio for normal-sized text, making the data difficult to read for users with low vision or in bright environments.",
+      "critical_reason": "WCAG 1.4.3 mandates a minimum 4.5:1 contrast ratio for normal text. Low contrast text increases cognitive effort for all users and excludes those with visual impairments.",
+      "recommendation": "Increase the color of axis labels and table cell text to at least #767676 (or darker) on white backgrounds to meet the 4.5:1 ratio. Consider using a slightly darker shade like #595959 for better readability.",
+      "reference": "WCAG 2.2 — 1.4.3 Contrast Minimum (AA): normal text requires 4.5:1 contrast ratio",
+      "wcag_criterion": "1.4.3",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 22,
+        "y": 30,
+        "w": 8,
+        "h": 40
+      }
+    },
+    {
+      "id": "03",
+      "title": "Truncated metric label obscures critical information",
+      "severity": "High",
+      "location": "Data table row 'B. Total Events of mea...' and right panel 'Total Events of meaningful interact...'",
+      "problem": "The metric name 'Total Events of meaningful interaction' is truncated in both the data table and the right query panel, hiding critical information. Users cannot quickly identify what metric B represents without hovering or interacting further.",
+      "critical_reason": "Per Nielsen's Heuristic #6 (Recognition rather than Recall), users should not have to remember or guess truncated labels. Truncation forces users to take extra actions to understand their own query, increasing cognitive load.",
+      "recommendation": "Use a tooltip on hover that shows the full name, and increase the column width or allow text wrapping for metric names. In the right panel, allow multi-line wrapping for metric titles instead of truncating.",
+      "reference": "Don't Make Me Think (Krug) — Billboard Design 101: users scan, not read",
+      "annotation": {
+        "x": 30,
+        "y": 75,
+        "w": 20,
+        "h": 4
+      }
+    },
+    {
+      "id": "04",
+      "title": "Icon-only buttons in chart type and visualization selectors lack accessible labels",
+      "severity": "High",
+      "location": "Right panel top row of 4 icon-only buttons (chart types) and bottom chart toggle icons (3 icons below chart)",
+      "problem": "Multiple icon-only buttons for chart type selection (right panel) and data view toggles (below chart) have no visible text labels. Screen reader users and unfamiliar users cannot determine what each icon represents without trial and error.",
+      "critical_reason": "WCAG 1.1.1 requires all non-text content to have a text alternative. Icon-only buttons without accessible names create barriers for assistive technology users and violate basic usability for sighted users unfamiliar with the iconography.",
+      "recommendation": "Add aria-label or title attributes to each icon button describing its function (e.g., 'Line chart', 'Bar chart', 'Table view'). Consider adding visible labels or tooltips on hover for all users.",
+      "reference": "WCAG 2.2 — 1.1.1 Non-text Content (A): all non-text content must have a text alternative",
+      "wcag_criterion": "1.1.1",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 82,
+        "y": 12,
+        "w": 18,
+        "h": 5
+      }
+    },
+    {
+      "id": "05",
+      "title": "Dual Y-axes create confusion and cognitive overload",
+      "severity": "Medium",
+      "location": "Chart area — left Y-axis (E0–E100) and right Y-axis (0–40)",
+      "problem": "The chart uses two different Y-axes with different scales (left: E0–E100, right: 0–40) without clear visual association to their respective data series. Users must mentally map which axis belongs to which line, increasing interpretation difficulty.",
+      "critical_reason": "Dual-axis charts violate the principle of minimizing cognitive load (Sweller's Cognitive Load Theory). Users' working memory is strained trying to maintain the mapping between axes and data series, leading to potential misinterpretation of trends.",
+      "recommendation": "Consider using two separate charts stacked vertically, each with its own clearly labeled Y-axis. If dual axes must be used, color-code the axis labels to match their respective lines and add clear axis titles.",
+      "reference": "Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter",
+      "annotation": {
+        "x": 50,
+        "y": 28,
+        "w": 70,
+        "h": 35
+      }
+    },
+    {
+      "id": "06",
+      "title": "Untitled report creates findability and recognition issues",
+      "severity": "Medium",
+      "location": "Top breadcrumb area showing 'SLMobbin / Untitled'",
+      "problem": "The report is labeled 'Untitled' in the header. If saved in this state, it will be indistinguishable from other untitled reports, making future retrieval difficult and cluttering the user's workspace.",
+      "critical_reason": "Nielsen's Heuristic #6 (Recognition rather than Recall) emphasizes that users should be able to recognize items easily. Generic names force users to open each report to identify its contents, wasting time and increasing frustration.",
+      "recommendation": "Prompt the user to name the report before or during the first save action. Consider auto-generating a descriptive name based on the metrics and filters used (e.g., 'Uniques & Interactions by Country - 30D').",
+      "reference": "The Design of Everyday Things (Norman) — Forcing Function: prevent irreversible actions with confirmation",
+      "annotation": {
+        "x": 24,
+        "y": 3,
+        "w": 15,
+        "h": 3
+      }
+    },
+    {
+      "id": "07",
+      "title": "Complex query configuration increases cognitive load with minimal progressive disclosure",
+      "severity": "Medium",
+      "location": "Right panel — Metrics A, B, C sections with nested dropdowns and filters",
+      "problem": "The right query panel displays all metrics, their event configurations, measurement options, filters, and breakdowns simultaneously. This dense layout presents too many options at once, overwhelming users who may only need to adjust one parameter.",
+      "critical_reason": "Hick's Law states that decision time increases logarithmically with the number of choices. Presenting all query options simultaneously overloads working memory and slows task completion, especially for less experienced analysts.",
+      "recommendation": "Implement progressive disclosure by collapsing metric sections by default and expanding only the one being actively edited. Add a summary view for configured metrics that can be expanded on click. Group Filter and Breakdown into a collapsible 'Advanced' section.",
+      "reference": "Universal Principles of Design — Progressive Disclosure: show only what is needed at each step",
+      "annotation": {
+        "x": 82,
+        "y": 45,
+        "w": 20,
+        "h": 55
+      }
+    },
+    {
+      "id": "08",
+      "title": "Small interactive targets for filter removal and dropdown toggles",
+      "severity": "Medium",
+      "location": "Small '×' close button next to 'Cumulative Sum' and various dropdown chevrons",
+      "problem": "The close/remove button next to 'Cumulative Sum' and the small dropdown toggle chevrons throughout the query panel appear to be very small click targets. This makes precise interaction difficult, especially on touch devices.",
+      "critical_reason": "WCAG 2.5.8 (Target Size minimum) requires interactive targets to be at least 24×24 CSS pixels. Small targets increase error rates and are particularly problematic for users with motor impairments or those using touch interfaces.",
+      "recommendation": "Increase all interactive targets (close buttons, dropdown toggles) to a minimum of 24×24px, ideally 44×44px for touch. Add adequate padding around small icons to expand the clickable area without changing visual size.",
+      "reference": "WCAG 2.2 — 2.5.8 Target Size Minimum (AA): interactive targets must be at least 24x24 CSS pixels",
+      "wcag_criterion": "2.5.8",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 86,
+        "y": 37,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "id": "09",
+      "title": "Y-axis label notation 'E' prefix is ambiguous",
+      "severity": "Medium",
+      "location": "Left Y-axis labels: E0, E10, E20, E40, E100",
+      "problem": "The left Y-axis uses 'E' prefix notation (E0, E10, E40, E100) which could be interpreted as scientific notation (e.g., E10 = 10^10) or as a custom abbreviation. The non-linear scale progression (0, 10, 20, 40, 100) further confuses interpretation.",
+      "critical_reason": "Norman's Gulf of Evaluation highlights that users must be able to understand system output. Ambiguous labeling forces users to guess the meaning, undermining trust in the data visualization and potentially leading to incorrect business decisions.",
+      "recommendation": "Use standard numeric labels (0, 10, 20, 40, 100) or clarify the axis title (e.g., 'Events count'). If using a logarithmic or custom scale, add an axis title that explains the unit and scale type.",
+      "reference": "The Design of Everyday Things (Norman) — Gulf of Evaluation: user cannot tell if their action worked",
+      "annotation": {
+        "x": 21,
+        "y": 25,
+        "w": 5,
+        "h": 35
+      }
+    },
+    {
+      "id": "10",
+      "title": "Inconsistent data table date range versus chart date range",
+      "severity": "Low",
+      "location": "Data table headers (Dec 21–Dec 25) vs chart X-axis (Dec 22–Jan 19)",
+      "problem": "The data table shows dates starting from Dec 21 while the chart X-axis begins at Dec 22 and extends to Jan 19. The table only shows 5 date columns (Dec 21–25) while the chart covers nearly a month, creating a disconnect between the two views.",
+      "critical_reason": "Gestalt's Law of Uniform Connectedness suggests that visually connected elements should represent the same data. The mismatch between table and chart ranges violates user expectations and creates confusion about which data is being displayed.",
+      "recommendation": "Synchronize the data table with the chart's visible date range. Add horizontal scrolling or pagination to the table to show all dates. Highlight the currently visible chart range in the table or allow table-chart interaction for filtering.",
+      "reference": "Psych 101 (Kleinman) — Gestalt: Law of Proximity",
+      "annotation": {
+        "x": 50,
+        "y": 64,
+        "w": 50,
+        "h": 5
+      }
+    }
+  ]
+}
