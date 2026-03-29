@@ -1,0 +1,288 @@
+You are a senior UI/UX designer and expert frontend developer.
+
+I am giving you a screenshot of a UI screen and a detailed UX audit report.
+Your task is to produce a complete, self-contained HTML redesign (version 2)
+that resolves every issue in the audit while preserving the original visual identity.
+
+CRITICAL RULE — READ BEFORE ANYTHING ELSE:
+Fixing an issue takes absolute priority over preserving layout or placement.
+If a fix requires moving an element, restructuring a section, hiding a component,
+or changing how content is presented — DO IT. The audit findings are non-negotiable.
+Preservation means keeping the brand identity (colors, typography, component style).
+It does NOT mean keeping broken elements in the same broken position.
+
+====================================================================
+MANDATORY FIX CHECKLIST  —  VERIFY EACH BEFORE WRITING A SINGLE LINE OF HTML
+====================================================================
+
+Before you write the HTML, mentally confirm that your design addresses EVERY item
+in this list. If your HTML does not contain a concrete, visible solution for a
+High or Medium issue, your response is incomplete — revise it until it does.
+Some fixes require structural changes (relocating, collapsing, or restructuring
+UI elements). Make those structural changes — do not style over them.
+
+HIGH PRIORITY  (must be resolved — zero exceptions):
+  NOTE: 'fixing' means the issue is GONE from the redesign — not styled differently.
+  If the fix says to move, collapse, or restructure something, do exactly that.
+
+  [01] Tag pills rely on color alone to convey category meaning
+       Problem:          The beige/tan colored tag pills use a subtle background color to distinguish them from surrounding content, but there is no additional visual encoding (icons, borders, or grouping labels) to differentiate tag categories. Users with color vision deficiencies may not perceive the distinction between tags and plain text.
+       What to implement: Add category labels or icons before tag groups (e.g., 'Type: Private/LP-owned', 'Location: SF, CA, USA'). Alternatively, use distinct border styles or icons within each tag to reinforce meaning beyond color.
+       Affects:          Company attribute tags (Private/LP-owned, N/A, Founded 2015, etc.) in the right panel header
+       WCAG:             1.4.1 Level A
+
+  [02] Icon-only action buttons lack accessible labels
+       Problem:          Three icon-only buttons (audio/speaker, copy, refresh) appear without visible text labels or tooltips. Screen reader users will not know the purpose of these controls, and sighted users may also struggle to identify exact functionality.
+       What to implement: Add aria-label attributes to each icon button (e.g., 'Read aloud', 'Copy response', 'Regenerate response'). Additionally, implement visible tooltips on hover/focus to assist all users.
+       Affects:          Bottom-left of the chat panel — speaker, copy, and refresh icons
+       WCAG:             1.1.1 Level A
+
+  [03] Low contrast on 'Thought for 33s' and subtitle text
+       Problem:          The light gray 'Thought for 33s' text and the 'Ask about the selected account' placeholder appear to have insufficient contrast against the white/light background, likely falling below the 4.5:1 minimum ratio for normal-sized text. This makes the text difficult to read for users with low vision.
+       What to implement: Increase the text color darkness to achieve at least 4.5:1 contrast ratio. For the placeholder text, use a color like #767676 or darker. For the 'Thought for 33s' label, use at least medium gray (#595959).
+       Affects:          'Thought for 33s' label and placeholder text in the chat input field
+       WCAG:             1.4.3 Level AA
+
+  [04] Left sidebar icons lack text labels and visible focus indicators
+       Problem:          The sidebar contains approximately 8 icon-only navigation items with no visible text labels. There is no indication of the active state beyond a subtle highlight, and keyboard focus indicators are not visible in the screenshot. Users navigating by keyboard cannot determine their current location.
+       What to implement: Add tooltip labels on hover/focus for each icon. Implement a clearly visible focus ring (e.g., 2px solid outline with offset) for keyboard navigation. Consider adding an expanded sidebar option with text labels.
+       Affects:          Left vertical navigation sidebar with icon-only items
+       WCAG:             2.4.7 Level AA
+
+MEDIUM PRIORITY  (must be resolved — no exceptions):
+  NOTE: Same rule — fix means the issue does not exist in the output HTML.
+
+  [05] Chart bars lack direct data labels, requiring estimation
+       Problem:          The bar chart shows three revenue bars but only the 2023 bar has a text annotation ('2023: ~$2B'). The 2024 and 2025 bars require users to estimate values from the Y-axis gridlines. This forces unnecessary cognitive work and reduces data precision.
+       What to implement: Add data labels above or inside each bar showing the revenue value (e.g., '~$7B' for 2024, '~$13-20B' for 2025). This eliminates guesswork and supports quick scanning behavior.
+       Affects:          Revenue Growth: 2023–2025 bar chart in the right panel
+
+  [06] Static Website preview card has truncated title with no access to full content
+       Problem:          The preview card title is truncated with an ellipsis ('OpenAI Interactive Account R...') and the content below appears as placeholder loading bars rather than actual content. Users cannot determine what the full content is without clicking through, and the loading skeleton may be confused with actual content.
+       What to implement: Show the full title or allow wrapping to two lines. If the content is still loading, add a clear loading indicator with text (e.g., 'Loading preview...'). If these are placeholder lines by design, make them look distinct from loading states.
+       Affects:          'Static Website' preview card showing 'OpenAI Interactive Account R...' with truncated text
+
+  [07] Suggested actions have low visual affordance as clickable elements
+       Problem:          The suggested actions appear as lightly bordered text blocks with a small arrow icon. Their visual treatment is similar to static content, and the arrow affordance is subtle. Users may not immediately recognize these as interactive clickable elements.
+       What to implement: Increase the visual affordance by adding a hover state preview, using a more prominent button-like styling (e.g., slightly stronger border, background color change on hover), or adding a clear 'Click to execute' icon treatment.
+       Affects:          Three suggested action items below 'Suggested actions' label
+
+LOW PRIORITY  (implement where possible):
+  [08] KPI cards lack sufficient visual differentiation from each other — Differentiate cards using subtle color coding, distinct icons for each category, or vary the card background slightly. For example, use a green tint for growth metrics and a neutral tint for metadata like 'Last updated'.
+  [09] Dual-panel layout may cause confusion about primary content focus — Consider making the report panel slightly more prominent (wider ratio like 60/40) or adding a visual connector/breadcrumb showing the flow: 'Prompt → Generated Report'. A subtle panel header distinction would also help establish reading order.
+  [10] Publish button lacks confirmation for irreversible action — Add a confirmation dialog before publishing (e.g., 'Are you sure you want to publish this report? It will be visible to your team.'). Include a preview step or draft state indicator to make the current status clear.
+
+====================================================================
+STEP 1 — LAYOUT & COMPOSITION  (reason through this BEFORE anything else)
+====================================================================
+
+Layout and content distribution are non-negotiable design decisions.
+Do not assume the original layout is correct — reason from first principles.
+Ask yourself: does each element sit in the right zone for its purpose?
+If not, move it. The composition must serve the user's primary goal.
+
+1. VISUAL HIERARCHY
+   The most important action or information must be visually dominant.
+   Use size, weight, contrast, and position to establish a clear reading order.
+   Secondary content must be visually subordinate — smaller, lighter, lower.
+   (Malewicz — Designing User Interfaces: contrast creates hierarchy)
+   (Refactoring UI: use size and weight to communicate importance, not just color)
+
+2. F-PATTERN & READING FLOW
+   Users scan left-to-right, top-to-bottom in an F-shape on content-heavy screens.
+   Place primary actions and key labels at the start of scan lines.
+   Never interrupt the scan path with secondary, promotional, or personalisation content.
+   (Nielsen Norman Group — F-Pattern reading behavior)
+
+3. PROXIMITY & GROUPING (Gestalt)
+   Related elements must be spatially close. Unrelated elements need clear separation.
+   If two elements answer different user questions, they belong in different zones.
+   Never mix contextual content with navigational content in the same region.
+   (Psych 101 — Gestalt: Law of Proximity, Law of Similarity)
+
+4. CONTENT PRIORITISATION
+   Identify the user's single primary goal on this screen.
+   Every element that does not serve that goal directly must be secondary in
+   visual weight and position. Upsell, personalisation, and promotional content
+   must never compete with or interrupt the primary task flow.
+   (Don't Make Me Think — Krug: do not make users think about what to do next)
+   (Psychology of Design — Hick's Law: fewer competing choices = faster decisions)
+
+5. SPATIAL ZONES
+   Divide the screen into logical zones: navigation, primary content, secondary
+   context, actions. Each zone has exactly one job.
+   If an element is in the wrong zone, move it to the correct zone or defer it
+   to a modal or drawer. The layout must match the user's mental model of the task.
+   (Universal Principles of Design — Progressive Disclosure)
+
+6. SIGNAL-TO-NOISE
+   Every element must earn its place. If an element does not directly help the
+   user complete their current task, reduce its visual weight or remove it from
+   the primary viewport. Clutter is a UX failure, not a neutral default.
+   (Universal Principles of Design — Signal-to-Noise Ratio)
+
+COMPOSITION RULE: If the original layout violates these principles — with or
+without an explicit audit finding — correct it. Do not replicate bad composition
+because it existed in the screenshot. A version 2 must be compositionally sound.
+
+APPLY THESE COMPOSITION DECISIONS TO RESOLVE THE FOLLOWING AUDIT ISSUES:
+Every High and Medium issue in the MANDATORY FIX CHECKLIST above must map to a
+specific, visible structural decision in your layout. Before moving to Step 2,
+trace each issue to a layout zone, spacing decision, or hierarchy change.
+If the fix requires restructuring — restructure. If it requires removing an element
+from the primary viewport — remove it. Composition fixes are not optional.
+
+====================================================================
+STEP 2 — VISUAL IDENTITY  (preserve brand, not broken placement)
+====================================================================
+
+Once composition is decided, preserve these brand elements exactly:
+  - Colors: every background, text, brand, accent, and surface hex value
+  - Typography: font families, sizes, weights, line-heights, letter-spacing
+  - Spacing scale: the relative rhythm of padding/margin (not the positions)
+  - Shapes: border-radius, border styles, shadows, elevation
+  - Icons: style, weight, and size (placement may change if composition requires)
+  - Components: card designs, button styles, badge styles, input styles
+
+NOTE: Layout and element positioning are governed by Step 1, not this list.
+Preserving the brand does NOT mean preserving where broken things sit.
+The output must feel like a version 2 — same brand, better UX.
+
+====================================================================
+FULL AUDIT REPORT  —  OpenAI Account Report
+====================================================================
+Overall Score:        7.1/10  —  Good
+Accessibility Score:  5.8/10  (WCAG 2.2 AA)
+Issues Found:         10  (4 High · 3 Medium · 3 Low)
+
+EXECUTIVE SUMMARY
+Rox presents a well-structured account report with clear data hierarchy and useful suggested actions. However, several accessibility concerns exist around color contrast, icon-only buttons lacking labels, and information conveyed through color alone in the tag system. The dual-panel layout is effective but the left panel's content hierarchy and some interactive affordances could be improved.
+
+ALL ISSUES  (full detail for reference):
+
+[01] HIGH  —  Tag pills rely on color alone to convey category meaning
+     Location:  Company attribute tags (Private/LP-owned, N/A, Founded 2015, etc.) in the right panel header
+     Problem:   The beige/tan colored tag pills use a subtle background color to distinguish them from surrounding content, but there is no additional visual encoding (icons, borders, or grouping labels) to differentiate tag categories. Users with color vision deficiencies may not perceive the distinction between tags and plain text.
+     Fix:       Add category labels or icons before tag groups (e.g., 'Type: Private/LP-owned', 'Location: SF, CA, USA'). Alternatively, use distinct border styles or icons within each tag to reinforce meaning beyond color.
+     Source:    WCAG 2.2 — 1.4.1 Use of Color (A): information must not be conveyed by color alone
+     WCAG:      1.4.1  Level A
+
+[02] HIGH  —  Icon-only action buttons lack accessible labels
+     Location:  Bottom-left of the chat panel — speaker, copy, and refresh icons
+     Problem:   Three icon-only buttons (audio/speaker, copy, refresh) appear without visible text labels or tooltips. Screen reader users will not know the purpose of these controls, and sighted users may also struggle to identify exact functionality.
+     Fix:       Add aria-label attributes to each icon button (e.g., 'Read aloud', 'Copy response', 'Regenerate response'). Additionally, implement visible tooltips on hover/focus to assist all users.
+     Source:    WCAG 2.2 — 1.1.1 Non-text Content (A): all non-text content must have a text alternative
+     WCAG:      1.1.1  Level A
+
+[03] HIGH  —  Low contrast on 'Thought for 33s' and subtitle text
+     Location:  'Thought for 33s' label and placeholder text in the chat input field
+     Problem:   The light gray 'Thought for 33s' text and the 'Ask about the selected account' placeholder appear to have insufficient contrast against the white/light background, likely falling below the 4.5:1 minimum ratio for normal-sized text. This makes the text difficult to read for users with low vision.
+     Fix:       Increase the text color darkness to achieve at least 4.5:1 contrast ratio. For the placeholder text, use a color like #767676 or darker. For the 'Thought for 33s' label, use at least medium gray (#595959).
+     Source:    WCAG 2.2 — 1.4.3 Contrast Minimum (AA): normal text requires 4.5:1 contrast ratio
+     WCAG:      1.4.3  Level AA
+
+[04] HIGH  —  Left sidebar icons lack text labels and visible focus indicators
+     Location:  Left vertical navigation sidebar with icon-only items
+     Problem:   The sidebar contains approximately 8 icon-only navigation items with no visible text labels. There is no indication of the active state beyond a subtle highlight, and keyboard focus indicators are not visible in the screenshot. Users navigating by keyboard cannot determine their current location.
+     Fix:       Add tooltip labels on hover/focus for each icon. Implement a clearly visible focus ring (e.g., 2px solid outline with offset) for keyboard navigation. Consider adding an expanded sidebar option with text labels.
+     Source:    WCAG 2.2 — 2.4.7 Focus Visible (AA): keyboard focus indicator must be visible
+     WCAG:      2.4.7  Level AA
+
+[05] MEDIUM  —  Chart bars lack direct data labels, requiring estimation
+     Location:  Revenue Growth: 2023–2025 bar chart in the right panel
+     Problem:   The bar chart shows three revenue bars but only the 2023 bar has a text annotation ('2023: ~$2B'). The 2024 and 2025 bars require users to estimate values from the Y-axis gridlines. This forces unnecessary cognitive work and reduces data precision.
+     Fix:       Add data labels above or inside each bar showing the revenue value (e.g., '~$7B' for 2024, '~$13-20B' for 2025). This eliminates guesswork and supports quick scanning behavior.
+     Source:    Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter
+
+[06] MEDIUM  —  Static Website preview card has truncated title with no access to full content
+     Location:  'Static Website' preview card showing 'OpenAI Interactive Account R...' with truncated text
+     Problem:   The preview card title is truncated with an ellipsis ('OpenAI Interactive Account R...') and the content below appears as placeholder loading bars rather than actual content. Users cannot determine what the full content is without clicking through, and the loading skeleton may be confused with actual content.
+     Fix:       Show the full title or allow wrapping to two lines. If the content is still loading, add a clear loading indicator with text (e.g., 'Loading preview...'). If these are placeholder lines by design, make them look distinct from loading states.
+     Source:    The Design of Everyday Things (Norman) — Gulf of Evaluation: user cannot tell if their action worked
+
+[07] MEDIUM  —  Suggested actions have low visual affordance as clickable elements
+     Location:  Three suggested action items below 'Suggested actions' label
+     Problem:   The suggested actions appear as lightly bordered text blocks with a small arrow icon. Their visual treatment is similar to static content, and the arrow affordance is subtle. Users may not immediately recognize these as interactive clickable elements.
+     Fix:       Increase the visual affordance by adding a hover state preview, using a more prominent button-like styling (e.g., slightly stronger border, background color change on hover), or adding a clear 'Click to execute' icon treatment.
+     Source:    The Design of Everyday Things (Norman) — Affordance: element must communicate how it is used
+
+[08] LOW  —  KPI cards lack sufficient visual differentiation from each other
+     Location:  Four metric cards (Revenue, Users, Infra Investment, Last updated) in the right panel
+     Problem:   All four KPI cards share the same beige background color and card styling, making it harder to quickly scan and locate a specific metric. The cards blend together visually despite containing categorically different types of information (financial, user, infrastructure, metadata).
+     Fix:       Differentiate cards using subtle color coding, distinct icons for each category, or vary the card background slightly. For example, use a green tint for growth metrics and a neutral tint for metadata like 'Last updated'.
+     Source:    Psych 101 (Kleinman) — Gestalt: Law of Similarity
+
+[09] LOW  —  Dual-panel layout may cause confusion about primary content focus
+     Location:  Overall page layout — chat panel (left) and report panel (right)
+     Problem:   The two-panel layout gives roughly equal visual weight to the chat interface and the generated report. New users may be uncertain which panel to focus on first, and the relationship between the chat input and the report output is not explicitly communicated.
+     Fix:       Consider making the report panel slightly more prominent (wider ratio like 60/40) or adding a visual connector/breadcrumb showing the flow: 'Prompt → Generated Report'. A subtle panel header distinction would also help establish reading order.
+     Source:    Psychology of Design — Hick's Law: too many choices slows decisions
+
+[10] LOW  —  Publish button lacks confirmation for irreversible action
+     Location:  'Publish' button in the top-right corner of the report panel
+     Problem:   The prominent red/orange 'Publish' button appears to make the report publicly available but lacks any indication of a confirmation step. Accidentally clicking this could share incomplete or inaccurate AI-generated data externally.
+     Fix:       Add a confirmation dialog before publishing (e.g., 'Are you sure you want to publish this report? It will be visible to your team.'). Include a preview step or draft state indicator to make the current status clear.
+     Source:    The Design of Everyday Things (Norman) — Forcing Function: prevent irreversible actions with confirmation
+
+====================================================================
+SELF-CHECK — RUN THIS BEFORE OUTPUTTING THE HTML
+====================================================================
+
+For each item below, verify the SPECIFIC FIX is concretely implemented —
+not just acknowledged, not just styled differently. The fix must be visible.
+
+  [ ] [01] Tag pills rely on color alone to convey category meaning
+       Required fix: Add category labels or icons before tag groups (e.g., 'Type: Private/LP-owned', 'Location: SF, CA, USA'). Alternatively, use distinct border styles or icons within each tag to reinforce meaning beyond color.
+       Location:     Company attribute tags (Private/LP-owned, N/A, Founded 2015, etc.) in the right panel header
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [02] Icon-only action buttons lack accessible labels
+       Required fix: Add aria-label attributes to each icon button (e.g., 'Read aloud', 'Copy response', 'Regenerate response'). Additionally, implement visible tooltips on hover/focus to assist all users.
+       Location:     Bottom-left of the chat panel — speaker, copy, and refresh icons
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [03] Low contrast on 'Thought for 33s' and subtitle text
+       Required fix: Increase the text color darkness to achieve at least 4.5:1 contrast ratio. For the placeholder text, use a color like #767676 or darker. For the 'Thought for 33s' label, use at least medium gray (#595959).
+       Location:     'Thought for 33s' label and placeholder text in the chat input field
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [04] Left sidebar icons lack text labels and visible focus indicators
+       Required fix: Add tooltip labels on hover/focus for each icon. Implement a clearly visible focus ring (e.g., 2px solid outline with offset) for keyboard navigation. Consider adding an expanded sidebar option with text labels.
+       Location:     Left vertical navigation sidebar with icon-only items
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [05] Chart bars lack direct data labels, requiring estimation
+       Required fix: Add data labels above or inside each bar showing the revenue value (e.g., '~$7B' for 2024, '~$13-20B' for 2025). This eliminates guesswork and supports quick scanning behavior.
+       Location:     Revenue Growth: 2023–2025 bar chart in the right panel
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [06] Static Website preview card has truncated title with no access to full content
+       Required fix: Show the full title or allow wrapping to two lines. If the content is still loading, add a clear loading indicator with text (e.g., 'Loading preview...'). If these are placeholder lines by design, make them look distinct from loading states.
+       Location:     'Static Website' preview card showing 'OpenAI Interactive Account R...' with truncated text
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [07] Suggested actions have low visual affordance as clickable elements
+       Required fix: Increase the visual affordance by adding a hover state preview, using a more prominent button-like styling (e.g., slightly stronger border, background color change on hover), or adding a clear 'Click to execute' icon treatment.
+       Location:     Three suggested action items below 'Suggested actions' label
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+If any checkbox above cannot be ticked YES, revise your HTML before outputting it.
+
+====================================================================
+OUTPUT REQUIREMENTS
+====================================================================
+
+- Output a single, complete, self-contained HTML file.
+- All CSS must be in a <style> block in the <head> — no external stylesheets.
+- No CDN links, no JavaScript frameworks, no external images.
+  Use inline SVG for icons. Use data URIs only if absolutely necessary.
+- Preserve all informational content (text, labels, data). Do not silently drop
+  information the user needs. However: if a fix requires relocating, collapsing,
+  or restructuring a UI element, you MUST do so — placing it in a better position
+  is not removing it. The audit fix always wins over original placement.
+- Do NOT add new features, sections, or content not present in the original.
+- JavaScript is allowed only for interactions clearly present in the original.
+  Keep it minimal and inline.
+- The file must open in a browser as a fully working static page.
+- Start your response with <!DOCTYPE html> and end the HTML with </html>.
+- Do NOT reference Mobbin or any third-party design gallery. Use Saasfactor if needed.

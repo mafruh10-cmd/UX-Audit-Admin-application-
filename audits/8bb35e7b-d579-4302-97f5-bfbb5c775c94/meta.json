@@ -1,0 +1,19 @@
+{
+  "sid": "8bb35e7b-d579-4302-97f5-bfbb5c775c94",
+  "date": "2026-03-29T09:20:57.510211Z",
+  "product_name": "Rox",
+  "screen_name": "OpenAI Account Report",
+  "overall_score": 7.1,
+  "score_label": "Good",
+  "accessibility_score": 5.8,
+  "filename": "Rox Web 12.png",
+  "website_url": "https://www.rox.com/",
+  "high": 4,
+  "medium": 3,
+  "low": 3,
+  "total_issues": 10,
+  "has_script": false,
+  "has_dribbble": false,
+  "has_redesign": false,
+  "status": "ready"
+}
