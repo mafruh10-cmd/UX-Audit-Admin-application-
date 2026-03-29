@@ -3,1146 +3,1448 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Analytics – All Calls | Dialpad</title>
+<title>sweetgreen — Attio</title>
 <style>
-/* ── Reset ──────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-  font-size: 13px;
-  color: #1a1a2e;
-  background: #f7f7fb;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-a { color: inherit; text-decoration: none; }
-button { font-family: inherit; font-size: inherit; cursor: pointer; }
-ul, ol { list-style: none; }
+  /* ─── Reset & Base ─── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-size: 13px; }
+  body {
+    font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+    background: #fff;
+    color: #1a1a1a;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; }
 
-/* ── Variables ───────────────────────────────────── */
-:root {
-  --purple:       #6C47FF;
-  --purple-pale:  #f0edff;
-  --purple-mid:   #9b7dff;
-  --text:         #1a1a2e;
-  --text-sec:     #595959;   /* [03] ≥4.5:1 on white */
-  --text-muted:   #767676;   /* [03] ≥4.5:1 on white */
-  --border:       #e2e2e8;
-  --bg:           #f7f7fb;
-  --sidebar:      #f8f8fc;
-  --white:        #ffffff;
-  --radius:       6px;
-  --radius-lg:    10px;
-}
+  /* ─── Layout ─── */
+  .app { display: flex; height: 100vh; overflow: hidden; }
 
-/* ── [04] Global focus ring ─────────────────────── */
-:focus-visible {
-  outline: 2px solid var(--purple);
-  outline-offset: 2px;
-  border-radius: 3px;
-}
-:focus:not(:focus-visible) { outline: none; }
+  /* ─── Sidebar ─── */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: #f7f7f6;
+    border-right: 1px solid #e8e8e6;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow-y: auto;
+    height: 100vh;
+  }
+  .sidebar-top {
+    padding: 10px 12px 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid #e8e8e6;
+  }
+  .workspace-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+  .sidebar-search {
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #8a8a8a;
+    font-size: 13px;
+    background: #efefee;
+    border-radius: 6px;
+    margin: 6px 10px;
+    cursor: pointer;
+  }
+  .sidebar-section { padding: 12px 0 4px; }
+  .sidebar-section-label {
+    padding: 2px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #9a9a9a;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px;
+    font-size: 13px;
+    color: #444;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .sidebar-item:hover { background: #ebebea; }
+  .sidebar-item.active { background: #e4e4e2; color: #1a1a1a; font-weight: 500; }
+  .sidebar-item svg { opacity: 0.6; flex-shrink: 0; }
+  .sidebar-badge {
+    margin-left: auto;
+    background: #e0e0de;
+    color: #555;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 10px;
+  }
+  .sidebar-footer {
+    margin-top: auto;
+    border-top: 1px solid #e8e8e6;
+    padding: 10px 0 6px;
+  }
+  .trial-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: #666;
+  }
+  .btn-billing {
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .sidebar-item-sub {
+    font-size: 12px;
+    color: #6b6b6b;
+    padding: 4px 14px 4px 36px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .sidebar-item-sub:hover { background: #ebebea; }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   [08] WARNING BANNER — big close target, descriptive link
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-#warning-banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #fff8e1;
-  border-bottom: 2px solid #f9c900;
-  padding: 0 16px 0 20px;
-  min-height: 48px;
-  flex-shrink: 0;
-}
-.wb-icon { color: #d97706; flex-shrink: 0; line-height: 0; }
-.wb-text { flex: 1; font-size: 13px; color: var(--text-sec); line-height: 1.5; }
-.wb-text strong { color: var(--text); }
-.wb-link { color: var(--purple); font-weight: 600; text-decoration: underline; }
-.wb-link:hover { text-decoration: none; }
-/* [08] min 44×44 touch target */
-.wb-close {
-  flex-shrink: 0;
-  min-width: 44px;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  color: var(--text-sec);
-  border-radius: 4px;
-  transition: background 0.15s;
-}
-.wb-close:hover { background: rgba(0,0,0,0.07); }
+  /* ─── Main Content ─── */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   APP BODY
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-.app-body { display: flex; flex: 1; overflow: hidden; }
+  /* ─── Top Bar ─── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    height: 44px;
+    border-bottom: 1px solid #e8e8e6;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .topbar-close {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 5px;
+    color: #666;
+    cursor: pointer;
+  }
+  .topbar-close:hover { background: #f0f0ee; }
+  .topbar-nav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .topbar-nav-btn {
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px;
+    color: #888;
+    cursor: pointer;
+  }
+  .topbar-nav-btn:hover { background: #f0f0ee; }
+  /* [09] FIX: Darker breadcrumb text, slightly larger */
+  .topbar-context {
+    font-size: 12.5px;
+    color: #595959;
+    font-weight: 450;
+    letter-spacing: 0.01em;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #f4f4f2;
+    border: 1px solid #e4e4e2;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; }
+  .topbar-more {
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 5px; color: #666; cursor: pointer;
+  }
+  .topbar-more:hover { background: #f0f0ee; }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   GLOBAL NAV  —  icon rail + text panel (two columns)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  /* ─── Record Header ─── */
+  .record-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px 10px;
+    border-bottom: 1px solid #e8e8e6;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .record-avatar {
+    width: 36px; height: 36px;
+    background: #4a7c59;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    letter-spacing: -0.5px;
+  }
+  .record-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a1a1a;
+    letter-spacing: -0.3px;
+  }
+  .record-star {
+    color: #ccc;
+    cursor: pointer;
+    padding: 2px;
+  }
+  .record-meta {
+    font-size: 12px;
+    color: #888;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .record-meta-dot { color: #ccc; }
+  .record-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .btn-action {
+    display: flex; align-items: center; gap: 5px;
+    padding: 6px 11px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #333;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .btn-action:hover { background: #f7f7f6; }
 
-/* ── 1. Narrow icon rail — far left ──────────────── */
-.icon-rail {
-  width: 44px;
-  flex-shrink: 0;
-  background: #ffffff;
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0;
-  z-index: 2;
-}
+  /* ─── Body ─── */
+  .body-area {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
 
-/* Dialpad logo tile at top */
-.rail-logo {
-  width: 44px;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.rail-logo-mark {
-  width: 28px; height: 28px;
-  background: linear-gradient(135deg, #e91e63 0%, #9c27b0 100%);
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  color: white; font-size: 14px; font-weight: 900;
-  letter-spacing: -0.5px;
-}
+  /* ─── Activity Panel ─── */
+  .activity-panel {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid #e8e8e6;
+  }
+  .tab-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0 20px;
+    border-bottom: 1px solid #e8e8e6;
+    flex-shrink: 0;
+  }
+  .tab {
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #888;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+  .tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+  .tab:hover:not(.active) { color: #444; }
+  .tab-count {
+    font-size: 11px;
+    color: #aaa;
+    font-weight: 400;
+  }
+  .tab.active .tab-count { color: #888; }
 
-/* Icon buttons in the rail */
-.rail-icons {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 8px 0;
-  flex: 1;
-  width: 100%;
-}
-.rail-btn {
-  width: 36px; height: 36px;
-  display: flex; align-items: center; justify-content: center;
-  border: none; background: none;
-  color: #9da3ae;
-  border-radius: 8px;
-  transition: background 0.13s, color 0.13s;
-  position: relative;
-}
-.rail-btn:hover { background: var(--purple-pale); color: var(--purple); }
-.rail-btn.is-active {
-  background: var(--purple-pale);
-  color: var(--purple);
-}
-/* Active dot indicator */
-.rail-btn.is-active::after {
-  content: '';
-  position: absolute;
-  left: -1px;
-  top: 50%; transform: translateY(-50%);
-  width: 3px; height: 20px;
-  background: var(--purple);
-  border-radius: 0 2px 2px 0;
-}
+  .activity-feed {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px 20px;
+  }
 
-/* Avatar at rail bottom */
-.rail-bottom {
-  padding: 10px 0 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  border-top: 1px solid var(--border);
-  width: 100%;
-}
-.rail-avatar {
-  width: 30px; height: 30px;
-  background: linear-gradient(135deg, var(--purple) 0%, var(--purple-mid) 100%);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  color: white; font-size: 11px; font-weight: 700;
-  cursor: pointer;
-}
+  .feed-section-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #aaa;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .feed-period-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    margin-top: 4px;
+  }
+  .feed-period-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #888;
+  }
+  .feed-period-collapse {
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    color: #aaa; cursor: pointer; border-radius: 4px;
+  }
+  .feed-period-collapse:hover { background: #f0f0ee; }
 
-/* ── 2. Text nav panel — beside the icon rail ────── */
-.nav-panel {
-  width: 168px;
-  flex-shrink: 0;
-  background: #f8f8fc;
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
+  /* ─── Activity Entry ─── */
+  .activity-entry {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 6px;
+    position: relative;
+  }
+  .activity-icon-col {
+    width: 28px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 1px;
+  }
+  .activity-avatar-sm {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: #4a7c59;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .activity-icon-badge {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: #f0f0ee;
+    display: flex; align-items: center; justify-content: center;
+    color: #888;
+    flex-shrink: 0;
+  }
+  .activity-body { flex: 1; min-width: 0; }
+  .activity-headline {
+    font-size: 13px;
+    color: #1a1a1a;
+    line-height: 1.4;
+    margin-bottom: 2px;
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+  .activity-actor { font-weight: 600; }
+  .activity-time {
+    font-size: 11.5px;
+    color: #aaa;
+    white-space: nowrap;
+  }
+  .activity-list-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #1a1a1a;
+    background: #f4f4f2;
+    border: 1px solid #e4e4e2;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
 
-/* Workspace dropdown */
-.ws-header { padding: 9px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.workspace-btn {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  width: 100%;
-  padding: 5px 7px;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-weight: 600;
-  font-size: 13px;
-  transition: border-color 0.15s;
-}
-.workspace-btn:hover { border-color: var(--purple-mid); }
-.ws-icon {
-  width: 20px; height: 20px;
-  background: linear-gradient(135deg, #e91e63 0%, #9c27b0 100%);
-  border-radius: 4px;
-  display: flex; align-items: center; justify-content: center;
-  color: white; font-size: 10px; font-weight: 900; flex-shrink: 0;
-}
-.ws-name { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* ─── Change Log ─── */
+  .change-log {
+    background: #f9f9f8;
+    border: 1px solid #ebebea;
+    border-radius: 8px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .change-row {
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+    gap: 8px;
+    border-bottom: 1px solid #efefee;
+    font-size: 12.5px;
+    color: #555;
+  }
+  .change-row:last-child { border-bottom: none; }
+  .change-icon { color: #bbb; flex-shrink: 0; width: 14px; display: flex; align-items: center; justify-content: center; }
+  .change-field {
+    color: #888;
+    min-width: 130px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .change-arrow { color: #ccc; margin: 0 4px; }
+  .change-value { display: flex; align-items: center; gap: 5px; font-weight: 500; color: #1a1a1a; }
 
-/* Nav sections */
-.nav-section { border-bottom: 1px solid var(--border); padding: 4px 0; }
-.nav-section:last-of-type { border-bottom: none; }
+  /* [01] FIX: Stage indicator with shape + color + label */
+  .stage-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+  }
+  .stage-badge.meeting {
+    background: #fef9e7;
+    border-color: #f0d96b;
+    color: #7a5c00;
+  }
+  .stage-badge.prospecting {
+    background: #eaf5ea;
+    border-color: #7bbf7b;
+    color: #1a5c1a;
+  }
+  .stage-shape {
+    width: 8px; height: 8px;
+    flex-shrink: 0;
+    display: inline-block;
+  }
+  .stage-shape.diamond {
+    background: #d4a800;
+    transform: rotate(45deg);
+    border-radius: 1px;
+  }
+  .stage-shape.circle {
+    background: #3a8a3a;
+    border-radius: 50%;
+  }
 
-.nav-link {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 7px 12px;
-  color: var(--text-sec);
-  font-size: 13px;
-  transition: background 0.12s, color 0.12s;
-  gap: 6px;
-}
-.nav-link:hover { background: rgba(108,71,255,0.06); color: var(--text); }
-.nav-link.is-active {
-  background: var(--purple-pale);
-  color: var(--purple);
-  font-weight: 600;
-}
-.nav-link--sub { padding-left: 24px; font-size: 12px; color: var(--text-muted); }
-.nav-link--sub:hover { color: var(--text); }
+  /* [03] FIX: Priority badge with proper contrast */
+  .priority-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+  .priority-badge.medium {
+    background: #fef3cd;
+    color: #7a4800;
+    border: 1px solid #f0c040;
+  }
+  .priority-badge.high {
+    background: #fde8e8;
+    color: #8b1a1a;
+    border: 1px solid #f0a0a0;
+  }
 
-.section-hdr {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 12px 3px;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
-  color: var(--text-muted); text-transform: uppercase;
-}
-.section-add {
-  width: 20px; height: 20px;
-  display: flex; align-items: center; justify-content: center;
-  border: none; background: none;
-  color: var(--text-muted); font-size: 16px;
-  border-radius: 3px;
-  transition: background 0.12s;
-  line-height: 1;
-}
-.section-add:hover { background: rgba(0,0,0,0.08); color: var(--text); }
-.no-filters { padding: 2px 12px 8px; font-size: 12px; color: var(--text-muted); }
+  /* [04] FIX: Star rating with accessible text */
+  .star-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .star {
+    width: 14px; height: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .star-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #555;
+    background: #f0f0ee;
+    border: 1px solid #e0e0de;
+    padding: 1px 5px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
 
-.badge-new {
-  font-size: 9px; font-weight: 800;
-  background: var(--purple); color: white;
-  padding: 1px 5px; border-radius: 99px;
-  letter-spacing: 0.04em; text-transform: uppercase;
-}
+  /* [05] FIX: Expandable "show more" for change log */
+  .change-show-more {
+    padding: 6px 10px;
+    font-size: 12px;
+    color: #5b73e8;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border-top: 1px solid #ebebea;
+    transition: background 0.1s;
+  }
+  .change-show-more:hover { background: #f3f3f1; }
+  .change-extra { display: none; }
+  .change-extra.visible { display: block; }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   MAIN CONTENT
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-.main-content {
-  flex: 1;
-  overflow-y: auto;
-  background: var(--white);
-  display: flex;
-  flex-direction: column;
-}
+  .hide-changes-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 8px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #555;
+    background: #f4f4f2;
+    border: 1px solid #e4e4e2;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .hide-changes-btn:hover { background: #ebebea; }
 
-/* Breadcrumb */
-.breadcrumb {
-  padding: 12px 32px;
-  font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
+  /* ─── Right Panel ─── */
+  .right-panel {
+    width: 340px;
+    min-width: 300px;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .right-panel-tabs {
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    border-bottom: 1px solid #e8e8e6;
+    flex-shrink: 0;
+  }
+  .right-panel-tab {
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #888;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .right-panel-tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+  .right-panel-body { flex: 1; overflow-y: auto; padding: 14px 16px 20px; }
 
-/* Page header */
-.page-hdr { padding: 20px 32px 0; }
-.page-hdr-row { display: flex; align-items: flex-start; justify-content: space-between; }
-.page-title { font-size: 22px; font-weight: 700; color: var(--text); }
-.pin-btn { background: none; border: none; padding: 4px; color: var(--purple); }
-.page-desc { margin-top: 5px; font-size: 13px; color: var(--text-sec); }
-.link-p { color: var(--purple); text-decoration: underline; font-weight: 500; }
-.link-p:hover { text-decoration: none; }
-.data-ts { margin-top: 3px; font-size: 11px; color: var(--text-muted); }
+  /* ─── Record Details ─── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+    flex: 1;
+  }
+  .section-chevron { color: #aaa; transition: transform 0.2s; }
 
-/* [04] Filter bar */
-.filter-bar {
-  display: flex; flex-wrap: wrap; gap: 8px;
-  padding: 14px 32px 10px;
-}
-.filter-pill {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 5px 12px;
-  border-radius: 99px;
-  border: 1px solid var(--border);
-  background: var(--white);
-  color: var(--text-sec);
-  font-size: 12px; font-weight: 500;
-  transition: border-color 0.12s, background 0.12s, color 0.12s;
-}
-.filter-pill:hover { border-color: var(--purple); color: var(--purple); }
-.filter-pill.is-active { background: var(--purple-pale); border-color: var(--purple); color: var(--purple); }
-/* [04] Explicit focus ring on pills */
-.filter-pill:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+  .detail-row {
+    display: flex;
+    align-items: flex-start;
+    padding: 4px 0;
+    gap: 8px;
+    border-bottom: 1px solid #f2f2f0;
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-label {
+    font-size: 12px;
+    color: #888;
+    min-width: 90px;
+    padding-top: 1px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .detail-label svg { opacity: 0.6; flex-shrink: 0; }
+  .detail-value {
+    font-size: 12.5px;
+    color: #1a1a1a;
+    flex: 1;
+    min-width: 0;
+    line-height: 1.5;
+  }
+  .detail-link { color: #3b5bf5; }
 
-/* Save search bar */
-.save-bar {
-  margin: 0 32px 2px;
-  padding: 7px 12px;
-  background: #fffde7;
-  border: 1px solid #f0e68c;
-  border-radius: var(--radius);
-  font-size: 12px; color: var(--text-sec);
-  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-}
-.save-bar a { color: var(--purple); font-weight: 500; }
-.view-calls-btn {
-  margin-left: auto;
-  display: flex; align-items: center; gap: 5px;
-  border: none; background: none;
-  color: var(--purple); font-size: 12px; font-weight: 500;
-}
+  /* [02] FIX: Category tags — outlined style with dark text, high contrast */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1.5px solid;
+    margin-right: 3px;
+    margin-bottom: 2px;
+  }
+  .tag.retail  { background: #edf7ee; color: #1a5c1a; border-color: #7bbf7b; }
+  .tag.food    { background: #fef3e7; color: #7a3800; border-color: #e8933a; }
+  .tag.rest    { background: #e7f5f5; color: #1a4d4d; border-color: #4aa8a8; }
+  .tag.b2c     { background: #eaedfd; color: #1a2a8a; border-color: #6b7de8; }
+  .tag.more    { background: #f4f4f2; color: #555; border-color: #ddd; }
 
-/* [09] Tabs — stronger active state */
-.tabs {
-  display: flex;
-  padding: 0 32px;
-  border-bottom: 2px solid var(--border);
-  margin-top: 14px;
-  flex-shrink: 0;
-}
-.tab-btn {
-  padding: 10px 16px;
-  background: none; border: none;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
-  font-size: 13px; font-weight: 500;
-  color: var(--text-muted);
-  transition: color 0.12s, border-color 0.12s;
-}
-.tab-btn:hover { color: var(--text); }
-.tab-btn.is-active {
-  color: var(--purple);
-  font-weight: 700;           /* [09] bolder */
-  border-bottom-color: var(--purple); /* [09] 3px, high-contrast */
-}
+  /* [07] FIX: Description with Show more */
+  .desc-text {
+    font-size: 12.5px;
+    color: #333;
+    line-height: 1.55;
+    overflow: hidden;
+  }
+  .desc-text.collapsed { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .desc-show-more {
+    font-size: 12px;
+    color: #5b73e8;
+    font-weight: 500;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 2px 0;
+    display: block;
+    margin-top: 1px;
+  }
+  .desc-show-more:hover { text-decoration: underline; }
 
-/* Content area */
-.content-area { padding: 20px 32px 40px; }
+  .show-all-link {
+    font-size: 12px;
+    color: #5b73e8;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin-top: 8px;
+    padding: 4px 0;
+  }
+  .show-all-link:hover { text-decoration: underline; }
 
-/* Section card */
-.s-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--white);
-  margin-bottom: 20px;
-  overflow: hidden;
-}
-.s-card-hdr {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
-}
-.s-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  /* ─── Lists Section ─── */
+  .lists-section { margin-top: 16px; }
+  .lists-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .lists-title { font-size: 13px; font-weight: 600; color: #1a1a1a; flex: 1; }
+  .btn-add-list {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 12px; font-weight: 500; color: #5b73e8;
+    cursor: pointer; padding: 3px 6px; border-radius: 4px;
+    transition: background 0.1s;
+  }
+  .btn-add-list:hover { background: #eef0fd; }
 
-/* [10] Export button — proper secondary button with icon */
-.export-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 13px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--white);
-  color: var(--text-sec);
-  font-size: 12px; font-weight: 500;
-  transition: border-color 0.13s, color 0.13s, background 0.13s;
-}
-.export-btn:hover { border-color: var(--purple); color: var(--purple); background: var(--purple-pale); }
+  .list-card {
+    background: #f9f9f8;
+    border: 1px solid #ebebea;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .list-card-header {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    gap: 6px;
+    border-bottom: 1px solid #ebebea;
+  }
+  .list-card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+    flex: 1;
+  }
+  .list-card-meta {
+    font-size: 11.5px;
+    color: #aaa;
+    font-weight: 400;
+  }
+  /* [06] FIX: Larger touch targets for icon buttons */
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    color: #888;
+    cursor: pointer;
+    transition: background 0.1s;
+    /* Extend touch area via padding without visual change */
+    padding: 4px;
+  }
+  .icon-btn:hover { background: #ececea; color: #333; }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   [01] CHART — markers, tooltip, value label
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-.chart-wrap {
-  padding: 8px 16px 12px;
-  position: relative;
-  user-select: none;
-}
-.chart-wrap svg { width: 100%; height: auto; display: block; }
-.data-pt { cursor: pointer; transition: r 0.1s; }
-.data-pt:hover { r: 5; }
+  .list-card-body { padding: 6px 0; }
+  .list-detail-row {
+    display: flex;
+    align-items: center;
+    padding: 4px 10px;
+    gap: 8px;
+  }
+  .list-detail-label {
+    font-size: 12px;
+    color: #888;
+    min-width: 80px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .list-detail-value {
+    font-size: 12.5px;
+    color: #1a1a1a;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .person-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px;
+  }
+  .person-dot {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #4a7c59;
+    color: #fff;
+    font-size: 7px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  /* [10] FIX: Specific "Show all list values" label */
+  .show-all-list-link {
+    font-size: 12px;
+    color: #5b73e8;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 10px;
+    border-top: 1px solid #ebebea;
+  }
+  .show-all-list-link:hover { text-decoration: underline; background: #f4f4f2; }
 
-#chart-tip {
-  position: absolute;
-  background: #1a1a2e;
-  color: #fff;
-  font-size: 12px;
-  padding: 5px 10px;
-  border-radius: 4px;
-  pointer-events: none;
-  white-space: nowrap;
-  z-index: 20;
-  transform: translate(-50%, -100%);
-  margin-top: -8px;
-  display: none;
-}
-#chart-tip::after {
-  content: '';
-  position: absolute;
-  top: 100%; left: 50%;
-  transform: translateX(-50%);
-  border: 5px solid transparent;
-  border-top-color: #1a1a2e;
-}
+  /* ─── Scrollbar ─── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: #bbb; }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   [05] LEGEND — distinct shapes per category
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-.legend {
-  display: flex; flex-wrap: wrap; gap: 8px 20px;
-  padding: 12px 18px;
-  border-bottom: 1px solid var(--border);
-}
-.legend-item {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 12px; color: var(--text-sec);
-}
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   [02][03][06] CALL COUNT BREAKDOWN
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-.bd-body { padding: 18px 18px 20px; }
-.bd-root { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
-
-/* Summary card */
-.bd-summary {
-  flex-shrink: 0;
-  min-width: 130px;
-  background: var(--purple-pale);
-  border: 1px solid rgba(108,71,255,0.22);
-  border-radius: var(--radius-lg);
-  padding: 16px 18px;
-  text-align: center;
-}
-.bd-big-num {
-  font-size: 38px; font-weight: 800; color: var(--purple); line-height: 1;
-}
-.bd-big-lbl { font-size: 12px; font-weight: 600; color: var(--text-sec); margin-top: 4px; }
-.bd-handled {
-  margin-top: 10px; padding-top: 10px;
-  border-top: 1px solid rgba(108,71,255,0.2);
-  font-size: 12px; color: var(--text-sec);
-}
-.bd-handled-val { font-weight: 700; color: var(--text); font-size: 13px; }
-
-/* Branch columns */
-.bd-cols {
-  flex: 1; min-width: 320px;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-}
-
-/* Branch card */
-.branch-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-.branch-card.is-zero { opacity: 0.7; }
-
-.branch-hdr {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 11px 14px;
-  background: var(--bg);
-}
-.branch-num { font-size: 20px; font-weight: 800; color: var(--text); line-height: 1; }
-.branch-num.is-zero { color: var(--text-muted); font-size: 18px; }
-.branch-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-sec); margin-top: 2px; }
-.branch-pct {
-  font-size: 11px; font-weight: 700; padding: 2px 7px;
-  background: var(--purple-pale); color: var(--purple);
-  border-radius: 99px;
-}
-.branch-pct.is-zero { background: var(--bg); color: var(--text-muted); }
-
-/* Sub-metrics */
-.sub-list { padding: 6px 14px 4px; }
-.sub-row {
-  display: flex; align-items: center; gap: 8px;
-  padding: 5px 0;
-  border-bottom: 1px solid #f3f3f6;
-}
-.sub-row:last-child { border-bottom: none; }
-/* [03] Sufficient contrast on all metric text */
-.sub-val { font-size: 14px; font-weight: 700; color: var(--text); min-width: 22px; }
-.sub-val.is-zero { font-weight: 500; font-size: 13px; color: var(--text-muted); }
-.sub-lbl { flex: 1; font-size: 12px; color: var(--text-sec); }
-.sub-pct { font-size: 11px; color: var(--text-muted); }
-
-/* [06] Zero-value toggle */
-.zero-toggle {
-  display: flex; align-items: center; gap: 6px;
-  width: 100%; padding: 8px 14px;
-  border: none; border-top: 1px dashed var(--border);
-  background: none; color: var(--text-muted);
-  font-size: 12px; text-align: left;
-  transition: color 0.12s, background 0.12s;
-}
-.zero-toggle:hover { color: var(--purple); background: var(--purple-pale); }
-.toggle-icon { transition: transform 0.2s; flex-shrink: 0; }
-.toggle-icon.open { transform: rotate(180deg); }
-.zero-section { display: none; }
-.zero-section.is-open { display: block; }
-.zero-section .sub-list { padding-top: 4px; }
-.zero-section .sub-row { opacity: 0.72; }
+  /* ─── Utility ─── */
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .gap-4 { gap: 4px; }
+  .gap-6 { gap: 6px; }
+  .ml-auto { margin-left: auto; }
+  .text-muted { color: #888; }
+  .font-medium { font-weight: 500; }
+  .font-semibold { font-weight: 600; }
 </style>
 </head>
 <body>
+<div class="app">
 
-<!-- ════════════════════════════════════════════════
-     [08] Warning Banner
-     ════════════════════════════════════════════════ -->
-<div id="warning-banner" role="alert" aria-live="polite">
-  <span class="wb-icon">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M8 1.5L14.5 13.5H1.5L8 1.5z" fill="#fde68a" stroke="#d97706" stroke-width="1.2" stroke-linejoin="round"/>
-      <line x1="8" y1="6" x2="8" y2="9.5" stroke="#92400e" stroke-width="1.5" stroke-linecap="round"/>
-      <circle cx="8" cy="11.6" r="0.85" fill="#92400e"/>
-    </svg>
-  </span>
-  <p class="wb-text">
-    <strong>You are not able to send external messages.</strong>
-    For more details on how to register your company and numbers, visit our Help Center.
-    <!-- [08] Descriptive link text replacing "Click here" -->
-    <a href="#" class="wb-link">Learn how to register your company</a>
-  </p>
-  <!-- [08] 44×44 minimum touch target -->
-  <button class="wb-close" aria-label="Dismiss this warning" onclick="document.getElementById('warning-banner').remove()">
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-      <line x1="2" y1="2" x2="12" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="12" y1="2" x2="2"  y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-    </svg>
-  </button>
-</div>
-
-<!-- ════════════════════════════════════════════════
-     APP BODY
-     ════════════════════════════════════════════════ -->
-<div class="app-body">
-
-  <!-- ══════════════════════════════════════════════
-       GLOBAL NAV  —  icon rail (far left) + text panel
-       ══════════════════════════════════════════════ -->
-
-  <!-- ── Column 1: narrow icon rail ─────────────── -->
-  <div class="icon-rail" role="navigation" aria-label="Feature navigation">
-
-    <!-- Dialpad logo -->
-    <div class="rail-logo" aria-label="Dialpad">
-      <div class="rail-logo-mark" aria-hidden="true">d</div>
+  <!-- ════════════════════════════════ SIDEBAR ════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <!-- Attio logo icon -->
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <rect width="24" height="24" rx="5" fill="#1a1a1a"/>
+        <path d="M7 17L12 7L17 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9 14h6" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="workspace-name">ASMobbin</span>
+      <svg style="margin-left:auto;opacity:0.4" width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
 
-    <!-- Feature icon buttons -->
-    <div class="rail-icons">
-      <!-- Calls -->
-      <button class="rail-btn" title="Calls" aria-label="Calls">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-          <path d="M14.2 11.8c-.8-.5-1.8-1-2.4-1s-.8.4-1.2.8c-.4.4-.8.8-1.2.8s-1.2-.7-2.2-1.7C6.2 9.7 5.5 9 5.5 8.6c0-.4.4-.8.8-1.2.4-.4.8-.8.8-1.2 0-.6-.5-1.6-1-2.4C5.5 3 5 2.7 4.4 2.8c-.5 0-.9.3-1.3.7C2.7 3.9 2 4.6 2 5.5c0 1.4.7 3.3 2.3 5.3C6 12.8 7.8 14.4 9.8 15.2c1.9.8 3.7 1.1 5 1.1.9 0 1.7-.6 2.1-1 .4-.4.7-.9.8-1.4.1-.5-.1-1-.9-1.6-.2-.2-.4-.3-.6-.5z" fill="currentColor"/>
-        </svg>
-      </button>
-      <!-- Contacts -->
-      <button class="rail-btn" title="Contacts" aria-label="Contacts">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-          <circle cx="9" cy="7" r="3.2" stroke="currentColor" stroke-width="1.6"/>
-          <path d="M2.5 16c0-2.5 2.9-4.5 6.5-4.5s6.5 2 6.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <!-- Settings -->
-      <button class="rail-btn" title="Settings" aria-label="Settings">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-          <circle cx="9" cy="9" r="2.6" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M9 1.5v2M9 14.5v2M1.5 9h2M14.5 9h2M3.6 3.6l1.4 1.4M13 13l1.4 1.4M14.4 3.6L13 5M5 13l-1.4 1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <!-- AI/Sparkle -->
-      <button class="rail-btn" title="AI Assistants" aria-label="AI Assistants">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-          <path d="M9 2L10.2 6.8 15 8l-4.8 1.2L9 14l-1.2-4.8L3 8l4.8-1.2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <!-- Analytics — ACTIVE -->
-      <button class="rail-btn is-active" title="Analytics" aria-label="Analytics" aria-current="page">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-          <rect x="2"  y="10.5" width="3.5" height="6"   rx="1" fill="currentColor"/>
-          <rect x="7.3" y="6.5"  width="3.5" height="10"  rx="1" fill="currentColor"/>
-          <rect x="12.5" y="2"   width="3.5" height="14.5" rx="1" fill="currentColor"/>
-        </svg>
-      </button>
-      <!-- History / Recents -->
-      <button class="rail-btn" title="Recents" aria-label="Recents">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-          <circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.6"/>
-          <path d="M9 5.5V9.5L11.5 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <!-- Video -->
-      <button class="rail-btn" title="Meetings" aria-label="Meetings">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-          <rect x="1.5" y="4.5" width="11" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M12.5 7.5L16.5 5.5V12.5L12.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <!-- Playbooks / Box -->
-      <button class="rail-btn" title="Playbooks" aria-label="Playbooks">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-          <path d="M9 2L16 5.5V12.5L9 16L2 12.5V5.5L9 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-          <path d="M9 2v14M2 5.5l7 3.5 7-3.5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-        </svg>
-      </button>
+    <div class="sidebar-search">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L13.5 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Quick actions</span>
+      <span style="margin-left:auto;font-size:10.5px;background:#e0e0de;color:#777;padding:1px 5px;border-radius:3px;">⌘K</span>
     </div>
 
-    <!-- User avatar at bottom of rail -->
-    <div class="rail-bottom">
-      <div class="rail-avatar" aria-label="Your profile" tabindex="0" role="button">F</div>
-    </div>
-  </div>
-
-  <!-- ── Column 2: text navigation panel ─────────── -->
-  <nav class="nav-panel" aria-label="Section navigation">
-
-    <!-- Workspace dropdown -->
-    <div class="ws-header">
-      <button class="workspace-btn" aria-haspopup="listbox" aria-label="Current workspace: ASMobbin. Click to switch.">
-        <div class="ws-icon" aria-hidden="true">D</div>
-        <span class="ws-name">ASMobbin</span>
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Primary links -->
-    <div class="nav-section">
-      <a href="#" class="nav-link is-active" aria-current="page">All calls</a>
-      <a href="#" class="nav-link">My calls</a>
-      <a href="#" class="nav-link">All digital</a>
-    </div>
-
-    <!-- My searches -->
-    <div class="nav-section">
-      <div class="section-hdr">
-        My searches (0)
-        <button class="section-add" aria-label="Add saved search">+</button>
+    <div class="sidebar-section">
+      <div class="sidebar-item">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 1112 0A6 6 0 012 8z" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3l2 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Notifications
       </div>
-      <p class="no-filters">No filters created</p>
+      <div class="sidebar-item">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 8h6M5 5.5h4M5 10.5h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Tasks
+      </div>
+      <div class="sidebar-item">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 3h12v8H2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M5 11l-1 2M11 11l1 2M5 13h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Notes
+      </div>
+      <div class="sidebar-item">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 6h12" stroke="currentColor" stroke-width="1.2"/><path d="M5 9.5l1.5 1.5L9 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Emails
+      </div>
+      <div class="sidebar-item">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 14V5l5-3 5 3v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><rect x="5.5" y="8" width="2" height="3" rx="0.5" stroke="currentColor" stroke-width="1.2"/><rect x="8.5" y="8" width="2" height="3" rx="0.5" stroke="currentColor" stroke-width="1.2"/></svg>
+        Reports
+      </div>
+      <div class="sidebar-item">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 3h4v4H3zM9 3h4v4H9zM3 9h4v4H3zM9 9h4v4H9z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+        Automations
+      </div>
     </div>
 
-    <!-- [07] Single instance of AI / Reports / Playbooks -->
-    <div class="nav-section">
-      <a href="#" class="nav-link">AI Assistants</a>
-      <a href="#" class="nav-link">
-        Reports&nbsp;<span class="badge-new">New</span>
-      </a>
-      <a href="#" class="nav-link">Playbooks</a>
-      <a href="#" class="nav-link nav-link--sub">Teams &amp; groups</a>
-      <a href="#" class="nav-link nav-link--sub">Agents</a>
-      <a href="#" class="nav-link nav-link--sub">Playbooks</a>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Favorites</div>
+      <div class="sidebar-item">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2.5" fill="#4a7c59"/><path d="M5 8h6M8 5v6" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+        UK &amp; EU Companies
+        <span class="sidebar-badge" style="font-size:9.5px;color:#666;background:#e4e4e2;">Companies</span>
+      </div>
+      <div class="sidebar-item-sub">B2B Relationship Building</div>
+      <div class="sidebar-item-sub">CRM Meeting Template</div>
+      <div class="sidebar-item-sub">Potential partnership m… <span style="color:#aaa;font-size:11px">Disney</span></div>
     </div>
 
-  </nav>
-
-  <!-- ── Main content ─────────────────────────────── -->
-  <main class="main-content" id="main">
-    <div class="breadcrumb" aria-label="Breadcrumb navigation">
-      Analytics / Summary Data / All calls
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Records</div>
+      <div class="sidebar-item active">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2.5" fill="#3b5bf5"/></svg>
+        Companies
+      </div>
+      <div class="sidebar-item">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 13c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        People
+      </div>
     </div>
 
-    <div class="page-hdr">
-      <div class="page-hdr-row">
-        <h1 class="page-title">All calls</h1>
-        <button class="pin-btn" aria-label="Pin this view">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-            <path d="M11 2l5 5-5.5 1.5-2 7.5-1-1 1.5-5.5L3.5 8 11 2z" fill="currentColor" stroke="currentColor" stroke-width="0.5" stroke-linejoin="round"/>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Lists</div>
+      <div class="sidebar-item">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 5l2 2 4-4" stroke="#e05252" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 10l2 2 4-4" stroke="#e05252" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 6h2M11 11h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Sales
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-item" style="padding:5px 14px;font-size:12.5px;color:#666;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3l1.5 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Invite teammates
+      </div>
+      <div class="sidebar-item" style="padding:5px 14px;font-size:12.5px;color:#666;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 7v5M8 5.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Help and first steps
+        <span class="sidebar-badge" style="margin-left:auto;background:#dbeafe;color:#1d4ed8;">4/6</span>
+      </div>
+      <div class="trial-bar">
+        <span><strong style="color:#1a1a1a;">14</strong> days left on trial</span>
+        <button class="btn-billing">Add billing</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════════════════════════════════ MAIN ════════════════════════════════ -->
+  <div class="main">
+
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-close">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
+      <div class="topbar-nav">
+        <div class="topbar-nav-btn">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="topbar-nav-btn">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <!-- [09] FIX: Darker color (#595959), larger text, subtle bg pill -->
+      <div class="topbar-context">
+        <span>1 of 1 in Stage</span>
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="#595959" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span style="font-weight:600;">Meeting</span>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-more">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="3.5" cy="8" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="12.5" cy="8" r="1.2" fill="currentColor"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Record Header -->
+    <div class="record-header">
+      <div class="record-avatar">SG</div>
+      <div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="record-name">sweetgreen</span>
+          <svg class="record-star" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2l1.545 3.13 3.455.502-2.5 2.437.59 3.437L8 9.87l-3.09 1.636.59-3.437L3 5.632l3.455-.502L8 2z" stroke="#d0d0cc" stroke-width="1.3" stroke-linejoin="round"/>
           </svg>
+        </div>
+        <div class="record-meta">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="3.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 14c0-2.2 1.8-4 4-4s4 1.8 4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          <span>Alex Smith</span>
+          <span class="record-meta-dot">·</span>
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 6.5h12" stroke="currentColor" stroke-width="1.2"/></svg>
+          <span>Alex Smith · about 3 hours ago</span>
+        </div>
+      </div>
+      <div class="record-actions">
+        <button class="btn-action">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3l1.5 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Add to List
+        </button>
+        <button class="btn-action">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8h7M6 5l4 3-4 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 4v8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Run workflow
+        </button>
+        <button class="btn-action">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 6.5h12M5 3v1M11 3v1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Compose Email
         </button>
       </div>
-      <p class="page-desc">
-        Explore what's happening on your team's Dialpad calls with
-        <a href="#" class="link-p">Dialpad AI</a>.
-        <a href="#" class="link-p">Need help?</a>
-      </p>
-      <p class="data-ts">All data is in US/Pacific &nbsp;·&nbsp; Updated Thu Feb 12, 2:43 AM</p>
     </div>
 
-    <!-- [04] Filter bar — focus ring via :focus-visible -->
-    <div class="filter-bar" role="group" aria-label="Data filters">
-      <button class="filter-pill is-active" aria-pressed="true" aria-label="Filter: This office (active)">
-        This office
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <button class="filter-pill is-active" aria-pressed="true" aria-label="Filter: Past 30 days (active)">
-        Past 30 days
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <button class="filter-pill" aria-pressed="false" aria-label="Filter: Keyword">
-        Keyword
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <button class="filter-pill" aria-pressed="false" aria-label="Filter: Moment">
-        Moment
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <button class="filter-pill is-active" aria-pressed="true" aria-label="Filter: Duration (active)">
-        Duration
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <button class="filter-pill" aria-pressed="false" aria-label="Filter: Internal and external">
-        Internal and external
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        </svg>
-      </button>
-    </div>
+    <!-- Body -->
+    <div class="body-area">
 
-    <!-- Save search bar -->
-    <div class="save-bar" role="region" aria-label="Save this search">
-      <span>Would you like to save this search?</span>
-      <a href="#" class="link-p">Clear</a>
-      <span aria-hidden="true">·</span>
-      <a href="#" class="link-p">Save this search</a>
-      <button class="view-calls-btn">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <path d="M10.5 9c-.6-.3-1.3-.8-1.7-.8s-.7.3-1 .6c-.3.3-.6.6-1 .6-.4 0-1-.5-1.8-1.3-.8-.8-1.3-1.4-1.3-1.8 0-.4.3-.7.6-1 .3-.3.6-.6.6-1 0-.5-.5-1.1-.8-1.7-.4-.6-.8-.8-1.2-.7-.3 0-.6.2-.9.5C2.7 3 2 3.6 2 4.4c0 1.1.6 2.6 1.8 4C5 9.8 6.5 11 7.9 11.4c1.4.5 2.8.7 3.8.7.6 0 1.2-.4 1.5-.7.3-.3.5-.6.5-.9.1-.4-.1-.7-.7-1.4-.1-.1-.3-.1-.5-.1z" fill="currentColor"/>
-        </svg>
-        View calls with these filters
-      </button>
-    </div>
-
-    <!-- [09] Tabs — bolder active state -->
-    <div class="tabs" role="tablist" aria-label="Analytics views">
-      <button class="tab-btn is-active" role="tab" aria-selected="true"  id="tab-calls"    aria-controls="panel-calls">Calls</button>
-      <button class="tab-btn"           role="tab" aria-selected="false" id="tab-moments"  aria-controls="panel-moments">Moments</button>
-      <button class="tab-btn"           role="tab" aria-selected="false" id="tab-duration" aria-controls="panel-duration">Duration</button>
-      <button class="tab-btn"           role="tab" aria-selected="false" id="tab-texts"    aria-controls="panel-texts">Texts</button>
-    </div>
-
-    <!-- ══ TAB PANEL: Calls ══════════════════════════ -->
-    <div class="content-area" role="tabpanel" id="panel-calls" aria-labelledby="tab-calls">
-
-      <!-- ── Call volume chart ── -->
-      <div class="s-card">
-        <div class="s-card-hdr">
-          <h2 class="s-title">Call volume over time</h2>
-          <!-- [10] Export as proper secondary button with icon -->
-          <button class="export-btn" aria-label="Export call volume data as CSV file">
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-              <path d="M6.5 1v6.5M4 5.5L6.5 8.5L9 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M1 9.5V11a1 1 0 001 1h9a1 1 0 001-1V9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-            Export (.csv)
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-              <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            </svg>
-          </button>
+      <!-- ── Activity Panel ── -->
+      <div class="activity-panel">
+        <div class="tab-bar">
+          <div class="tab active">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3l1.5 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+            Activity
+          </div>
+          <div class="tab">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 6.5h12" stroke="currentColor" stroke-width="1.2"/></svg>
+            Emails <span class="tab-count">73</span>
+          </div>
+          <div class="tab">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8h5M3 5h8M3 11h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+            Team <span class="tab-count">1</span>
+          </div>
+          <div class="tab">Notes <span class="tab-count">0</span></div>
+          <div class="tab">Tasks <span class="tab-count">0</span></div>
+          <div class="tab">Files</div>
         </div>
 
-        <!-- [01] SVG chart with data point markers, peak label, tooltip -->
-        <div class="chart-wrap" id="chart-wrap">
-          <!--
-            Plot area:  x: 52→840  (width=788),  y: 30→172  (height=142)
-            16 points:  step = 788/15 = 52.53
-            Y scale:    value 0 → y=172,  value 6 → y=30
-                        y = 172 - val*(142/6) = 172 - val*23.67
-            All values = 0 except index 14 (Feb 10) = 6
+        <div class="activity-feed">
+          <div class="feed-section-label">2024</div>
 
-            X coords (rounded):
-              0=52, 1=105, 2=157, 3=210, 4=262, 5=315, 6=367, 7=420,
-              8=472, 9=525, 10=577, 11=630, 12=682, 13=735, 14=788, 15=840
-          -->
-          <svg id="vol-chart"
-               viewBox="0 0 860 216"
-               xmlns="http://www.w3.org/2000/svg"
-               role="img"
-               aria-label="Line chart: call volume Jan 13 – Feb 12. All days zero except Feb 10 which peaks at 6 calls.">
-            <defs>
-              <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%"   stop-color="#6C47FF" stop-opacity="0.22"/>
-                <stop offset="85%"  stop-color="#6C47FF" stop-opacity="0.04"/>
-                <stop offset="100%" stop-color="#6C47FF" stop-opacity="0"/>
-              </linearGradient>
-            </defs>
-
-            <!-- Y-axis gridlines + labels -->
-            <!-- y=0  → 172 -->
-            <line x1="52" y1="172" x2="840" y2="172" stroke="#e8e8f0" stroke-width="1"/>
-            <!-- y=2  → 124 -->
-            <line x1="52" y1="124" x2="840" y2="124" stroke="#e8e8f0" stroke-width="1" stroke-dasharray="4 4"/>
-            <!-- y=4  → 77 -->
-            <line x1="52" y1="77"  x2="840" y2="77"  stroke="#e8e8f0" stroke-width="1" stroke-dasharray="4 4"/>
-            <!-- y=6  → 30 -->
-            <line x1="52" y1="30"  x2="840" y2="30"  stroke="#e8e8f0" stroke-width="1" stroke-dasharray="4 4"/>
-
-            <!-- Y-axis labels -->
-            <text x="46" y="175" text-anchor="end" font-size="11" fill="#767676">0</text>
-            <text x="46" y="127" text-anchor="end" font-size="11" fill="#767676">2</text>
-            <text x="46" y="80"  text-anchor="end" font-size="11" fill="#767676">4</text>
-            <text x="46" y="33"  text-anchor="end" font-size="11" fill="#767676">6</text>
-
-            <!-- Area fill (all points at y=172 except pt14=Feb10 at y=30) -->
-            <path d="
-              M 52,172
-              L 105,172 L 157,172 L 210,172 L 262,172
-              L 315,172 L 367,172 L 420,172 L 472,172
-              L 525,172 L 577,172 L 630,172 L 682,172
-              L 735,172 L 788,30 L 840,172 Z
-            " fill="url(#areaGrad)"/>
-
-            <!-- Line -->
-            <path d="
-              M 52,172
-              L 105,172 L 157,172 L 210,172 L 262,172
-              L 315,172 L 367,172 L 420,172 L 472,172
-              L 525,172 L 577,172 L 630,172 L 682,172
-              L 735,172 L 788,30 L 840,172
-            " fill="none" stroke="#6C47FF" stroke-width="2" stroke-linejoin="round"/>
-
-            <!-- [01] Data point markers on every data point -->
-            <circle class="data-pt" cx="52"  cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 13" data-val="0"/>
-            <circle class="data-pt" cx="105" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 15" data-val="0"/>
-            <circle class="data-pt" cx="157" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 17" data-val="0"/>
-            <circle class="data-pt" cx="210" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 19" data-val="0"/>
-            <circle class="data-pt" cx="262" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 21" data-val="0"/>
-            <circle class="data-pt" cx="315" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 23" data-val="0"/>
-            <circle class="data-pt" cx="367" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 25" data-val="0"/>
-            <circle class="data-pt" cx="420" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 27" data-val="0"/>
-            <circle class="data-pt" cx="472" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 29" data-val="0"/>
-            <circle class="data-pt" cx="525" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 31" data-val="0"/>
-            <circle class="data-pt" cx="577" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Feb 2"  data-val="0"/>
-            <circle class="data-pt" cx="630" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Feb 4"  data-val="0"/>
-            <circle class="data-pt" cx="682" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Feb 6"  data-val="0"/>
-            <circle class="data-pt" cx="735" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Feb 8"  data-val="0"/>
-            <!-- [01] Peak: larger marker + direct value label -->
-            <circle class="data-pt" cx="788" cy="30"  r="6"   fill="#6C47FF" stroke="white" stroke-width="2.5" data-date="Feb 10" data-val="6"/>
-            <text x="788" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#6C47FF">6</text>
-            <circle class="data-pt" cx="840" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Feb 12" data-val="0"/>
-
-            <!-- X-axis tick labels -->
-            <text x="52"  y="193" text-anchor="middle" font-size="10" fill="#767676">13</text>
-            <text x="157" y="193" text-anchor="middle" font-size="10" fill="#767676">17</text>
-            <text x="262" y="193" text-anchor="middle" font-size="10" fill="#767676">21</text>
-            <text x="367" y="193" text-anchor="middle" font-size="10" fill="#767676">25</text>
-            <text x="472" y="193" text-anchor="middle" font-size="10" fill="#767676">29</text>
-            <!-- Jan label -->
-            <text x="262" y="208" text-anchor="middle" font-size="10" font-weight="600" fill="#595959">Jan</text>
-            <text x="577" y="193" text-anchor="middle" font-size="10" fill="#767676">2</text>
-            <text x="682" y="193" text-anchor="middle" font-size="10" fill="#767676">6</text>
-            <text x="788" y="193" text-anchor="middle" font-size="10" fill="#767676">10</text>
-            <text x="840" y="193" text-anchor="middle" font-size="10" fill="#767676">12</text>
-            <!-- Feb label -->
-            <text x="710" y="208" text-anchor="middle" font-size="10" font-weight="600" fill="#595959">Feb</text>
-          </svg>
-          <!-- Tooltip element -->
-          <div id="chart-tip" role="tooltip" aria-live="polite"></div>
-        </div>
-      </div>
-
-      <!-- ── Call count breakdown ── -->
-      <div class="s-card">
-        <div class="s-card-hdr">
-          <h2 class="s-title">Call count breakdown</h2>
-        </div>
-
-        <!-- [05] Legend with DISTINCT SHAPES (not color-only) -->
-        <div class="legend" aria-label="Legend">
-          <div class="legend-item">
-            <!-- circle = Total calls -->
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="#6C47FF"/></svg>
-            <span>Total calls</span>
+          <!-- This week -->
+          <div class="feed-period-row">
+            <span class="feed-period-label">This week</span>
+            <div class="feed-period-collapse">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
           </div>
-          <div class="legend-item">
-            <!-- square = Answered -->
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="1.5" y="1.5" width="11" height="11" rx="1.5" fill="#22c55e"/></svg>
-            <span>Answered calls</span>
-          </div>
-          <div class="legend-item">
-            <!-- triangle = Missed -->
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><polygon points="7,1.5 13,12.5 1,12.5" fill="#ef4444"/></svg>
-            <span>Missed calls</span>
-          </div>
-          <div class="legend-item">
-            <!-- diamond = Unanswered transferred -->
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><polygon points="7,1 13,7 7,13 1,7" fill="#f59e0b"/></svg>
-            <span>Unanswered transferred calls</span>
-          </div>
-          <div class="legend-item">
-            <!-- cross = Outbound connected -->
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-              <line x1="2" y1="2" x2="12" y2="12" stroke="#3b82f6" stroke-width="2.8" stroke-linecap="round"/>
-              <line x1="12" y1="2" x2="2"  y2="12" stroke="#3b82f6" stroke-width="2.8" stroke-linecap="round"/>
-            </svg>
-            <span>Outbound (connected)</span>
-          </div>
-        </div>
 
-        <!-- [02][03][06] Restructured breakdown — progressive disclosure -->
-        <div class="bd-body">
-          <div class="bd-root">
-
-            <!-- Summary card — circle marker = Total calls -->
-            <div class="bd-summary" aria-label="Total call summary">
-              <div class="bd-big-num">6</div>
-              <div class="bd-big-lbl">
-                <!-- [05] circle marker matches legend -->
-                <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-right:4px;flex-shrink:0"><circle cx="5" cy="5" r="4.5" fill="#6C47FF"/></svg>
-                Total calls
+          <!-- Entry 1: Alex Smith changed Stage and 7 other attributes -->
+          <div class="activity-entry">
+            <div class="activity-icon-col">
+              <div class="activity-avatar-sm">AS</div>
+            </div>
+            <div class="activity-body">
+              <div class="activity-headline">
+                <span class="activity-actor">Alex Smith</span>
+                <span style="color:#555;">changed Stage and 7 other attributes in</span>
+                <span class="activity-list-tag">
+                  <!-- pin icon -->
+                  <svg width="10" height="10" viewBox="0 0 16 16" fill="#e05252"><path d="M8 2a4 4 0 014 4c0 2.5-4 8-4 8S4 8.5 4 6a4 4 0 014-4z" fill="#e05252"/><circle cx="8" cy="6" r="1.5" fill="white"/></svg>
+                  Sales
+                </span>
+                <span class="activity-time">3 minutes ago</span>
               </div>
-              <div class="bd-handled">
-                <span class="bd-handled-val">5</span> (83.3%) Handled
+
+              <!-- [05] FIX: Show only 3 key changes by default, rest collapsible -->
+              <div class="change-log" id="changeLog">
+                <!-- Visible by default: Stage, Priority, Owner (most important 3) -->
+
+                <!-- [01] FIX: Stage change row with shape + color + text -->
+                <!-- [08] FIX: Use "Set to" for initial/new value vs "→" for changes -->
+                <div class="change-row">
+                  <div class="change-icon">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                  </div>
+                  <div class="change-field">Stage</div>
+                  <div class="change-value">
+                    <span class="stage-badge prospecting">
+                      <span class="stage-shape circle"></span>
+                      Prospecting
+                    </span>
+                    <span class="change-arrow">→</span>
+                    <span class="stage-badge meeting">
+                      <span class="stage-shape diamond"></span>
+                      Meeting
+                    </span>
+                  </div>
+                </div>
+
+                <!-- [03] FIX: Medium priority with accessible contrast -->
+                <div class="change-row">
+                  <div class="change-icon">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2v7M8 13v.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                  </div>
+                  <div class="change-field">Priority</div>
+                  <div class="change-value" style="color:#888;font-weight:400;">
+                    <span style="color:#aaa;font-style:italic;">not set</span>
+                    <span class="change-arrow">→</span>
+                    <!-- [03] FIX: dark amber text (#7a4800) on pale yellow, ≥4.5:1 contrast -->
+                    <span class="priority-badge medium">
+                      <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><path d="M5 1v4M5 7.5v.5" stroke="#7a4800" stroke-width="1.5" stroke-linecap="round"/></svg>
+                      Medium
+                    </span>
+                  </div>
+                </div>
+
+                <div class="change-row">
+                  <div class="change-icon">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M3 13c0-2.2 1.8-4 5-4s5 1.8 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                  </div>
+                  <div class="change-field">Owner</div>
+                  <div class="change-value">
+                    <span style="color:#aaa;font-style:italic;">not set</span>
+                    <span class="change-arrow">→</span>
+                    <span class="person-chip">
+                      <span class="person-dot">AS</span>
+                      Alex Smith
+                    </span>
+                  </div>
+                </div>
+
+                <!-- [05] Hidden extra changes (5 more) -->
+                <div class="change-extra" id="extraChanges">
+                  <div class="change-row">
+                    <div class="change-icon">
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l1.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                    </div>
+                    <div class="change-field">Estimated value</div>
+                    <div class="change-value">
+                      <span style="color:#aaa;font-style:italic;">not set</span>
+                      <span class="change-arrow">→</span>
+                      <span style="color:#1a5c1a;font-weight:600;">$50,000.00</span>
+                    </div>
+                  </div>
+
+                  <div class="change-row">
+                    <div class="change-icon">
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M3 13c0-2.2 1.8-4 5-4s5 1.8 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    </div>
+                    <div class="change-field">Main point of contact</div>
+                    <div class="change-value">
+                      <span style="color:#aaa;font-style:italic;">not set</span>
+                      <span class="change-arrow">→</span>
+                      <span class="person-chip">
+                        <span class="person-dot" style="background:#4a7c59;">sg</span>
+                        sweetgreen
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="change-row">
+                    <div class="change-icon">
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 6.5h12M5 3v1M11 3v1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                    </div>
+                    <div class="change-field">Projected close date</div>
+                    <div class="change-value">
+                      <span style="color:#aaa;font-style:italic;">not set</span>
+                      <span class="change-arrow">→</span>
+                      <strong>Sep 29th 2024</strong>
+                    </div>
+                  </div>
+
+                  <!-- [04] FIX: Star rating with aria-label + visible text + outline vs filled stars -->
+                  <div class="change-row">
+                    <div class="change-icon">
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.2 2.5 2.8.4-2 2 .5 2.8L8 8.3l-2.5 1.4.5-2.8-2-2 2.8-.4z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>
+                    </div>
+                    <div class="change-field">Close confidence</div>
+                    <div class="change-value">
+                      <span style="color:#aaa;font-style:italic;">not set</span>
+                      <span class="change-arrow">→</span>
+                      <span class="star-rating" role="img" aria-label="Close confidence: 3 out of 5 stars">
+                        <span class="stars">
+                          <!-- Filled stars (1-3) -->
+                          <span class="star">
+                            <svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 2l1.2 2.4 2.8.4-2 1.95.47 2.76L8 8.25 5.53 9.55 6 6.79l-2-1.95 2.8-.4z" fill="#f5a623" stroke="#d48a10" stroke-width="0.5" stroke-linejoin="round"/></svg>
+                          </span>
+                          <span class="star">
+                            <svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 2l1.2 2.4 2.8.4-2 1.95.47 2.76L8 8.25 5.53 9.55 6 6.79l-2-1.95 2.8-.4z" fill="#f5a623" stroke="#d48a10" stroke-width="0.5" stroke-linejoin="round"/></svg>
+                          </span>
+                          <span class="star">
+                            <svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 2l1.2 2.4 2.8.4-2 1.95.47 2.76L8 8.25 5.53 9.55 6 6.79l-2-1.95 2.8-.4z" fill="#f5a623" stroke="#d48a10" stroke-width="0.5" stroke-linejoin="round"/></svg>
+                          </span>
+                          <!-- Empty stars (4-5): outlined only -->
+                          <span class="star">
+                            <svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 2l1.2 2.4 2.8.4-2 1.95.47 2.76L8 8.25 5.53 9.55 6 6.79l-2-1.95 2.8-.4z" fill="none" stroke="#ccc" stroke-width="1.1" stroke-linejoin="round"/></svg>
+                          </span>
+                          <span class="star">
+                            <svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 2l1.2 2.4 2.8.4-2 1.95.47 2.76L8 8.25 5.53 9.55 6 6.79l-2-1.95 2.8-.4z" fill="none" stroke="#ccc" stroke-width="1.1" stroke-linejoin="round"/></svg>
+                          </span>
+                        </span>
+                        <!-- Visible numeric label -->
+                        <span class="star-label">3 / 5</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- [08] FIX: Last Stage row is "Set to" (initial set), not a transition -->
+                  <div class="change-row">
+                    <div class="change-icon">
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/></svg>
+                    </div>
+                    <div class="change-field">Stage (initial set)</div>
+                    <div class="change-value">
+                      <span style="color:#888;font-size:11.5px;font-weight:400;font-style:italic;background:#f4f4f2;border:1px solid #e4e4e2;padding:1px 5px;border-radius:3px;">Created</span>
+                      <span class="change-arrow">→</span>
+                      <span class="stage-badge prospecting">
+                        <span class="stage-shape circle"></span>
+                        Prospecting
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- [05] Show 5 more / hide toggle -->
+                <div class="change-show-more" id="showMoreBtn" onclick="toggleExtraChanges()">
+                  <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="3.5" cy="8" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="12.5" cy="8" r="1.2" fill="currentColor"/></svg>
+                  Show 5 more changes
+                </div>
+              </div>
+
+              <button class="hide-changes-btn" id="hideChangesBtn" onclick="toggleAllChanges()" style="display:none;">
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 10l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Hide all changes
+              </button>
+              <button class="hide-changes-btn" id="showAllBtn" onclick="toggleAllChanges()">
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Show all changes
+              </button>
+            </div>
+          </div>
+
+          <!-- Entry 2 -->
+          <div class="activity-entry" style="margin-top:12px;">
+            <div class="activity-icon-col">
+              <div class="activity-avatar-sm">SG</div>
+            </div>
+            <div class="activity-body">
+              <div class="activity-headline">
+                <span class="activity-actor">sweetgreen</span>
+                <span style="color:#555;">was added to</span>
+                <span class="activity-list-tag">
+                  <svg width="10" height="10" viewBox="0 0 16 16" fill="#e05252"><path d="M8 2a4 4 0 014 4c0 2.5-4 8-4 8S4 8.5 4 6a4 4 0 014-4z" fill="#e05252"/><circle cx="8" cy="6" r="1.5" fill="white"/></svg>
+                  Sales
+                </span>
+                <span class="activity-time">8 minutes ago</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Entry 3 -->
+          <div class="activity-entry" style="margin-top:8px;">
+            <div class="activity-icon-col">
+              <div class="activity-icon-badge">
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3l1.5 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              </div>
+            </div>
+            <div class="activity-body">
+              <div class="activity-headline">
+                <span style="color:#555;font-weight:500;">sweetgreen.com</span>
+                <span style="color:#555;">was added to Domains</span>
+                <span class="activity-time">about 4 hours ago</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Entry 4 -->
+          <div class="activity-entry" style="margin-top:8px;">
+            <div class="activity-icon-col">
+              <div class="activity-avatar-sm">SG</div>
+            </div>
+            <div class="activity-body">
+              <div class="activity-headline">
+                <span class="activity-actor">sweetgreen</span>
+                <span style="color:#555;">was created</span>
+                <span class="activity-time">about 4 hours ago</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- June section -->
+          <div class="feed-period-row" style="margin-top:20px;">
+            <span class="feed-period-label">June</span>
+            <div class="feed-period-collapse">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+          <div class="activity-entry">
+            <div class="activity-icon-col">
+              <div class="activity-avatar-sm">AS</div>
+            </div>
+            <div class="activity-body">
+              <div class="activity-headline">
+                <span class="activity-actor">Alex Smith</span>
+                <span style="color:#555;">first contacted sweetgreen</span>
+                <span class="activity-time">2 months ago</span>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /activity-feed -->
+      </div><!-- /activity-panel -->
+
+      <!-- ── Right Panel ── -->
+      <div class="right-panel">
+        <div class="right-panel-tabs">
+          <div class="right-panel-tab active">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            Details
+          </div>
+          <div class="right-panel-tab">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 12V4a1 1 0 011-1h10a1 1 0 011 1v8l-3-2H3a1 1 0 01-1-1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+            Comments <span style="color:#aaa;font-size:11px;font-weight:400;">0</span>
+          </div>
+        </div>
+
+        <div class="right-panel-body">
+
+          <!-- Record Details -->
+          <div class="section-header">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4 6l4-4 4 4" stroke="#aaa" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="section-title">Record Details</span>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 8.5a3 3 0 006 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              Domains
+            </div>
+            <div class="detail-value">
+              <a href="#" class="detail-link">sweetgreen.com</a>
+            </div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/></svg>
+              Name
+            </div>
+            <div class="detail-value" style="font-weight:500;">sweetgreen</div>
+          </div>
+
+          <!-- [07] FIX: Truncated description with "Show more" button -->
+          <div class="detail-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
+            <div class="detail-label" style="min-width:unset;">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 7h7M3 10h9M3 13h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              Description
+            </div>
+            <div id="descText" class="desc-text collapsed" style="font-size:12.5px;color:#444;line-height:1.55;">
+              sweetgreen offers simple, seasonal, and healthy fast-casual food options, primarily salads and grain bowls, made with locally sourced, high-quality ingredients. The company is known for its commitment to sustainability, transparency, and building a community around healthy eating.
+            </div>
+            <button class="desc-show-more" id="descToggle" onclick="toggleDesc()">Show more</button>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 13V5l4-3 4 3v8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><rect x="6" y="8" width="2" height="3" rx="0.4" stroke="currentColor" stroke-width="1.1"/><rect x="8" y="8" width="2" height="3" rx="0.4" stroke="currentColor" stroke-width="1.1"/></svg>
+              Team
+            </div>
+            <div class="detail-value">
+              <span class="person-chip">
+                <span class="person-dot" style="background:#4a7c59;">sg</span>
+                sweetgreen
+              </span>
+            </div>
+          </div>
+
+          <!-- [02] FIX: Category tags with outlined style + dark text for WCAG AA contrast -->
+          <div class="detail-row" style="align-items:flex-start;">
+            <div class="detail-label" style="padding-top:4px;">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 2h5l7 7-5 5-7-7V2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="5.5" cy="5.5" r="1" fill="currentColor"/></svg>
+              Categories
+            </div>
+            <div class="detail-value" style="display:flex;flex-wrap:wrap;gap:3px;padding-top:3px;">
+              <span class="tag retail">
+                <svg width="6" height="6" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3" fill="#1a5c1a"/></svg>
+                Retail
+              </span>
+              <span class="tag food">
+                <svg width="6" height="6" viewBox="0 0 8 8"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="#7a3800"/></svg>
+                Food
+              </span>
+              <span class="tag rest">
+                <svg width="6" height="6" viewBox="0 0 8 8"><polygon points="4,1 7,7 1,7" fill="#1a4d4d"/></svg>
+                Restaurants
+              </span>
+              <span class="tag b2c">
+                <svg width="6" height="6" viewBox="0 0 8 8"><path d="M4 1l2 3H2z" fill="#1a2a8a"/></svg>
+                B2C
+              </span>
+              <span class="tag more">+2</span>
+            </div>
+          </div>
+
+          <!-- [10] FIX: "Show all record details" (was generic "Show all values") -->
+          <div class="show-all-link">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="#5b73e8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Show all record details
+          </div>
+
+          <!-- Lists Section -->
+          <div class="lists-section">
+            <div class="lists-header">
+              <span class="lists-title" style="display:flex;align-items:center;gap:5px;">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 6h6M5 9h4M5 12h2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+                Lists
+              </span>
+              <div class="btn-add-list">
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                Add to list
               </div>
             </div>
 
-            <!-- Branch columns -->
-            <div class="bd-cols">
-
-              <!-- Inbound: 0 — de-emphasized, zeros collapsed [06] -->
-              <div class="branch-card is-zero" aria-label="Inbound calls — all zero">
-                <div class="branch-hdr">
-                  <div>
-                    <div class="branch-num is-zero">0</div>
-                    <div class="branch-lbl">Inbound calls</div>
-                  </div>
-                  <span class="branch-pct is-zero">0%</span>
+            <!-- Sales List Card -->
+            <div class="list-card">
+              <div class="list-card-header">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="#e05252"><path d="M8 2a4 4 0 014 4c0 2.5-4 8-4 8S4 8.5 4 6a4 4 0 014-4z"/><circle cx="8" cy="6" r="1.5" fill="white"/></svg>
+                <span class="list-card-name">Sales</span>
+                <span class="list-card-meta">· Created 10 minutes ago</span>
+                <!-- [06] FIX: Larger touch targets (32×32px minimum) -->
+                <div class="icon-btn" role="button" aria-label="Refresh Sales list" title="Refresh">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2.5 8a5.5 5.5 0 0110.5-2.2M13.5 8a5.5 5.5 0 01-10.5 2.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11 3l2.5 2.8L11 8.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
-                <button class="zero-toggle"
-                        onclick="toggleZeros('inbound-z', this)"
-                        aria-expanded="false"
-                        aria-controls="inbound-z">
-                  <svg class="toggle-icon" width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-                    <path d="M2 4L5.5 7.5L9 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                  </svg>
-                  Show 8 sub-metrics (all zero)
-                </button>
-                <div id="inbound-z" class="zero-section" aria-hidden="true">
-                  <div class="sub-list">
-                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">New calls</span><span class="sub-pct">0%</span></div>
-                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Transfer from Other User or Group</span></div>
-                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Transfer from Same Group</span></div>
-                    <!-- square = Answered -->
-                    <div class="sub-row">
-                      <span class="sub-val is-zero">0</span>
-                      <span class="sub-lbl">
-                        <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-right:3px;flex-shrink:0"><rect x="0.5" y="0.5" width="8" height="8" rx="1" fill="#22c55e"/></svg>
-                        Answered
-                      </span>
-                    </div>
-                    <!-- no marker — Unanswered is a parent bucket, not a legend category itself -->
-                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Unanswered</span></div>
-                    <!-- triangle = Missed -->
-                    <div class="sub-row">
-                      <span class="sub-val is-zero">0</span>
-                      <span class="sub-lbl">
-                        <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-right:3px;flex-shrink:0"><polygon points="4.5,0.5 8.5,8.5 0.5,8.5" fill="#ef4444"/></svg>
-                        Missed
-                      </span>
-                    </div>
-                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Abandoned</span></div>
-                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Callbacks requested</span></div>
-                  </div>
+                <div class="icon-btn" role="button" aria-label="More options for Sales list" title="More options">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="3.5" cy="8" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="12.5" cy="8" r="1.2" fill="currentColor"/></svg>
                 </div>
               </div>
 
-              <!-- Outbound: 6 — highlighted, non-zeros prominent [06] -->
-              <div class="branch-card" aria-label="Outbound calls breakdown">
-                <div class="branch-hdr">
-                  <div>
-                    <div class="branch-num">6</div>
-                    <div class="branch-lbl">Outbound calls</div>
+              <div class="list-card-body">
+                <!-- [01] FIX: Stage in list card also uses shape + color + text -->
+                <div class="list-detail-row">
+                  <div class="list-detail-label">
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/></svg>
+                    Stage
                   </div>
-                  <span class="branch-pct">100%</span>
-                </div>
-                <div class="sub-list">
-                  <div class="sub-row">
-                    <span class="sub-val">6</span>
-                    <span class="sub-lbl">User initiated</span>
-                    <span class="sub-pct">100%</span>
-                  </div>
-                  <!-- cross = Outbound (connected) -->
-                  <div class="sub-row">
-                    <span class="sub-val">5</span>
-                    <span class="sub-lbl">
-                      <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-right:3px;flex-shrink:0">
-                        <line x1="1" y1="1" x2="8" y2="8" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
-                        <line x1="8" y1="1" x2="1" y2="8" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
-                      </svg>
-                      Connected
+                  <div class="list-detail-value">
+                    <span class="stage-badge meeting">
+                      <span class="stage-shape diamond"></span>
+                      Meeting
                     </span>
-                    <span class="sub-pct">83.3%</span>
-                  </div>
-                  <div class="sub-row">
-                    <span class="sub-val">1</span>
-                    <span class="sub-lbl">Cancelled</span>
-                    <span class="sub-pct">16.7%</span>
                   </div>
                 </div>
-                <button class="zero-toggle"
-                        onclick="toggleZeros('outbound-z', this)"
-                        aria-expanded="false"
-                        aria-controls="outbound-z">
-                  <svg class="toggle-icon" width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-                    <path d="M2 4L5.5 7.5L9 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                  </svg>
-                  Show 6 zero-value metrics
-                </button>
-                <div id="outbound-z" class="zero-section" aria-hidden="true">
-                  <div class="sub-list">
-                    <!-- triangle = Missed -->
-                    <div class="sub-row">
-                      <span class="sub-val is-zero">0</span>
-                      <span class="sub-lbl">
-                        <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-right:3px;flex-shrink:0"><polygon points="4.5,0.5 8.5,8.5 0.5,8.5" fill="#ef4444"/></svg>
-                        Missed
-                      </span>
-                    </div>
-                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Abandoned</span></div>
-                    <!-- diamond = Unanswered transfer -->
-                    <div class="sub-row">
-                      <span class="sub-val is-zero">0</span>
-                      <span class="sub-lbl">
-                        <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-right:3px;flex-shrink:0"><polygon points="4.5,0 9,4.5 4.5,9 0,4.5" fill="#f59e0b"/></svg>
-                        Unanswered transfer
-                      </span>
-                    </div>
-                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Other voicemail</span></div>
-                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Callback attempts</span><span class="sub-pct">0%</span></div>
-                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Successful callbacks</span></div>
-                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Unsuccessful callbacks</span></div>
+
+                <div class="list-detail-row">
+                  <div class="list-detail-label">
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M3 13c0-2.2 1.8-4 5-4s5 1.8 5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                    Main point of co…
+                  </div>
+                  <div class="list-detail-value">
+                    <span class="person-chip">
+                      <span class="person-dot" style="background:#4a7c59;">sg</span>
+                      sweetgreen
+                    </span>
+                  </div>
+                </div>
+
+                <div class="list-detail-row">
+                  <div class="list-detail-label">
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M3 13c0-2.2 1.8-4 5-4s5 1.8 5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                    Owner
+                  </div>
+                  <div class="list-detail-value">
+                    <span class="person-chip">
+                      <span class="person-dot">AS</span>
+                      Alex Smith
+                    </span>
                   </div>
                 </div>
               </div>
 
-            </div><!-- end bd-cols -->
-          </div><!-- end bd-root -->
-        </div>
-      </div>
+              <!-- [10] FIX: "Show all list values" (was generic "Show all values") -->
+              <div class="show-all-list-link">
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="#5b73e8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Show all list values
+                <span style="margin-left:auto;color:#aaa;font-size:11px;">
+                  <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 8h8M10 5l3 3-3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+              </div>
+            </div>
 
-      <!-- Dialpad meetings placeholder -->
-      <div class="s-card">
-        <div class="s-card-hdr">
-          <h2 class="s-title">Dialpad meetings over time</h2>
-          <button class="export-btn" aria-label="Export meetings data as CSV">
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-              <path d="M6.5 1v6.5M4 5.5L6.5 8.5L9 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M1 9.5V11a1 1 0 001 1h9a1 1 0 001-1V9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-            Export (.csv)
-          </button>
-        </div>
-        <div style="height:72px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:13px;">
-          No meeting data for the selected period
-        </div>
-      </div>
+          </div><!-- /lists-section -->
+        </div><!-- /right-panel-body -->
+      </div><!-- /right-panel -->
 
-    </div><!-- /#panel-calls -->
-  </main>
-</div><!-- /.app-body -->
+    </div><!-- /body-area -->
+  </div><!-- /main -->
+</div><!-- /app -->
 
 <script>
-/* ─── [06] Toggle zero-value sections ─────────────── */
-function toggleZeros(id, btn) {
-  var sec  = document.getElementById(id);
-  var icon = btn.querySelector('.toggle-icon');
-  var open = sec.classList.toggle('is-open');
-  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  sec.setAttribute('aria-hidden',   open ? 'false' : 'true');
-  if (icon) icon.classList.toggle('open', open);
+  /* [05] Toggle extra changes */
+  var extraVisible = false;
+  var allHidden = false;
 
-  // Update button text
-  var text = btn.childNodes[btn.childNodes.length - 1];
-  if (text && text.nodeType === 3) {
-    text.textContent = open
-      ? ' Hide zero-value metrics'
-      : (id === 'inbound-z'
-          ? ' Show 8 sub-metrics (all zero)'
-          : ' Show 6 zero-value metrics');
+  function toggleExtraChanges() {
+    var extra = document.getElementById('extraChanges');
+    var btn = document.getElementById('showMoreBtn');
+    extraVisible = !extraVisible;
+    extra.classList.toggle('visible', extraVisible);
+    btn.innerHTML = extraVisible
+      ? '<svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 10l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Show fewer changes'
+      : '<svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="3.5" cy="8" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="12.5" cy="8" r="1.2" fill="currentColor"/></svg> Show 5 more changes';
   }
-}
 
-/* ─── [01] Chart tooltip ───────────────────────────── */
-(function () {
-  var wrap = document.getElementById('chart-wrap');
-  var tip  = document.getElementById('chart-tip');
-  if (!wrap || !tip) return;
+  function toggleAllChanges() {
+    var log = document.getElementById('changeLog');
+    var hideBtn = document.getElementById('hideChangesBtn');
+    var showBtn = document.getElementById('showAllBtn');
+    allHidden = !allHidden;
+    log.style.display = allHidden ? 'none' : '';
+    hideBtn.style.display = allHidden ? 'none' : '';
+    showBtn.style.display = allHidden ? '' : 'none';
+  }
 
-  document.querySelectorAll('.data-pt').forEach(function (pt) {
-    pt.addEventListener('mouseenter', function (e) {
-      var date = this.getAttribute('data-date');
-      var val  = this.getAttribute('data-val');
-      tip.textContent = date + ': ' + val + ' call' + (val === '1' ? '' : 's');
-
-      var svgRect  = document.getElementById('vol-chart').getBoundingClientRect();
-      var wrapRect = wrap.getBoundingClientRect();
-      var ptRect   = this.getBoundingClientRect();
-
-      var cx = ptRect.left + ptRect.width  / 2 - wrapRect.left;
-      var cy = ptRect.top  - wrapRect.top;
-
-      tip.style.left    = cx + 'px';
-      tip.style.top     = cy + 'px';
-      tip.style.display = 'block';
-    });
-    pt.addEventListener('mouseleave', function () {
-      tip.style.display = 'none';
-    });
-    pt.setAttribute('tabindex', '0');
-    pt.setAttribute('role', 'button');
-    pt.addEventListener('focus', function () { this.dispatchEvent(new MouseEvent('mouseenter')); });
-    pt.addEventListener('blur',  function () { this.dispatchEvent(new MouseEvent('mouseleave')); });
-  });
-})();
-
-/* ─── [09] Tab switching ───────────────────────────── */
-document.querySelectorAll('.tab-btn').forEach(function (tab) {
-  tab.addEventListener('click', function () {
-    document.querySelectorAll('.tab-btn').forEach(function (t) {
-      t.classList.remove('is-active');
-      t.setAttribute('aria-selected', 'false');
-    });
-    this.classList.add('is-active');
-    this.setAttribute('aria-selected', 'true');
-  });
-});
+  /* [07] Toggle description expand/collapse */
+  var descExpanded = false;
+  function toggleDesc() {
+    var el = document.getElementById('descText');
+    var btn = document.getElementById('descToggle');
+    descExpanded = !descExpanded;
+    el.classList.toggle('collapsed', !descExpanded);
+    btn.textContent = descExpanded ? 'Show less' : 'Show more';
+  }
 </script>
 </body>
 </html>
