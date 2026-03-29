@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wrangle — Dashboard v2</title>
+<style>
+  /* ── Design tokens ── */
+  :root {
+    --brand-green: #22c55e;
+    --brand-green-light: #dcfce7;
+    --brand-green-dark: #16a34a;
+    --nav-bg: #111827;
+    --nav-text: #d1d5db;
+    --nav-text-active: #ffffff;
+    --nav-hover: #1f2937;
+    --surface: #ffffff;
+    --surface-2: #f9fafb;
+    --border: #e5e7eb;
+    --border-strong: #d1d5db;
+    /* FIX [02]: secondary text meets 4.5:1 contrast — use #595959 min, using #4b5563 */
+    --text-primary: #111827;
+    --text-secondary: #4b5563;   /* contrast ~7:1 on white */
+    --text-muted: #6b7280;       /* contrast ~4.6:1 on white — passes AA */
+    --accent-blue: #3b82f6;
+    --accent-orange: #f59e0b;
+    --accent-red: #ef4444;
+    --focus-ring: #2563eb;       /* FIX [04]: focus ring color */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  /* ── FIX [04]: Global focus-visible ring ── */
+  *:focus { outline: none; }
+  *:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f3f4f6;
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ══════════════════════════════════════════
+     FIX [08]: Trial banner moved to top — dismissible
+     ══════════════════════════════════════════ */
+  #trial-banner {
+    background: #f0fdf4;
+    border-bottom: 1px solid #bbf7d0;
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #15803d;
+    position: relative;
+  }
+  #trial-banner .trial-icon {
+    width: 16px; height: 16px; flex-shrink: 0;
+  }
+  #trial-banner .trial-text { flex: 1; }
+  #trial-banner .trial-text strong { font-weight: 600; }
+  #trial-banner .trial-progress-wrap {
+    display: flex; align-items: center; gap: 8px;
+  }
+  #trial-banner .trial-bar-bg {
+    width: 80px; height: 6px; background: #bbf7d0; border-radius: 99px; overflow: hidden;
+  }
+  #trial-banner .trial-bar-fill {
+    width: 28%; height: 100%; background: var(--brand-green); border-radius: 99px;
+  }
+  #trial-banner .trial-days { font-size: 12px; white-space: nowrap; }
+  #trial-banner .dismiss-btn {
+    background: none; border: none; cursor: pointer;
+    color: #15803d; padding: 4px; border-radius: 4px; line-height: 1;
+    opacity: 0.7;
+  }
+  #trial-banner .dismiss-btn:hover { opacity: 1; background: #dcfce7; }
+  #trial-banner.hidden { display: none; }
+
+  /* ── App shell ── */
+  .app-shell {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 224px;
+    background: var(--nav-bg);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+
+  .sidebar-header {
+    padding: 16px 14px 12px;
+    border-bottom: 1px solid #1f2937;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 600; color: #fff; font-size: 14px; text-decoration: none;
+  }
+  .brand-logo {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--brand-green); display: flex; align-items: center; justify-content: center;
+  }
+  .collapse-btn {
+    background: none; border: none; cursor: pointer; color: #6b7280;
+    padding: 4px; border-radius: 4px;
+  }
+  .collapse-btn:hover { color: #9ca3af; background: #1f2937; }
+
+  .sidebar-search {
+    padding: 10px 14px;
+    border-bottom: 1px solid #1f2937;
+  }
+  .sidebar-search-inner {
+    display: flex; align-items: center; gap: 6px;
+    background: #1f2937; border: 1px solid #374151; border-radius: var(--radius-sm);
+    padding: 5px 10px; cursor: pointer; width: 100%;
+  }
+  .sidebar-search-inner:hover { border-color: #4b5563; }
+  .sidebar-search-inner span { color: #9ca3af; font-size: 13px; flex: 1; }
+  .sidebar-search-inner .kbd { color: #6b7280; font-size: 11px; }
+
+  .nav-section { padding: 8px 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px; color: var(--nav-text); text-decoration: none;
+    font-size: 13.5px; border-radius: 0; cursor: pointer;
+    border: none; background: none; width: 100%; text-align: left;
+    transition: background 0.15s;
+  }
+  .nav-item:hover { background: var(--nav-hover); color: #fff; }
+  .nav-item.active { background: #1f2937; color: #fff; font-weight: 500; }
+  .nav-item .nav-icon { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.8; }
+  .nav-item.active .nav-icon { opacity: 1; }
+
+  .nav-label {
+    padding: 10px 14px 4px; font-size: 11px; font-weight: 600;
+    color: #6b7280; letter-spacing: 0.06em; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-label button {
+    background: none; border: none; cursor: pointer; color: #6b7280; padding: 2px;
+  }
+  .nav-label button:hover { color: #9ca3af; }
+
+  .nav-sub {
+    padding-left: 14px;
+  }
+  .nav-sub .nav-item { padding-left: 12px; font-size: 13px; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 8px 0 12px;
+    border-top: 1px solid #1f2937;
+  }
+
+  /* ── Main content ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .topbar-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand-green); }
+
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    border: 1px solid transparent; transition: background 0.15s, box-shadow 0.15s;
+    text-decoration: none;
+  }
+  .btn-ghost {
+    background: none; border-color: var(--border); color: var(--text-secondary);
+  }
+  .btn-ghost:hover { background: var(--surface-2); }
+  .btn-primary {
+    background: var(--brand-green); color: #fff; border-color: var(--brand-green-dark);
+  }
+  .btn-primary:hover { background: var(--brand-green-dark); }
+
+  .page-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* ══════════════════════════════════════════
+     FIX [09]: Project cards with nav arrows + peek
+     ══════════════════════════════════════════ */
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+  }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .section-link { font-size: 13px; color: var(--accent-blue); text-decoration: none; }
+  .section-link:hover { text-decoration: underline; }
+
+  .cards-carousel-wrapper { position: relative; }
+  .cards-nav-btn {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 5; transition: background 0.15s;
+  }
+  .cards-nav-btn:hover { background: var(--surface-2); }
+  .cards-nav-btn.prev { left: -12px; }
+  .cards-nav-btn.next { right: -12px; }
+  .cards-nav-btn svg { width: 14px; height: 14px; color: var(--text-secondary); }
+  .cards-nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+  .cards-scroll {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    padding: 4px 2px;
+    /* FIX [09]: fade-out peek on right edge */
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  }
+  .cards-scroll::-webkit-scrollbar { display: none; }
+
+  /* Project card */
+  .proj-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    min-width: 260px;
+    max-width: 260px;
+    display: flex; flex-direction: column; gap: 10px;
+    cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    position: relative;
+  }
+  .proj-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-strong);
+  }
+
+  .proj-card-header {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+  }
+  .proj-card-title-wrap { display: flex; align-items: center; gap: 6px; }
+  .proj-card-icon { width: 20px; height: 20px; flex-shrink: 0; }
+  .proj-card-title { font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+  .proj-type-badge {
+    font-size: 11px; font-weight: 500; padding: 2px 7px;
+    border-radius: 99px; background: #f3f4f6; color: var(--text-muted);
+    white-space: nowrap; flex-shrink: 0;
+  }
+
+  /* FIX [03]: description wraps to 2 lines + tooltip */
+  .proj-desc {
+    font-size: 12.5px; color: var(--text-secondary);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; line-height: 1.45;
+    position: relative; cursor: help;
+  }
+  .proj-desc[title]:hover::after {
+    content: attr(title);
+    position: absolute; bottom: calc(100% + 6px); left: 0; right: 0;
+    background: #1f2937; color: #fff; font-size: 12px; line-height: 1.4;
+    padding: 8px 10px; border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md); z-index: 20; white-space: normal;
+    pointer-events: none;
+  }
+
+  /* FIX [01]: Status badge with icon — not color alone */
+  .proj-status-row { display: flex; align-items: center; gap: 6px; }
+  .proj-status-label { font-size: 12px; color: var(--text-muted); }
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 99px;
+    font-size: 12px; font-weight: 600;
+  }
+  .status-badge.active {
+    background: #dcfce7; color: #15803d;
+    border: 1px solid #86efac;
+  }
+  .status-badge.active .badge-icon { width: 11px; height: 11px; }
+
+  .proj-meta { display: flex; flex-direction: column; gap: 4px; }
+  /* FIX [10]: consistent metadata row */
+  .proj-meta-row { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-secondary); }
+  .proj-meta-row svg { width: 13px; height: 13px; flex-shrink: 0; color: var(--text-muted); }
+  .proj-creator { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-secondary); }
+  .proj-creator svg { width: 13px; height: 13px; color: var(--text-muted); }
+
+  /* ══════════════════════════════════════════
+     FIX [07]: Metric cards with trends + CTA
+     ══════════════════════════════════════════ */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .metric-card-header {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .metric-icon-wrap {
+    width: 32px; height: 32px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .metric-icon-wrap.green { background: #dcfce7; }
+  .metric-icon-wrap.blue  { background: #dbeafe; }
+  .metric-icon-wrap.purple{ background: #ede9fe; }
+  .metric-icon-wrap.red   { background: #fee2e2; }
+  .metric-icon-wrap svg { width: 16px; height: 16px; }
+  .metric-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+
+  .metric-value-row { display: flex; align-items: baseline; gap: 8px; }
+  .metric-value { font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+  .metric-sub { font-size: 12px; color: var(--text-muted); }
+
+  /* trend badges */
+  .metric-trend {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 99px;
+  }
+  .metric-trend.up { background: #dcfce7; color: #15803d; }
+  .metric-trend.neutral { background: #f3f4f6; color: var(--text-muted); }
+  .metric-trend svg { width: 10px; height: 10px; }
+
+  /* CTA for 0 outreach */
+  .metric-cta {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; color: var(--accent-blue); text-decoration: none;
+    cursor: pointer; border: none; background: none; padding: 0;
+    font-family: inherit;
+  }
+  .metric-cta:hover { text-decoration: underline; }
+  .metric-cta svg { width: 12px; height: 12px; }
+
+  /* ── Lower section: candidates + chart side by side ── */
+  .lower-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    min-height: 0;
+  }
+
+  /* ══════════════════════════════════════════
+     FIX [06]: Candidate list with hover states
+     ══════════════════════════════════════════ */
+  .candidates-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .panel-header {
+    padding: 14px 16px 10px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+
+  .candidate-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px; cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none; color: inherit;
+    transition: background 0.12s;
+    position: relative;
+  }
+  .candidate-row:last-child { border-bottom: none; }
+  .candidate-row:hover {
+    background: #f0fdf4;
+  }
+  /* FIX [06]: "View profile" affordance revealed on hover */
+  .candidate-row .view-profile {
+    margin-left: auto; font-size: 12px; font-weight: 500;
+    color: var(--brand-green-dark); opacity: 0; transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  .candidate-row:hover .view-profile { opacity: 1; }
+  .candidate-row .chevron { color: var(--text-muted); flex-shrink: 0; }
+
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0;
+    overflow: hidden;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .avatar.green  { background: #16a34a; }
+  .avatar.blue   { background: #2563eb; }
+  .avatar.slate  { background: #475569; }
+  .avatar.purple { background: #7c3aed; }
+  .avatar.amber  { background: #d97706; }
+  .avatar.teal   { background: #0d9488; }
+  .avatar.rose   { background: #e11d48; }
+  .avatar.indigo { background: #4338ca; }
+
+  .candidate-info { flex: 1; min-width: 0; }
+  .candidate-name { font-size: 13.5px; font-weight: 500; color: var(--text-primary); }
+  .candidate-meta { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+  .candidate-meta svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+  /* ══════════════════════════════════════════
+     FIX [05]: Bar chart with y-axis, tooltips, aria table
+     ══════════════════════════════════════════ */
+  .chart-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .chart-header {
+    padding: 14px 16px 10px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; justify-content: space-between;
+  }
+  .chart-title-wrap { display: flex; align-items: center; gap: 8px; }
+  .chart-stat { font-size: 22px; font-weight: 700; color: var(--text-primary); }
+  .chart-stat-label { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  .chart-toggle { display: flex; gap: 4px; }
+  .toggle-btn {
+    padding: 4px 10px; font-size: 12px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); background: none; cursor: pointer;
+    color: var(--text-muted);
+  }
+  .toggle-btn.active { background: var(--surface-2); color: var(--text-primary); font-weight: 500; }
+
+  .chart-body { padding: 14px 16px; flex: 1; display: flex; flex-direction: column; }
+
+  /* Chart SVG area */
+  .chart-area {
+    display: flex; gap: 8px; flex: 1; min-height: 180px;
+  }
+  .chart-y-axis {
+    display: flex; flex-direction: column; justify-content: space-between;
+    width: 28px; flex-shrink: 0;
+    font-size: 10px; color: var(--text-muted); text-align: right;
+    padding-bottom: 22px; /* align with x-axis labels */
+  }
+  .chart-bars-wrap { flex: 1; display: flex; flex-direction: column; }
+  .chart-bars {
+    flex: 1; display: flex; align-items: flex-end; gap: 4px;
+    border-left: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    padding: 8px 4px 0; position: relative;
+  }
+  /* horizontal grid lines */
+  .chart-bars::before {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--border) 0, var(--border) 1px,
+      transparent 1px, transparent 25%
+    );
+    opacity: 0.5; pointer-events: none;
+  }
+  .bar-col {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: flex-end; gap: 0; height: 100%; cursor: pointer; position: relative;
+  }
+  .bar-fill {
+    width: 100%; background: var(--brand-green);
+    border-radius: 3px 3px 0 0; min-height: 2px;
+    transition: background 0.15s;
+    position: relative;
+  }
+  .bar-col:hover .bar-fill { background: var(--brand-green-dark); }
+  /* tooltip on hover */
+  .bar-col:hover .bar-tooltip { display: block; }
+  .bar-tooltip {
+    display: none; position: absolute; bottom: calc(100% + 4px); left: 50%;
+    transform: translateX(-50%); background: #1f2937; color: #fff;
+    font-size: 11px; padding: 4px 7px; border-radius: 4px;
+    white-space: nowrap; pointer-events: none; z-index: 10;
+  }
+  .bar-tooltip::after {
+    content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    border: 4px solid transparent; border-top-color: #1f2937;
+  }
+  .chart-x-labels { display: flex; gap: 4px; padding: 4px 4px 0; }
+  .chart-x-label { flex: 1; text-align: center; font-size: 10px; color: var(--text-muted); }
+
+  /* visually hidden accessible table */
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     FIX [08]: Trial banner — top position, dismissible
+     ══════════════════════════════════════════ -->
+<div id="trial-banner" role="banner" aria-label="Trial notification">
+  <svg class="trial-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <circle cx="8" cy="8" r="7" fill="#22c55e" opacity=".2"/>
+    <path d="M8 4v4l2.5 2.5" stroke="#15803d" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>
+  <span class="trial-text">
+    <strong>Your Wrangle trial is active.</strong>
+    Enjoy 5 more days of Starter benefits with your free trial.
+  </span>
+  <span class="trial-progress-wrap" aria-label="5 of 14 trial days used">
+    <span class="trial-bar-bg"><span class="trial-bar-fill"></span></span>
+    <span class="trial-days">5 days left</span>
+  </span>
+  <button class="dismiss-btn" onclick="document.getElementById('trial-banner').classList.add('hidden')"
+          aria-label="Dismiss trial notification">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </button>
+</div>
+
+<div class="app-shell">
+
+  <!-- ── Sidebar ── -->
+  <nav class="sidebar" aria-label="Primary navigation">
+    <div class="sidebar-header">
+      <a href="#" class="brand" aria-label="Wrangle home">
+        <div class="brand-logo" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8l3 3 7-7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        Wrangle
+      </a>
+      <button class="collapse-btn" aria-label="Collapse sidebar">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M10 4l-4 4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="sidebar-search">
+      <button class="sidebar-search-inner" aria-label="New search, press Command K">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <circle cx="6" cy="6" r="4.5" stroke="#9ca3af" stroke-width="1.4"/>
+          <path d="M9.5 9.5l2.5 2.5" stroke="#9ca3af" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <span>New search</span>
+        <span class="kbd">⌘K</span>
+      </button>
+    </div>
+
+    <div class="nav-section">
+      <a href="#" class="nav-item" aria-label="Weekly Team Sync — 3 hr 3 min">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="2" y="3" width="12" height="11" rx="2" stroke="#9ca3af" stroke-width="1.3"/>
+          <path d="M5 1v2M11 1v2M2 7h12" stroke="#9ca3af" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Weekly Team Sync
+        <span style="margin-left:auto;font-size:11px;color:#6b7280;">3h 3m</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <a href="#" class="nav-item active" aria-current="page">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="1" y="1" width="6" height="6" rx="1.5" fill="#22c55e"/>
+          <rect x="9" y="1" width="6" height="6" rx="1.5" stroke="#d1d5db" stroke-width="1.3"/>
+          <rect x="1" y="9" width="6" height="6" rx="1.5" stroke="#d1d5db" stroke-width="1.3"/>
+          <rect x="9" y="9" width="6" height="6" rx="1.5" stroke="#d1d5db" stroke-width="1.3"/>
+        </svg>
+        Dashboard
+      </a>
+      <a href="#" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="8" cy="8" r="6" stroke="#9ca3af" stroke-width="1.3"/>
+          <path d="M8 5v3l2 2" stroke="#9ca3af" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Sourcing
+      </a>
+      <a href="#" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M3 4h10M3 8h10M3 12h6" stroke="#9ca3af" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Library
+      </a>
+      <a href="#" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M2 4h12M2 8h8M2 12h10" stroke="#9ca3af" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Outreach
+      </a>
+      <a href="#" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="2" y="2" width="5" height="5" rx="1" stroke="#9ca3af" stroke-width="1.3"/>
+          <rect x="9" y="2" width="5" height="5" rx="1" stroke="#9ca3af" stroke-width="1.3"/>
+          <rect x="2" y="9" width="5" height="5" rx="1" stroke="#9ca3af" stroke-width="1.3"/>
+          <path d="M9 11.5h5M11.5 9v5" stroke="#9ca3af" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Interviews
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">
+        Collections
+        <button aria-label="Add collection">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M7 2v10M2 7h10" stroke="#6b7280" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="nav-sub">
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="1" y="1" width="6" height="6" rx="1" fill="#3b82f6" opacity=".7"/>
+            <rect x="9" y="1" width="6" height="6" rx="1" fill="#3b82f6" opacity=".4"/>
+            <rect x="1" y="9" width="6" height="6" rx="1" fill="#3b82f6" opacity=".4"/>
+            <rect x="9" y="9" width="6" height="6" rx="1" fill="#3b82f6" opacity=".2"/>
+          </svg>
+          Software Engineer
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="1" y="1" width="6" height="6" rx="1" fill="#8b5cf6" opacity=".7"/>
+            <rect x="9" y="1" width="6" height="6" rx="1" fill="#8b5cf6" opacity=".4"/>
+            <rect x="1" y="9" width="6" height="6" rx="1" fill="#8b5cf6" opacity=".4"/>
+            <rect x="9" y="9" width="6" height="6" rx="1" fill="#8b5cf6" opacity=".2"/>
+          </svg>
+          Product Designer
+        </a>
+        <a href="#" class="nav-item" style="color:#9ca3af; font-size:12px; padding-left:12px;">
+          Product Designer Batch 1
+        </a>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <a href="#" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="6" cy="6" r="3" stroke="#9ca3af" stroke-width="1.3"/>
+          <circle cx="10" cy="10" r="3" stroke="#9ca3af" stroke-width="1.3"/>
+          <path d="M8.5 3.5l-1 1M7.5 11.5l1-1" stroke="#9ca3af" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Invite team
+      </a>
+      <a href="#" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M8 2a6 6 0 100 12A6 6 0 008 2z" stroke="#9ca3af" stroke-width="1.3"/>
+          <path d="M8 7v2M8 11v.5" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Knowledge hub
+      </a>
+      <a href="#" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="8" cy="8" r="2" stroke="#9ca3af" stroke-width="1.3"/>
+          <path d="M8 2v1.5M8 12.5V14M2 8h1.5M12.5 8H14M3.93 3.93l1.06 1.06M11.01 11.01l1.06 1.06M3.93 12.07l1.06-1.06M11.01 4.99l1.06-1.06" stroke="#9ca3af" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        Account settings
+      </a>
+    </div>
+  </nav>
+
+  <!-- ── Main area ── -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <span class="status-dot" aria-hidden="true"></span>
+        <h1 class="topbar-title">Dashboard</h1>
+        <span style="font-size:13px; color: var(--text-muted);">Everything up to date</span>
+      </div>
+      <div class="topbar-right">
+        <span style="color: var(--text-muted); font-size:13px;">3,803</span>
+        <button class="btn btn-ghost" aria-label="Notifications">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 2a4 4 0 00-4 4v3l-1.5 2h11L12 9V6a4 4 0 00-4-4z" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M6.5 13a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.3"/>
+          </svg>
+        </button>
+        <button class="btn btn-ghost">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M2 7h7M2 4h5M2 10h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          Give feedback
+        </button>
+        <button class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="5" stroke="#fff" stroke-width="1.3"/>
+            <path d="M7 4.5v5M4.5 7h5" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          Start a search
+        </button>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- ═══ PROJECT CARDS ═══ -->
+      <section aria-labelledby="projects-heading">
+        <div class="section-header">
+          <h2 class="section-title" id="projects-heading">Active Projects</h2>
+          <a href="#" class="section-link">View all</a>
+        </div>
+
+        <!-- FIX [09]: carousel with prev/next buttons -->
+        <div class="cards-carousel-wrapper">
+          <button class="cards-nav-btn prev" id="cards-prev" aria-label="Scroll projects left" onclick="scrollCards(-1)" disabled>
+            <svg viewBox="0 0 14 14" fill="none"><path d="M9 3L5 7l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="cards-scroll" id="cards-scroll" role="list" aria-label="Project cards">
+
+            <!-- Card 1 -->
+            <article class="proj-card" tabindex="0" role="listitem" aria-label="Senior Software Engineer project">
+              <div class="proj-card-header">
+                <div class="proj-card-title-wrap">
+                  <svg class="proj-card-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <rect width="20" height="20" rx="5" fill="#fef9c3"/>
+                    <path d="M6 10l2.5 2.5L14 7" stroke="#ca8a04" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span class="proj-card-title">Senior Software Engineer</span>
+                </div>
+                <span class="proj-type-badge">Sourcing</span>
+              </div>
+              <!-- FIX [03]: 2-line clamp + tooltip -->
+              <p class="proj-desc" title="Looking for a Senior Software Engineer with 5+ years of experience in distributed systems, strong Go or Rust skills, and a proven track record in high-scale environments.">
+                Looking for a Senior Software Engineer with 5+ years of experience in distributed systems, strong Go or Rust skills, and a proven track record in high-scale environments.
+              </p>
+              <div class="proj-status-row">
+                <span class="proj-status-label">Status:</span>
+                <!-- FIX [01]: icon + color + text — not color alone -->
+                <span class="status-badge active" role="status" aria-label="Status: Active">
+                  <svg class="badge-icon" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                    <circle cx="5.5" cy="5.5" r="4.5" fill="#22c55e" stroke="#15803d" stroke-width="1"/>
+                    <path d="M3 5.5l1.8 1.8L8 3.5" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Active
+                </span>
+              </div>
+              <div class="proj-meta">
+                <!-- FIX [10]: consistent metadata -->
+                <div class="proj-meta-row">
+                  <svg viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="5" r="2.5" stroke="#6b7280" stroke-width="1.2"/><path d="M1.5 11c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="#6b7280" stroke-width="1.2" stroke-linecap="round"/></svg>
+                  <span>98 candidates</span>
+                </div>
+                <div class="proj-creator">
+                  <svg viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5" stroke="#6b7280" stroke-width="1.2"/><path d="M4 6.5l1.8 1.8L9 4.5" stroke="#6b7280" stroke-width="1.2" stroke-linecap="round"/></svg>
+                  <span>Created by Alex Smith</span>
+                </div>
+              </div>
+            </article>
+
+            <!-- Card 2 -->
+            <article class="proj-card" tabindex="0" role="listitem" aria-label="Software Engineer collection">
+              <div class="proj-card-header">
+                <div class="proj-card-title-wrap">
+                  <svg class="proj-card-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <rect width="20" height="20" rx="5" fill="#dbeafe"/>
+                    <rect x="4" y="4" width="5" height="5" rx="1" fill="#3b82f6" opacity=".7"/>
+                    <rect x="11" y="4" width="5" height="5" rx="1" fill="#3b82f6" opacity=".4"/>
+                    <rect x="4" y="11" width="5" height="5" rx="1" fill="#3b82f6" opacity=".4"/>
+                    <rect x="11" y="11" width="5" height="5" rx="1" fill="#3b82f6" opacity=".2"/>
+                  </svg>
+                  <span class="proj-card-title">Software Engineer</span>
+                </div>
+                <span class="proj-type-badge">Collection</span>
+              </div>
+              <p class="proj-desc" title="Not shared • 6 minutes ago • 1 attribute. Collection of Software Engineer candidates curated for the engineering team review pipeline.">
+                Not shared • 6 minutes ago • 1 attribute
+              </p>
+              <div class="proj-status-row">
+                <span class="proj-status-label">Status:</span>
+                <span class="status-badge active" role="status" aria-label="Status: Active">
+                  <svg class="badge-icon" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                    <circle cx="5.5" cy="5.5" r="4.5" fill="#22c55e" stroke="#15803d" stroke-width="1"/>
+                    <path d="M3 5.5l1.8 1.8L8 3.5" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Active
+                </span>
+              </div>
+              <div class="proj-meta">
+                <div class="proj-meta-row">
+                  <svg viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="5" r="2.5" stroke="#6b7280" stroke-width="1.2"/><path d="M1.5 11c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="#6b7280" stroke-width="1.2" stroke-linecap="round"/></svg>
+                  <span>0 candidates</span>
+                </div>
+                <div class="proj-creator">
+                  <svg viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5" stroke="#6b7280" stroke-width="1.2"/><path d="M4 6.5l1.8 1.8L9 4.5" stroke="#6b7280" stroke-width="1.2" stroke-linecap="round"/></svg>
+                  <span>Created by Alex Smith</span>
+                </div>
+              </div>
+            </article>
+
+            <!-- Card 3 -->
+            <article class="proj-card" tabindex="0" role="listitem" aria-label="Product Designer sourcing project">
+              <div class="proj-card-header">
+                <div class="proj-card-title-wrap">
+                  <svg class="proj-card-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <rect width="20" height="20" rx="5" fill="#fce7f3"/>
+                    <circle cx="10" cy="10" r="4" stroke="#ec4899" stroke-width="1.5"/>
+                    <circle cx="10" cy="10" r="1.5" fill="#ec4899"/>
+                  </svg>
+                  <span class="proj-card-title">Product Designer</span>
+                </div>
+                <span class="proj-type-badge">Sourcing</span>
+              </div>
+              <p class="proj-desc" title="Product Designer with 3+ years of experience in B2B SaaS design systems, Figma expertise, and a strong portfolio demonstrating end-to-end product design ownership.">
+                Product Designer with 3+ years of experience in B2B SaaS design systems, Figma expertise, and a strong portfolio demonstrating end-to-end product design ownership.
+              </p>
+              <div class="proj-status-row">
+                <span class="proj-status-label">Status:</span>
+                <span class="status-badge active" role="status" aria-label="Status: Active">
+                  <svg class="badge-icon" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                    <circle cx="5.5" cy="5.5" r="4.5" fill="#22c55e" stroke="#15803d" stroke-width="1"/>
+                    <path d="M3 5.5l1.8 1.8L8 3.5" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Active
+                </span>
+              </div>
+              <div class="proj-meta">
+                <div class="proj-meta-row">
+                  <svg viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="5" r="2.5" stroke="#6b7280" stroke-width="1.2"/><path d="M1.5 11c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="#6b7280" stroke-width="1.2" stroke-linecap="round"/></svg>
+                  <span>4 candidates</span>
+                </div>
+                <div class="proj-creator">
+                  <svg viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5" stroke="#6b7280" stroke-width="1.2"/><path d="M4 6.5l1.8 1.8L9 4.5" stroke="#6b7280" stroke-width="1.2" stroke-linecap="round"/></svg>
+                  <span>Created by Alex Smith</span>
+                </div>
+              </div>
+            </article>
+
+            <!-- Card 4 -->
+            <article class="proj-card" tabindex="0" role="listitem" aria-label="Second Product Designer sourcing project">
+              <div class="proj-card-header">
+                <div class="proj-card-title-wrap">
+                  <svg class="proj-card-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <rect width="20" height="20" rx="5" fill="#ede9fe"/>
+                    <rect x="4" y="4" width="5" height="5" rx="1" fill="#7c3aed" opacity=".7"/>
+                    <rect x="11" y="4" width="5" height="5" rx="1" fill="#7c3aed" opacity=".4"/>
+                    <rect x="4" y="11" width="5" height="5" rx="1" fill="#7c3aed" opacity=".4"/>
+                    <rect x="11" y="11" width="5" height="5" rx="1" fill="#7c3aed" opacity=".2"/>
+                  </svg>
+                  <span class="proj-card-title">Product Designer</span>
+                </div>
+                <span class="proj-type-badge">Sourcing</span>
+              </div>
+              <p class="proj-desc" title="Not shared • 1 day ago • 2 attributes. A second Product Designer search targeting senior-level IC candidates with motion and interaction design skills.">
+                Not shared • 1 day ago • 2 attributes
+              </p>
+              <div class="proj-status-row">
+                <span class="proj-status-label">Status:</span>
+                <span class="status-badge active" role="status" aria-label="Status: Active">
+                  <svg class="badge-icon" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                    <circle cx="5.5" cy="5.5" r="4.5" fill="#22c55e" stroke="#15803d" stroke-width="1"/>
+                    <path d="M3 5.5l1.8 1.8L8 3.5" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Active
+                </span>
+              </div>
+              <div class="proj-meta">
+                <div class="proj-meta-row">
+                  <svg viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="5" r="2.5" stroke="#6b7280" stroke-width="1.2"/><path d="M1.5 11c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="#6b7280" stroke-width="1.2" stroke-linecap="round"/></svg>
+                  <span>194 candidates</span>
+                </div>
+                <div class="proj-creator">
+                  <svg viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5" stroke="#6b7280" stroke-width="1.2"/><path d="M4 6.5l1.8 1.8L9 4.5" stroke="#6b7280" stroke-width="1.2" stroke-linecap="round"/></svg>
+                  <span>Created by Alex Smith</span>
+                </div>
+              </div>
+            </article>
+
+          </div><!-- /cards-scroll -->
+          <button class="cards-nav-btn next" id="cards-next" aria-label="Scroll projects right" onclick="scrollCards(1)">
+            <svg viewBox="0 0 14 14" fill="none"><path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- ═══ METRICS ═══ -->
+      <!-- FIX [07]: trends + CTA added -->
+      <section aria-labelledby="metrics-heading">
+        <h2 class="sr-only" id="metrics-heading">Summary metrics</h2>
+        <div class="metrics-grid">
+
+          <div class="metric-card" role="region" aria-label="Total Lists metric">
+            <div class="metric-card-header">
+              <div class="metric-icon-wrap green" aria-hidden="true">
+                <svg viewBox="0 0 16 16" fill="none">
+                  <rect x="2" y="2" width="5" height="5" rx="1" fill="#16a34a" opacity=".8"/>
+                  <rect x="9" y="2" width="5" height="5" rx="1" fill="#16a34a" opacity=".5"/>
+                  <rect x="2" y="9" width="5" height="5" rx="1" fill="#16a34a" opacity=".5"/>
+                  <rect x="9" y="9" width="5" height="5" rx="1" fill="#16a34a" opacity=".3"/>
+                </svg>
+              </div>
+              <span class="metric-name">Total Lists</span>
+            </div>
+            <div class="metric-value-row">
+              <span class="metric-value">3</span>
+              <span class="metric-trend up" aria-label="Up 1 from last month">
+                <svg viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M5 8V2M2 5l3-3 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                +1
+              </span>
+            </div>
+            <span class="metric-sub">Collections added</span>
+          </div>
+
+          <div class="metric-card" role="region" aria-label="Candidates Saved metric">
+            <div class="metric-card-header">
+              <div class="metric-icon-wrap blue" aria-hidden="true">
+                <svg viewBox="0 0 16 16" fill="none">
+                  <circle cx="5" cy="6" r="2.5" fill="#2563eb" opacity=".7"/>
+                  <circle cx="11" cy="6" r="2.5" fill="#2563eb" opacity=".4"/>
+                  <path d="M1 13c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5" stroke="#2563eb" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>
+                  <path d="M9 11.5c.6-.9 1.7-1.5 3-1.5 2 0 3.5 1.5 3.5 3.5" stroke="#2563eb" stroke-width="1.2" stroke-linecap="round" opacity=".4"/>
+                </svg>
+              </div>
+              <span class="metric-name">Candidates Saved</span>
+            </div>
+            <div class="metric-value-row">
+              <span class="metric-value">203</span>
+              <span class="metric-trend up" aria-label="Up 18 percent from last month">
+                <svg viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M5 8V2M2 5l3-3 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                +18%
+              </span>
+            </div>
+            <span class="metric-sub">Candidates in lists</span>
+          </div>
+
+          <div class="metric-card" role="region" aria-label="Total Searches metric">
+            <div class="metric-card-header">
+              <div class="metric-icon-wrap purple" aria-hidden="true">
+                <svg viewBox="0 0 16 16" fill="none">
+                  <circle cx="7" cy="7" r="4.5" stroke="#7c3aed" stroke-width="1.4"/>
+                  <path d="M10.5 10.5l3 3" stroke="#7c3aed" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <span class="metric-name">Total Searches</span>
+            </div>
+            <div class="metric-value-row">
+              <span class="metric-value">9</span>
+              <span class="metric-trend neutral" aria-label="Same as last month">— same</span>
+            </div>
+            <span class="metric-sub">Talent searches ran</span>
+          </div>
+
+          <!-- FIX [07]: 0-outreach card with actionable CTA -->
+          <div class="metric-card" role="region" aria-label="Candidates Outreached metric — no emails sent yet">
+            <div class="metric-card-header">
+              <div class="metric-icon-wrap red" aria-hidden="true">
+                <svg viewBox="0 0 16 16" fill="none">
+                  <rect x="2" y="4" width="12" height="9" rx="2" stroke="#ef4444" stroke-width="1.3"/>
+                  <path d="M2 6l6 4 6-4" stroke="#ef4444" stroke-width="1.3" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <span class="metric-name">Candidates Outreached</span>
+            </div>
+            <div class="metric-value-row">
+              <span class="metric-value">0</span>
+            </div>
+            <button class="metric-cta" aria-label="Start your first outreach campaign">
+              <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+              Start your first outreach campaign
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═══ LOWER: CANDIDATES + CHART ═══ -->
+      <div class="lower-grid">
+
+        <!-- Candidates panel -->
+        <!-- FIX [06]: hover states, cursor pointer, view profile affordance -->
+        <section class="candidates-panel" aria-labelledby="candidates-heading">
+          <div class="panel-header">
+            <h2 class="panel-title" id="candidates-heading">Recent Candidates</h2>
+            <a href="#" class="section-link" style="font-size:13px;">View all</a>
+          </div>
+
+          <a href="#" class="candidate-row" aria-label="Claire G., Software Engineer — view profile">
+            <div class="avatar green">CG</div>
+            <div class="candidate-info">
+              <div class="candidate-name">Claire G.</div>
+              <div class="candidate-meta">
+                <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><rect x="1" y="1" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".6"/><rect x="7" y="1" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".4"/><rect x="1" y="7" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".4"/><rect x="7" y="7" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".2"/></svg>
+                Software Engineer
+              </div>
+            </div>
+            <span class="view-profile" aria-hidden="true">View profile</span>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+
+          <a href="#" class="candidate-row" aria-label="Robert Barker, Software Engineer — view profile">
+            <div class="avatar blue">RB</div>
+            <div class="candidate-info">
+              <div class="candidate-name">Robert Barker</div>
+              <div class="candidate-meta">
+                <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><rect x="1" y="1" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".6"/><rect x="7" y="1" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".4"/><rect x="1" y="7" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".4"/><rect x="7" y="7" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".2"/></svg>
+                Software Engineer
+              </div>
+            </div>
+            <span class="view-profile" aria-hidden="true">View profile</span>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+
+          <a href="#" class="candidate-row" aria-label="Muhammad Jasim, Software Engineer — view profile">
+            <div class="avatar slate">MJ</div>
+            <div class="candidate-info">
+              <div class="candidate-name">Muhammad Jasim</div>
+              <div class="candidate-meta">
+                <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><rect x="1" y="1" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".6"/><rect x="7" y="1" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".4"/><rect x="1" y="7" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".4"/><rect x="7" y="7" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".2"/></svg>
+                Software Engineer
+              </div>
+            </div>
+            <span class="view-profile" aria-hidden="true">View profile</span>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+
+          <a href="#" class="candidate-row" aria-label="Caleb Sides, Software Engineer — view profile">
+            <div class="avatar amber">CS</div>
+            <div class="candidate-info">
+              <div class="candidate-name">Caleb Sides</div>
+              <div class="candidate-meta">
+                <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><rect x="1" y="1" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".6"/><rect x="7" y="1" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".4"/><rect x="1" y="7" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".4"/><rect x="7" y="7" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".2"/></svg>
+                Software Engineer
+              </div>
+            </div>
+            <span class="view-profile" aria-hidden="true">View profile</span>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+
+          <a href="#" class="candidate-row" aria-label="Alexander Petersen, Software Engineer — view profile">
+            <div class="avatar teal">AP</div>
+            <div class="candidate-info">
+              <div class="candidate-name">Alexander Petersen</div>
+              <div class="candidate-meta">
+                <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><rect x="1" y="1" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".6"/><rect x="7" y="1" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".4"/><rect x="1" y="7" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".4"/><rect x="7" y="7" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".2"/></svg>
+                Software Engineer
+              </div>
+            </div>
+            <span class="view-profile" aria-hidden="true">View profile</span>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+
+          <a href="#" class="candidate-row" aria-label="Sammy Naranjo, Software Engineer — view profile">
+            <div class="avatar purple">SN</div>
+            <div class="candidate-info">
+              <div class="candidate-name">Sammy Naranjo</div>
+              <div class="candidate-meta">
+                <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><rect x="1" y="1" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".6"/><rect x="7" y="1" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".4"/><rect x="1" y="7" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".4"/><rect x="7" y="7" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".2"/></svg>
+                Software Engineer
+              </div>
+            </div>
+            <span class="view-profile" aria-hidden="true">View profile</span>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+
+          <a href="#" class="candidate-row" aria-label="Hassan Khan, Software Engineer — view profile">
+            <div class="avatar rose">HK</div>
+            <div class="candidate-info">
+              <div class="candidate-name">Hassan Khan</div>
+              <div class="candidate-meta">
+                <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><rect x="1" y="1" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".6"/><rect x="7" y="1" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".4"/><rect x="1" y="7" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".4"/><rect x="7" y="7" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".2"/></svg>
+                Software Engineer
+              </div>
+            </div>
+            <span class="view-profile" aria-hidden="true">View profile</span>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+
+          <a href="#" class="candidate-row" aria-label="Michael Helvey, Software Engineer — view profile">
+            <div class="avatar indigo">MH</div>
+            <div class="candidate-info">
+              <div class="candidate-name">Michael Helvey</div>
+              <div class="candidate-meta">
+                <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><rect x="1" y="1" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".6"/><rect x="7" y="1" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".4"/><rect x="1" y="7" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".4"/><rect x="7" y="7" width="4" height="4" rx=".8" fill="#3b82f6" opacity=".2"/></svg>
+                Software Engineer
+              </div>
+            </div>
+            <span class="view-profile" aria-hidden="true">View profile</span>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+
+        </section>
+
+        <!-- Chart panel -->
+        <!-- FIX [05]: y-axis labels, tooltips, aria table -->
+        <section class="chart-panel" aria-labelledby="chart-heading">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title-wrap">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                  <rect x="1" y="8" width="3" height="9" rx="1" fill="#22c55e"/>
+                  <rect x="6" y="5" width="3" height="12" rx="1" fill="#22c55e" opacity=".7"/>
+                  <rect x="11" y="2" width="3" height="15" rx="1" fill="#22c55e" opacity=".5"/>
+                  <rect x="16" y="6" width="2" height="11" rx="1" fill="#22c55e" opacity=".4"/>
+                </svg>
+                <span class="chart-stat" aria-label="106 profiles added today">106</span>
+              </div>
+              <div class="chart-stat-label" id="chart-heading">Profiles added today</div>
+            </div>
+            <div class="chart-toggle" role="group" aria-label="Chart period">
+              <button class="toggle-btn active" aria-pressed="true">Daily</button>
+              <button class="toggle-btn" aria-pressed="false">Weekly</button>
+            </div>
+          </div>
+
+          <div class="chart-body">
+            <!-- FIX [05]: accessible sr-only data table -->
+            <table class="sr-only" aria-label="Profiles added per day">
+              <caption>Daily profile additions Feb 9–20</caption>
+              <thead><tr><th>Date</th><th>Profiles Added</th></tr></thead>
+              <tbody>
+                <tr><td>Feb 9</td><td>4</td></tr>
+                <tr><td>Feb 10</td><td>2</td></tr>
+                <tr><td>Feb 11</td><td>6</td></tr>
+                <tr><td>Feb 12</td><td>3</td></tr>
+                <tr><td>Feb 13</td><td>8</td></tr>
+                <tr><td>Feb 14</td><td>5</td></tr>
+                <tr><td>Feb 15</td><td>7</td></tr>
+                <tr><td>Feb 16</td><td>4</td></tr>
+                <tr><td>Feb 17</td><td>6</td></tr>
+                <tr><td>Feb 18</td><td>106</td></tr>
+                <tr><td>Feb 19</td><td>74</td></tr>
+                <tr><td>Feb 20</td><td>12</td></tr>
+              </tbody>
+            </table>
+
+            <div class="chart-area" aria-hidden="true">
+              <!-- FIX [05]: y-axis labels -->
+              <div class="chart-y-axis" aria-hidden="true">
+                <span>120</span>
+                <span>90</span>
+                <span>60</span>
+                <span>30</span>
+                <span>0</span>
+              </div>
+              <div class="chart-bars-wrap">
+                <div class="chart-bars" role="img" aria-label="Bar chart: profiles added per day Feb 9-20, peak 106 on Feb 18">
+                  <!-- bars: heights as % of max 120 -->
+                  <div class="bar-col" tabindex="0" aria-label="Feb 9: 4 profiles">
+                    <span class="bar-tooltip">Feb 9 · 4</span>
+                    <div class="bar-fill" style="height:3.3%"></div>
+                  </div>
+                  <div class="bar-col" tabindex="0" aria-label="Feb 10: 2 profiles">
+                    <span class="bar-tooltip">Feb 10 · 2</span>
+                    <div class="bar-fill" style="height:1.7%"></div>
+                  </div>
+                  <div class="bar-col" tabindex="0" aria-label="Feb 11: 6 profiles">
+                    <span class="bar-tooltip">Feb 11 · 6</span>
+                    <div class="bar-fill" style="height:5%"></div>
+                  </div>
+                  <div class="bar-col" tabindex="0" aria-label="Feb 12: 3 profiles">
+                    <span class="bar-tooltip">Feb 12 · 3</span>
+                    <div class="bar-fill" style="height:2.5%"></div>
+                  </div>
+                  <div class="bar-col" tabindex="0" aria-label="Feb 13: 8 profiles">
+                    <span class="bar-tooltip">Feb 13 · 8</span>
+                    <div class="bar-fill" style="height:6.7%"></div>
+                  </div>
+                  <div class="bar-col" tabindex="0" aria-label="Feb 14: 5 profiles">
+                    <span class="bar-tooltip">Feb 14 · 5</span>
+                    <div class="bar-fill" style="height:4.2%"></div>
+                  </div>
+                  <div class="bar-col" tabindex="0" aria-label="Feb 15: 7 profiles">
+                    <span class="bar-tooltip">Feb 15 · 7</span>
+                    <div class="bar-fill" style="height:5.8%"></div>
+                  </div>
+                  <div class="bar-col" tabindex="0" aria-label="Feb 16: 4 profiles">
+                    <span class="bar-tooltip">Feb 16 · 4</span>
+                    <div class="bar-fill" style="height:3.3%"></div>
+                  </div>
+                  <div class="bar-col" tabindex="0" aria-label="Feb 17: 6 profiles">
+                    <span class="bar-tooltip">Feb 17 · 6</span>
+                    <div class="bar-fill" style="height:5%"></div>
+                  </div>
+                  <div class="bar-col" tabindex="0" aria-label="Feb 18: 106 profiles">
+                    <span class="bar-tooltip">Feb 18 · 106</span>
+                    <div class="bar-fill" style="height:88.3%"></div>
+                  </div>
+                  <div class="bar-col" tabindex="0" aria-label="Feb 19: 74 profiles">
+                    <span class="bar-tooltip">Feb 19 · 74</span>
+                    <div class="bar-fill" style="height:61.7%"></div>
+                  </div>
+                  <div class="bar-col" tabindex="0" aria-label="Feb 20: 12 profiles">
+                    <span class="bar-tooltip">Feb 20 · 12</span>
+                    <div class="bar-fill" style="height:10%"></div>
+                  </div>
+                </div>
+                <div class="chart-x-labels" aria-hidden="true">
+                  <span class="chart-x-label">2/9</span>
+                  <span class="chart-x-label">2/10</span>
+                  <span class="chart-x-label">2/11</span>
+                  <span class="chart-x-label">2/12</span>
+                  <span class="chart-x-label">2/13</span>
+                  <span class="chart-x-label">2/14</span>
+                  <span class="chart-x-label">2/15</span>
+                  <span class="chart-x-label">2/16</span>
+                  <span class="chart-x-label">2/17</span>
+                  <span class="chart-x-label">2/18</span>
+                  <span class="chart-x-label">2/19</span>
+                  <span class="chart-x-label">2/20</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div><!-- /lower-grid -->
+
+    </div><!-- /page-content -->
+  </div><!-- /main -->
+</div><!-- /app-shell -->
+
+<script>
+  // FIX [09]: carousel scroll with prev/next buttons
+  const scroll = document.getElementById('cards-scroll');
+  const prev = document.getElementById('cards-prev');
+  const next = document.getElementById('cards-next');
+
+  function scrollCards(dir) {
+    scroll.scrollBy({ left: dir * 280, behavior: 'smooth' });
+  }
+
+  scroll.addEventListener('scroll', function() {
+    prev.disabled = scroll.scrollLeft <= 0;
+    next.disabled = scroll.scrollLeft + scroll.clientWidth >= scroll.scrollWidth - 10;
+  });
+
+  // Toggle chart buttons
+  document.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.toggle-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed', 'false');
+      });
+      this.classList.add('active');
+      this.setAttribute('aria-pressed', 'true');
+    });
+  });
+</script>
+</body>
+</html>
