@@ -1,0 +1,19 @@
+{
+  "sid": "8d404254-c622-469e-b88e-366c2f6c5670",
+  "date": "2026-03-29T05:57:49.412234Z",
+  "product_name": "Wrangle",
+  "screen_name": "Dashboard",
+  "overall_score": 6.8,
+  "score_label": "Good",
+  "accessibility_score": 5.5,
+  "filename": "Wrangle Web 56.png",
+  "website_url": "https://wrangle.ai/",
+  "high": 4,
+  "medium": 5,
+  "low": 1,
+  "total_issues": 10,
+  "has_script": false,
+  "has_dribbble": false,
+  "has_redesign": false,
+  "status": "ready"
+}
