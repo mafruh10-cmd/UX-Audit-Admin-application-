@@ -1,0 +1,298 @@
+You are a senior UI/UX designer and expert frontend developer.
+
+I am giving you a screenshot of a UI screen and a detailed UX audit report.
+Your task is to produce a complete, self-contained HTML redesign (version 2)
+that resolves every issue in the audit while preserving the original visual identity.
+
+CRITICAL RULE — READ BEFORE ANYTHING ELSE:
+Fixing an issue takes absolute priority over preserving layout or placement.
+If a fix requires moving an element, restructuring a section, hiding a component,
+or changing how content is presented — DO IT. The audit findings are non-negotiable.
+Preservation means keeping the brand identity (colors, typography, component style).
+It does NOT mean keeping broken elements in the same broken position.
+
+====================================================================
+MANDATORY FIX CHECKLIST  —  VERIFY EACH BEFORE WRITING A SINGLE LINE OF HTML
+====================================================================
+
+Before you write the HTML, mentally confirm that your design addresses EVERY item
+in this list. If your HTML does not contain a concrete, visible solution for a
+High or Medium issue, your response is incomplete — revise it until it does.
+Some fixes require structural changes (relocating, collapsing, or restructuring
+UI elements). Make those structural changes — do not style over them.
+
+HIGH PRIORITY  (must be resolved — zero exceptions):
+  NOTE: 'fixing' means the issue is GONE from the redesign — not styled differently.
+  If the fix says to move, collapse, or restructure something, do exactly that.
+
+  [01] 100% error rate uses color-only encoding with no text/icon alternative
+       Problem:          The error rate of 100% is communicated primarily through a solid red progress bar alongside the number. Users with color vision deficiency may not perceive the severity distinction between the blue requests bar and the red error bar. The critical alert state relies on red color alone without any icon, pattern, or text severity label.
+       What to implement: Add a warning/error icon (e.g., ⚠️) next to the 100% error rate value and use a hatched or patterned fill for the error bar. Include a text label like 'Critical' or 'Error' alongside the percentage to ensure the severity is communicated without relying on color.
+       Affects:          Active deployment table - Error Rate column showing 100% with red bar
+       WCAG:             1.4.1 Level A
+
+  [02] Green status dot for active deployment relies solely on color
+       Problem:          The green dot indicator next to the version ID is the only signal that this deployment is active/healthy. There is no accompanying text label (e.g., 'Active') or alternative visual indicator like a checkmark icon. Color-blind users cannot distinguish this status.
+       What to implement: Replace the green dot with a labeled badge such as 'Active' with a green background plus a checkmark icon. This provides redundant coding through text, icon, and color simultaneously.
+       Affects:          Active deployment table - Version column green dot next to v033a5b3a
+       WCAG:             1.4.1 Level A
+
+  [03] Small percentage change text has insufficient contrast
+       Problem:          The small orange/red percentage change indicators next to metrics like Requests, Errors, CPU Time, and Wall Time appear to use a relatively low-contrast color against the white background. At this small font size (~11px), a 4.5:1 contrast ratio is required, and these appear borderline or below threshold.
+       What to implement: Increase the contrast of percentage change text to at least 4.5:1 by using a darker shade of the trend color (e.g., darker red/orange). Alternatively, increase the font size to improve legibility alongside the contrast adjustment.
+       Affects:          Summary metrics cards - percentage change values (e.g., '87.00%', '9.88%', '24.62%')
+       WCAG:             1.4.3 Level AA
+
+  [04] Truncated data in deployment table obscures critical information
+       Problem:          Several column values are truncated with ellipsis, hiding the full deployment date/time and the complete requests/sec value. Users cannot see the full information without additional interaction. This is critical operational data that should be immediately visible.
+       What to implement: Use responsive column widths or allow horizontal scrolling within the table. Consider reformatting the date to a more compact format (e.g., 'Feb 17, 2025') and showing full values in the default view. Add tooltips on hover as a secondary disclosure mechanism.
+       Affects:          Active deployment table - 'Deployed on' and 'Requests/sec' columns showing '2025-02-17 ... UTC' and '0 re...'
+
+MEDIUM PRIORITY  (must be resolved — no exceptions):
+  NOTE: Same rule — fix means the issue does not exist in the output HTML.
+
+  [05] Icon-only buttons in chart headers lack accessible labels
+       Problem:          The small icon buttons next to the Count/RPS toggle in both chart sections appear to have no visible text labels. Screen reader users and users unfamiliar with the icon semantics will not understand the button's purpose. There is no visible tooltip or aria-label apparent.
+       What to implement: Add aria-label attributes to each icon button (e.g., 'Export chart data', 'Copy to clipboard'). Include visible tooltips on hover/focus to assist sighted users as well.
+       Affects:          Requests chart and Request Distribution chart - small icon buttons (copy/export icons) next to Count/RPS toggles
+       WCAG:             1.1.1 Level A
+
+  [06] Dense navigation sidebar creates cognitive overload
+       Problem:          The left sidebar contains over 15 navigation items spanning account-level features (Domain Registration, Analytics), security features (WAF, Turnstile), and compute features (Workers, Storage). This flat listing with minimal grouping forces users to scan the entire list to find their target. The currently active section 'Compute (Workers)' is highlighted but sibling items compete for attention.
+       What to implement: Group navigation items into collapsible sections (e.g., 'Security', 'Compute', 'Storage') and collapse non-active sections by default. This reduces visible choices and leverages progressive disclosure to show only relevant options.
+       Affects:          Left sidebar navigation with 15+ menu items
+
+  [07] Summary metric cards lack clear visual grouping and boundaries
+       Problem:          The five summary metrics are displayed in a single row with minimal visual separation between them. There are no clear card borders, dividers, or background distinctions between adjacent metrics. The Subrequests value of '0' lacks a sparkline chart unlike its neighbors, creating inconsistent visual rhythm.
+       What to implement: Add subtle vertical dividers or distinct card containers with borders/shadows for each metric. Ensure all metrics have consistent visual treatment - either all show sparkline mini-charts (even if flat/empty) or none do.
+       Affects:          Top metrics row: Requests, Subrequests, Errors, CPU Time, Wall time
+
+  [08] Sparkline charts in metrics cards lack axis labels and data context
+       Problem:          The small sparkline charts beneath each metric provide a visual trend but have no axis labels, time scale indicators, or data point values on hover. Users cannot determine the time range, scale, or specific values from these charts. The execution duration and request duration charts similarly lack context.
+       What to implement: Add subtle time-range labels (e.g., '24h') below sparklines and enable hover tooltips showing exact values at each data point. Consider adding min/max indicators or a baseline reference line for context.
+       Affects:          Mini sparkline charts under Requests, Errors, CPU Time, Wall time metrics
+
+LOW PRIORITY  (implement where possible):
+  [09] Deploy version button placement creates accidental action risk — Consider using a secondary/outline button style for 'Deploy version' on the metrics page, reserving the primary style for the Deployments tab. Add a confirmation dialog before executing the deployment action.
+  [10] Request Distribution map lacks text alternative and keyboard access — Provide a toggle to switch between map and table view showing country/region and request count. Add an aria-label to the map container describing the general distribution (e.g., 'Request distribution: primarily from Europe and North America').
+
+====================================================================
+STEP 1 — LAYOUT & COMPOSITION  (reason through this BEFORE anything else)
+====================================================================
+
+Layout and content distribution are non-negotiable design decisions.
+Do not assume the original layout is correct — reason from first principles.
+Ask yourself: does each element sit in the right zone for its purpose?
+If not, move it. The composition must serve the user's primary goal.
+
+1. VISUAL HIERARCHY
+   The most important action or information must be visually dominant.
+   Use size, weight, contrast, and position to establish a clear reading order.
+   Secondary content must be visually subordinate — smaller, lighter, lower.
+   (Malewicz — Designing User Interfaces: contrast creates hierarchy)
+   (Refactoring UI: use size and weight to communicate importance, not just color)
+
+2. F-PATTERN & READING FLOW
+   Users scan left-to-right, top-to-bottom in an F-shape on content-heavy screens.
+   Place primary actions and key labels at the start of scan lines.
+   Never interrupt the scan path with secondary, promotional, or personalisation content.
+   (Nielsen Norman Group — F-Pattern reading behavior)
+
+3. PROXIMITY & GROUPING (Gestalt)
+   Related elements must be spatially close. Unrelated elements need clear separation.
+   If two elements answer different user questions, they belong in different zones.
+   Never mix contextual content with navigational content in the same region.
+   (Psych 101 — Gestalt: Law of Proximity, Law of Similarity)
+
+4. CONTENT PRIORITISATION
+   Identify the user's single primary goal on this screen.
+   Every element that does not serve that goal directly must be secondary in
+   visual weight and position. Upsell, personalisation, and promotional content
+   must never compete with or interrupt the primary task flow.
+   (Don't Make Me Think — Krug: do not make users think about what to do next)
+   (Psychology of Design — Hick's Law: fewer competing choices = faster decisions)
+
+5. SPATIAL ZONES
+   Divide the screen into logical zones: navigation, primary content, secondary
+   context, actions. Each zone has exactly one job.
+   If an element is in the wrong zone, move it to the correct zone or defer it
+   to a modal or drawer. The layout must match the user's mental model of the task.
+   (Universal Principles of Design — Progressive Disclosure)
+
+6. SIGNAL-TO-NOISE
+   Every element must earn its place. If an element does not directly help the
+   user complete their current task, reduce its visual weight or remove it from
+   the primary viewport. Clutter is a UX failure, not a neutral default.
+   (Universal Principles of Design — Signal-to-Noise Ratio)
+
+COMPOSITION RULE: If the original layout violates these principles — with or
+without an explicit audit finding — correct it. Do not replicate bad composition
+because it existed in the screenshot. A version 2 must be compositionally sound.
+
+APPLY THESE COMPOSITION DECISIONS TO RESOLVE THE FOLLOWING AUDIT ISSUES:
+Every High and Medium issue in the MANDATORY FIX CHECKLIST above must map to a
+specific, visible structural decision in your layout. Before moving to Step 2,
+trace each issue to a layout zone, spacing decision, or hierarchy change.
+If the fix requires restructuring — restructure. If it requires removing an element
+from the primary viewport — remove it. Composition fixes are not optional.
+
+====================================================================
+STEP 2 — VISUAL IDENTITY  (preserve brand, not broken placement)
+====================================================================
+
+Once composition is decided, preserve these brand elements exactly:
+  - Colors: every background, text, brand, accent, and surface hex value
+  - Typography: font families, sizes, weights, line-heights, letter-spacing
+  - Spacing scale: the relative rhythm of padding/margin (not the positions)
+  - Shapes: border-radius, border styles, shadows, elevation
+  - Icons: style, weight, and size (placement may change if composition requires)
+  - Components: card designs, button styles, badge styles, input styles
+
+NOTE: Layout and element positioning are governed by Step 1, not this list.
+Preserving the brand does NOT mean preserving where broken things sit.
+The output must feel like a version 2 — same brand, better UX.
+
+====================================================================
+FULL AUDIT REPORT  —  Workers & Pages - Metrics Dashboard
+====================================================================
+Overall Score:        6.8/10  —  Fair
+Accessibility Score:  5.2/10  (WCAG 2.2 AA)
+Issues Found:         10  (4 High · 4 Medium · 2 Low)
+
+EXECUTIVE SUMMARY
+The Cloudflare Workers metrics dashboard presents a dense amount of operational data but suffers from critical accessibility issues including color-only status indicators, low-contrast text, and truncated data that hinders comprehension. The information hierarchy is adequate but could benefit from clearer visual separation and more accessible data presentation patterns.
+
+ALL ISSUES  (full detail for reference):
+
+[01] HIGH  —  100% error rate uses color-only encoding with no text/icon alternative
+     Location:  Active deployment table - Error Rate column showing 100% with red bar
+     Problem:   The error rate of 100% is communicated primarily through a solid red progress bar alongside the number. Users with color vision deficiency may not perceive the severity distinction between the blue requests bar and the red error bar. The critical alert state relies on red color alone without any icon, pattern, or text severity label.
+     Fix:       Add a warning/error icon (e.g., ⚠️) next to the 100% error rate value and use a hatched or patterned fill for the error bar. Include a text label like 'Critical' or 'Error' alongside the percentage to ensure the severity is communicated without relying on color.
+     Source:    WCAG 2.2 — 1.4.1 Use of Color (A): color must not be the only means of conveying information
+     WCAG:      1.4.1  Level A
+
+[02] HIGH  —  Green status dot for active deployment relies solely on color
+     Location:  Active deployment table - Version column green dot next to v033a5b3a
+     Problem:   The green dot indicator next to the version ID is the only signal that this deployment is active/healthy. There is no accompanying text label (e.g., 'Active') or alternative visual indicator like a checkmark icon. Color-blind users cannot distinguish this status.
+     Fix:       Replace the green dot with a labeled badge such as 'Active' with a green background plus a checkmark icon. This provides redundant coding through text, icon, and color simultaneously.
+     Source:    WCAG 2.2 — 1.4.1 Use of Color (A): color must not be the only means of conveying information
+     WCAG:      1.4.1  Level A
+
+[03] HIGH  —  Small percentage change text has insufficient contrast
+     Location:  Summary metrics cards - percentage change values (e.g., '87.00%', '9.88%', '24.62%')
+     Problem:   The small orange/red percentage change indicators next to metrics like Requests, Errors, CPU Time, and Wall Time appear to use a relatively low-contrast color against the white background. At this small font size (~11px), a 4.5:1 contrast ratio is required, and these appear borderline or below threshold.
+     Fix:       Increase the contrast of percentage change text to at least 4.5:1 by using a darker shade of the trend color (e.g., darker red/orange). Alternatively, increase the font size to improve legibility alongside the contrast adjustment.
+     Source:    WCAG 2.2 — 1.4.3 Contrast (Minimum) (AA): normal text requires 4.5:1 contrast ratio
+     WCAG:      1.4.3  Level AA
+
+[04] HIGH  —  Truncated data in deployment table obscures critical information
+     Location:  Active deployment table - 'Deployed on' and 'Requests/sec' columns showing '2025-02-17 ... UTC' and '0 re...'
+     Problem:   Several column values are truncated with ellipsis, hiding the full deployment date/time and the complete requests/sec value. Users cannot see the full information without additional interaction. This is critical operational data that should be immediately visible.
+     Fix:       Use responsive column widths or allow horizontal scrolling within the table. Consider reformatting the date to a more compact format (e.g., 'Feb 17, 2025') and showing full values in the default view. Add tooltips on hover as a secondary disclosure mechanism.
+     Source:    Universal Principles of Design — Visibility: system status and available actions must be visible
+
+[05] MEDIUM  —  Icon-only buttons in chart headers lack accessible labels
+     Location:  Requests chart and Request Distribution chart - small icon buttons (copy/export icons) next to Count/RPS toggles
+     Problem:   The small icon buttons next to the Count/RPS toggle in both chart sections appear to have no visible text labels. Screen reader users and users unfamiliar with the icon semantics will not understand the button's purpose. There is no visible tooltip or aria-label apparent.
+     Fix:       Add aria-label attributes to each icon button (e.g., 'Export chart data', 'Copy to clipboard'). Include visible tooltips on hover/focus to assist sighted users as well.
+     Source:    WCAG 2.2 — 1.1.1 Non-text Content (A): all non-text content must have a text alternative
+     WCAG:      1.1.1  Level A
+
+[06] MEDIUM  —  Dense navigation sidebar creates cognitive overload
+     Location:  Left sidebar navigation with 15+ menu items
+     Problem:   The left sidebar contains over 15 navigation items spanning account-level features (Domain Registration, Analytics), security features (WAF, Turnstile), and compute features (Workers, Storage). This flat listing with minimal grouping forces users to scan the entire list to find their target. The currently active section 'Compute (Workers)' is highlighted but sibling items compete for attention.
+     Fix:       Group navigation items into collapsible sections (e.g., 'Security', 'Compute', 'Storage') and collapse non-active sections by default. This reduces visible choices and leverages progressive disclosure to show only relevant options.
+     Source:    Psychology of Design — Hick's Law: too many choices slows decisions
+
+[07] MEDIUM  —  Summary metric cards lack clear visual grouping and boundaries
+     Location:  Top metrics row: Requests, Subrequests, Errors, CPU Time, Wall time
+     Problem:   The five summary metrics are displayed in a single row with minimal visual separation between them. There are no clear card borders, dividers, or background distinctions between adjacent metrics. The Subrequests value of '0' lacks a sparkline chart unlike its neighbors, creating inconsistent visual rhythm.
+     Fix:       Add subtle vertical dividers or distinct card containers with borders/shadows for each metric. Ensure all metrics have consistent visual treatment - either all show sparkline mini-charts (even if flat/empty) or none do.
+     Source:    Psych 101 (Kleinman) — Gestalt: Law of Proximity
+
+[08] MEDIUM  —  Sparkline charts in metrics cards lack axis labels and data context
+     Location:  Mini sparkline charts under Requests, Errors, CPU Time, Wall time metrics
+     Problem:   The small sparkline charts beneath each metric provide a visual trend but have no axis labels, time scale indicators, or data point values on hover. Users cannot determine the time range, scale, or specific values from these charts. The execution duration and request duration charts similarly lack context.
+     Fix:       Add subtle time-range labels (e.g., '24h') below sparklines and enable hover tooltips showing exact values at each data point. Consider adding min/max indicators or a baseline reference line for context.
+     Source:    Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter
+
+[09] LOW  —  Deploy version button placement creates accidental action risk
+     Location:  Active deployment section - 'Deploy version' primary blue button on far right
+     Problem:   The prominent 'Deploy version' primary action button is placed in the same visual row as the deployment table header. This high-impact action (deploying code) is positioned without any confirmation affordance visible, and its proximity to the data table could lead to accidental clicks during routine monitoring.
+     Fix:       Consider using a secondary/outline button style for 'Deploy version' on the metrics page, reserving the primary style for the Deployments tab. Add a confirmation dialog before executing the deployment action.
+     Source:    The Design of Everyday Things (Norman) — Forcing Function: prevent irreversible actions with confirmation
+
+[10] LOW  —  Request Distribution map lacks text alternative and keyboard access
+     Location:  Request Distribution world map visualization in bottom right
+     Problem:   The geographic distribution map uses bubble sizes on a world map to convey request origins but provides no text-based alternative such as a data table fallback. Users who cannot see the map or who use screen readers have no way to understand the geographic distribution of requests.
+     Fix:       Provide a toggle to switch between map and table view showing country/region and request count. Add an aria-label to the map container describing the general distribution (e.g., 'Request distribution: primarily from Europe and North America').
+     Source:    WCAG 2.2 — 1.1.1 Non-text Content (A): all non-text content must have a text alternative
+     WCAG:      1.1.1  Level A
+
+====================================================================
+SELF-CHECK — RUN THIS BEFORE OUTPUTTING THE HTML
+====================================================================
+
+For each item below, verify the SPECIFIC FIX is concretely implemented —
+not just acknowledged, not just styled differently. The fix must be visible.
+
+  [ ] [01] 100% error rate uses color-only encoding with no text/icon alternative
+       Required fix: Add a warning/error icon (e.g., ⚠️) next to the 100% error rate value and use a hatched or patterned fill for the error bar. Include a text label like 'Critical' or 'Error' alongside the percentage to ensure the severity is communicated without relying on color.
+       Location:     Active deployment table - Error Rate column showing 100% with red bar
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [02] Green status dot for active deployment relies solely on color
+       Required fix: Replace the green dot with a labeled badge such as 'Active' with a green background plus a checkmark icon. This provides redundant coding through text, icon, and color simultaneously.
+       Location:     Active deployment table - Version column green dot next to v033a5b3a
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [03] Small percentage change text has insufficient contrast
+       Required fix: Increase the contrast of percentage change text to at least 4.5:1 by using a darker shade of the trend color (e.g., darker red/orange). Alternatively, increase the font size to improve legibility alongside the contrast adjustment.
+       Location:     Summary metrics cards - percentage change values (e.g., '87.00%', '9.88%', '24.62%')
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [04] Truncated data in deployment table obscures critical information
+       Required fix: Use responsive column widths or allow horizontal scrolling within the table. Consider reformatting the date to a more compact format (e.g., 'Feb 17, 2025') and showing full values in the default view. Add tooltips on hover as a secondary disclosure mechanism.
+       Location:     Active deployment table - 'Deployed on' and 'Requests/sec' columns showing '2025-02-17 ... UTC' and '0 re...'
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [05] Icon-only buttons in chart headers lack accessible labels
+       Required fix: Add aria-label attributes to each icon button (e.g., 'Export chart data', 'Copy to clipboard'). Include visible tooltips on hover/focus to assist sighted users as well.
+       Location:     Requests chart and Request Distribution chart - small icon buttons (copy/export icons) next to Count/RPS toggles
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [06] Dense navigation sidebar creates cognitive overload
+       Required fix: Group navigation items into collapsible sections (e.g., 'Security', 'Compute', 'Storage') and collapse non-active sections by default. This reduces visible choices and leverages progressive disclosure to show only relevant options.
+       Location:     Left sidebar navigation with 15+ menu items
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [07] Summary metric cards lack clear visual grouping and boundaries
+       Required fix: Add subtle vertical dividers or distinct card containers with borders/shadows for each metric. Ensure all metrics have consistent visual treatment - either all show sparkline mini-charts (even if flat/empty) or none do.
+       Location:     Top metrics row: Requests, Subrequests, Errors, CPU Time, Wall time
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [08] Sparkline charts in metrics cards lack axis labels and data context
+       Required fix: Add subtle time-range labels (e.g., '24h') below sparklines and enable hover tooltips showing exact values at each data point. Consider adding min/max indicators or a baseline reference line for context.
+       Location:     Mini sparkline charts under Requests, Errors, CPU Time, Wall time metrics
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+If any checkbox above cannot be ticked YES, revise your HTML before outputting it.
+
+====================================================================
+OUTPUT REQUIREMENTS
+====================================================================
+
+- Output a single, complete, self-contained HTML file.
+- All CSS must be in a <style> block in the <head> — no external stylesheets.
+- No CDN links, no JavaScript frameworks, no external images.
+  Use inline SVG for icons. Use data URIs only if absolutely necessary.
+- Preserve all informational content (text, labels, data). Do not silently drop
+  information the user needs. However: if a fix requires relocating, collapsing,
+  or restructuring a UI element, you MUST do so — placing it in a better position
+  is not removing it. The audit fix always wins over original placement.
+- Do NOT add new features, sections, or content not present in the original.
+- JavaScript is allowed only for interactions clearly present in the original.
+  Keep it minimal and inline.
+- The file must open in a browser as a fully working static page.
+- Start your response with <!DOCTYPE html> and end the HTML with </html>.
+- Do NOT reference Mobbin or any third-party design gallery. Use Saasfactor if needed.

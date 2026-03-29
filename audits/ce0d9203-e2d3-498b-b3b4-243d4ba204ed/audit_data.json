@@ -1,0 +1,180 @@
+{
+  "product_name": "Cloudflare",
+  "screen_name": "Workers & Pages - Metrics Dashboard",
+  "overall_score": 6.8,
+  "score_label": "Fair",
+  "summary": "The Cloudflare Workers metrics dashboard presents a dense amount of operational data but suffers from critical accessibility issues including color-only status indicators, low-contrast text, and truncated data that hinders comprehension. The information hierarchy is adequate but could benefit from clearer visual separation and more accessible data presentation patterns.",
+  "accessibility_score": 5.2,
+  "issues": [
+    {
+      "id": "01",
+      "title": "100% error rate uses color-only encoding with no text/icon alternative",
+      "severity": "High",
+      "location": "Active deployment table - Error Rate column showing 100% with red bar",
+      "problem": "The error rate of 100% is communicated primarily through a solid red progress bar alongside the number. Users with color vision deficiency may not perceive the severity distinction between the blue requests bar and the red error bar. The critical alert state relies on red color alone without any icon, pattern, or text severity label.",
+      "critical_reason": "WCAG 1.4.1 requires that color is not used as the only visual means of conveying information. Color-blind users (~8% of males) cannot distinguish red from other colors, missing a critical operational alert.",
+      "recommendation": "Add a warning/error icon (e.g., ⚠️) next to the 100% error rate value and use a hatched or patterned fill for the error bar. Include a text label like 'Critical' or 'Error' alongside the percentage to ensure the severity is communicated without relying on color.",
+      "reference": "WCAG 2.2 — 1.4.1 Use of Color (A): color must not be the only means of conveying information",
+      "wcag_criterion": "1.4.1",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 63,
+        "y": 55,
+        "w": 20,
+        "h": 4
+      }
+    },
+    {
+      "id": "02",
+      "title": "Green status dot for active deployment relies solely on color",
+      "severity": "High",
+      "location": "Active deployment table - Version column green dot next to v033a5b3a",
+      "problem": "The green dot indicator next to the version ID is the only signal that this deployment is active/healthy. There is no accompanying text label (e.g., 'Active') or alternative visual indicator like a checkmark icon. Color-blind users cannot distinguish this status.",
+      "critical_reason": "Per WCAG 1.4.1, information conveyed through color alone excludes users with color vision deficiencies. The green dot is a classic example of color-only status communication.",
+      "recommendation": "Replace the green dot with a labeled badge such as 'Active' with a green background plus a checkmark icon. This provides redundant coding through text, icon, and color simultaneously.",
+      "reference": "WCAG 2.2 — 1.4.1 Use of Color (A): color must not be the only means of conveying information",
+      "wcag_criterion": "1.4.1",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 22,
+        "y": 55,
+        "w": 10,
+        "h": 4
+      }
+    },
+    {
+      "id": "03",
+      "title": "Small percentage change text has insufficient contrast",
+      "severity": "High",
+      "location": "Summary metrics cards - percentage change values (e.g., '87.00%', '9.88%', '24.62%')",
+      "problem": "The small orange/red percentage change indicators next to metrics like Requests, Errors, CPU Time, and Wall Time appear to use a relatively low-contrast color against the white background. At this small font size (~11px), a 4.5:1 contrast ratio is required, and these appear borderline or below threshold.",
+      "critical_reason": "WCAG 1.4.3 mandates that text smaller than 18pt (or 14pt bold) must have at least a 4.5:1 contrast ratio against its background. Low contrast on small text creates significant readability issues especially for users with low vision.",
+      "recommendation": "Increase the contrast of percentage change text to at least 4.5:1 by using a darker shade of the trend color (e.g., darker red/orange). Alternatively, increase the font size to improve legibility alongside the contrast adjustment.",
+      "reference": "WCAG 2.2 — 1.4.3 Contrast (Minimum) (AA): normal text requires 4.5:1 contrast ratio",
+      "wcag_criterion": "1.4.3",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 40,
+        "y": 26,
+        "w": 60,
+        "h": 5
+      }
+    },
+    {
+      "id": "04",
+      "title": "Truncated data in deployment table obscures critical information",
+      "severity": "High",
+      "location": "Active deployment table - 'Deployed on' and 'Requests/sec' columns showing '2025-02-17 ... UTC' and '0 re...'",
+      "problem": "Several column values are truncated with ellipsis, hiding the full deployment date/time and the complete requests/sec value. Users cannot see the full information without additional interaction. This is critical operational data that should be immediately visible.",
+      "critical_reason": "Per Nielsen's Visibility of System Status heuristic, users need to see complete system information to make informed decisions. Truncating deployment timestamps forces users to guess or take extra steps to discover essential monitoring data.",
+      "recommendation": "Use responsive column widths or allow horizontal scrolling within the table. Consider reformatting the date to a more compact format (e.g., 'Feb 17, 2025') and showing full values in the default view. Add tooltips on hover as a secondary disclosure mechanism.",
+      "reference": "Universal Principles of Design — Visibility: system status and available actions must be visible",
+      "annotation": {
+        "x": 45,
+        "y": 55,
+        "w": 40,
+        "h": 4
+      }
+    },
+    {
+      "id": "05",
+      "title": "Icon-only buttons in chart headers lack accessible labels",
+      "severity": "Medium",
+      "location": "Requests chart and Request Distribution chart - small icon buttons (copy/export icons) next to Count/RPS toggles",
+      "problem": "The small icon buttons next to the Count/RPS toggle in both chart sections appear to have no visible text labels. Screen reader users and users unfamiliar with the icon semantics will not understand the button's purpose. There is no visible tooltip or aria-label apparent.",
+      "critical_reason": "WCAG 1.1.1 requires that all non-text content has a text alternative. Icon-only buttons without accessible names leave screen reader users unable to determine the button's function.",
+      "recommendation": "Add aria-label attributes to each icon button (e.g., 'Export chart data', 'Copy to clipboard'). Include visible tooltips on hover/focus to assist sighted users as well.",
+      "reference": "WCAG 2.2 — 1.1.1 Non-text Content (A): all non-text content must have a text alternative",
+      "wcag_criterion": "1.1.1",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 55,
+        "y": 64,
+        "w": 10,
+        "h": 4
+      }
+    },
+    {
+      "id": "06",
+      "title": "Dense navigation sidebar creates cognitive overload",
+      "severity": "Medium",
+      "location": "Left sidebar navigation with 15+ menu items",
+      "problem": "The left sidebar contains over 15 navigation items spanning account-level features (Domain Registration, Analytics), security features (WAF, Turnstile), and compute features (Workers, Storage). This flat listing with minimal grouping forces users to scan the entire list to find their target. The currently active section 'Compute (Workers)' is highlighted but sibling items compete for attention.",
+      "critical_reason": "Hick's Law states that decision time increases logarithmically with the number of choices. With 15+ options, users experience increased cognitive load finding the relevant navigation item, especially when items span different conceptual domains.",
+      "recommendation": "Group navigation items into collapsible sections (e.g., 'Security', 'Compute', 'Storage') and collapse non-active sections by default. This reduces visible choices and leverages progressive disclosure to show only relevant options.",
+      "reference": "Psychology of Design — Hick's Law: too many choices slows decisions",
+      "annotation": {
+        "x": 8,
+        "y": 50,
+        "w": 15,
+        "h": 80
+      }
+    },
+    {
+      "id": "07",
+      "title": "Summary metric cards lack clear visual grouping and boundaries",
+      "severity": "Medium",
+      "location": "Top metrics row: Requests, Subrequests, Errors, CPU Time, Wall time",
+      "problem": "The five summary metrics are displayed in a single row with minimal visual separation between them. There are no clear card borders, dividers, or background distinctions between adjacent metrics. The Subrequests value of '0' lacks a sparkline chart unlike its neighbors, creating inconsistent visual rhythm.",
+      "critical_reason": "The Gestalt Law of Proximity and Common Region suggests that items in a shared region are perceived as related. Without clear boundaries, users may have difficulty distinguishing where one metric ends and another begins, particularly Subrequests which lacks visual parity with adjacent metrics.",
+      "recommendation": "Add subtle vertical dividers or distinct card containers with borders/shadows for each metric. Ensure all metrics have consistent visual treatment - either all show sparkline mini-charts (even if flat/empty) or none do.",
+      "reference": "Psych 101 (Kleinman) — Gestalt: Law of Proximity",
+      "annotation": {
+        "x": 55,
+        "y": 25,
+        "w": 70,
+        "h": 15
+      }
+    },
+    {
+      "id": "08",
+      "title": "Sparkline charts in metrics cards lack axis labels and data context",
+      "severity": "Medium",
+      "location": "Mini sparkline charts under Requests, Errors, CPU Time, Wall time metrics",
+      "problem": "The small sparkline charts beneath each metric provide a visual trend but have no axis labels, time scale indicators, or data point values on hover. Users cannot determine the time range, scale, or specific values from these charts. The execution duration and request duration charts similarly lack context.",
+      "critical_reason": "Nielsen's Heuristic #1 (Visibility of System Status) requires that users can understand the current state. Without scale or axis context, these charts become decorative rather than informative, failing to communicate meaningful trend data.",
+      "recommendation": "Add subtle time-range labels (e.g., '24h') below sparklines and enable hover tooltips showing exact values at each data point. Consider adding min/max indicators or a baseline reference line for context.",
+      "reference": "Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter",
+      "annotation": {
+        "x": 40,
+        "y": 30,
+        "w": 65,
+        "h": 8
+      }
+    },
+    {
+      "id": "09",
+      "title": "Deploy version button placement creates accidental action risk",
+      "severity": "Low",
+      "location": "Active deployment section - 'Deploy version' primary blue button on far right",
+      "problem": "The prominent 'Deploy version' primary action button is placed in the same visual row as the deployment table header. This high-impact action (deploying code) is positioned without any confirmation affordance visible, and its proximity to the data table could lead to accidental clicks during routine monitoring.",
+      "critical_reason": "Norman's Forcing Function principle states that high-consequence actions should have safeguards. Placing a deployment trigger prominently on a monitoring/metrics page without visible confirmation UI creates risk of unintended production deployments.",
+      "recommendation": "Consider using a secondary/outline button style for 'Deploy version' on the metrics page, reserving the primary style for the Deployments tab. Add a confirmation dialog before executing the deployment action.",
+      "reference": "The Design of Everyday Things (Norman) — Forcing Function: prevent irreversible actions with confirmation",
+      "annotation": {
+        "x": 91,
+        "y": 46,
+        "w": 12,
+        "h": 4
+      }
+    },
+    {
+      "id": "10",
+      "title": "Request Distribution map lacks text alternative and keyboard access",
+      "severity": "Low",
+      "location": "Request Distribution world map visualization in bottom right",
+      "problem": "The geographic distribution map uses bubble sizes on a world map to convey request origins but provides no text-based alternative such as a data table fallback. Users who cannot see the map or who use screen readers have no way to understand the geographic distribution of requests.",
+      "critical_reason": "WCAG 1.1.1 requires text alternatives for non-text content. A map visualization without a table alternative or descriptive text excludes screen reader users and those who prefer tabular data from accessing this information.",
+      "recommendation": "Provide a toggle to switch between map and table view showing country/region and request count. Add an aria-label to the map container describing the general distribution (e.g., 'Request distribution: primarily from Europe and North America').",
+      "reference": "WCAG 2.2 — 1.1.1 Non-text Content (A): all non-text content must have a text alternative",
+      "wcag_criterion": "1.1.1",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 80,
+        "y": 75,
+        "w": 35,
+        "h": 25
+      }
+    }
+  ]
+}
