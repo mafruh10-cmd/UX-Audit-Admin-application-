@@ -1,0 +1,180 @@
+{
+  "product_name": "Dialpad",
+  "screen_name": "Analytics - All Calls Dashboard",
+  "overall_score": 5.8,
+  "score_label": "Fair",
+  "summary": "The analytics dashboard presents a dense amount of call data but suffers from significant visual complexity and information overload. The call count breakdown section is particularly cluttered with nested boxes and small text that challenges readability. Several accessibility concerns around contrast, color-only data encoding, and interactive element labeling reduce usability for diverse user groups.",
+  "accessibility_score": 5.2,
+  "issues": [
+    {
+      "id": "01",
+      "title": "Color-only data encoding in call volume chart",
+      "severity": "High",
+      "location": "Call volume over time line chart",
+      "problem": "The chart uses a purple fill and line as the sole means of conveying data trends, with no pattern, texture, or supplementary labeling on data points. Users with color vision deficiencies cannot distinguish or interpret the data accurately.",
+      "critical_reason": "WCAG 1.4.1 requires that color is not used as the only visual means of conveying information. Approximately 8% of males have some form of color blindness, making this a significant barrier.",
+      "recommendation": "Add data point markers (circles, squares) along the line, provide on-hover tooltips with exact values, and include a dashed or patterned fill option. Consider adding direct value labels at key inflection points.",
+      "reference": "WCAG 2.2 — 1.4.1 Use of Color (A): information must not be conveyed by color alone",
+      "wcag_criterion": "1.4.1",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 62,
+        "y": 42,
+        "w": 72,
+        "h": 18
+      }
+    },
+    {
+      "id": "02",
+      "title": "Call count breakdown is visually overwhelming and hard to parse",
+      "severity": "High",
+      "location": "Call count breakdown section with nested boxes",
+      "problem": "The call count breakdown uses a complex nested box layout with over 15 data points crammed into a single view. The hierarchy is unclear—boxes of varying sizes with thin borders and small text create significant cognitive load. Users must mentally map parent-child relationships between metrics.",
+      "critical_reason": "Miller's Law states working memory can hold 7±2 items; this section presents far more in a non-hierarchical layout, forcing excessive cognitive processing. The signal-to-noise ratio is poor with many zero-value metrics cluttering the view.",
+      "recommendation": "Restructure using a clear tree or flow diagram with progressive disclosure—collapse zero-value branches by default. Use indentation, stronger visual hierarchy with bolder headings, and allow drill-down interaction rather than showing everything at once.",
+      "reference": "Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter",
+      "annotation": {
+        "x": 53,
+        "y": 70,
+        "w": 80,
+        "h": 30
+      }
+    },
+    {
+      "id": "03",
+      "title": "Low contrast text on light backgrounds throughout data sections",
+      "severity": "High",
+      "location": "Call count breakdown labels such as '0 (0%) Inbound calls', '0 New calls', and various metric labels",
+      "problem": "Multiple text labels in the call count breakdown appear in light gray or muted tones against white/light backgrounds. Text like '0 Unanswered', '0 Callbacks requested' appears to have insufficient contrast ratios, likely below the 4.5:1 minimum for normal-sized text.",
+      "critical_reason": "WCAG 1.4.3 requires a minimum contrast ratio of 4.5:1 for normal text. Low contrast text causes reading difficulty for users with low vision, aging eyes, or those viewing in bright ambient lighting.",
+      "recommendation": "Increase text color to at least #595959 on white backgrounds to meet 4.5:1 contrast ratio. For the larger '6' numeral which functions as a heading, ensure it meets at least 3:1 for large text. Audit all metric labels with a contrast checker tool.",
+      "reference": "WCAG 2.2 — 1.4.3 Contrast Minimum (AA): normal text requires 4.5:1 contrast ratio",
+      "wcag_criterion": "1.4.3",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 45,
+        "y": 68,
+        "w": 50,
+        "h": 8
+      }
+    },
+    {
+      "id": "04",
+      "title": "Dropdown filters lack visible focus indicators",
+      "severity": "High",
+      "location": "Filter bar: 'This office', 'Past 30 days', 'Keyword', 'Moment', 'Duration', 'Internal and external'",
+      "problem": "The filter pill buttons along the top do not show any visible focus indicator styling in their current state. Keyboard-only users navigating through these controls would not know which filter is currently focused, creating a significant navigation barrier.",
+      "critical_reason": "WCAG 2.4.7 requires that any keyboard operable interface has a visible focus indicator. Without it, keyboard users cannot orient themselves within the interface, violating fundamental accessibility requirements.",
+      "recommendation": "Add a 2px solid outline in a contrasting color (e.g., dark purple #6C47FF) with a 2px offset around each filter when focused. Ensure the focus ring has at least a 3:1 contrast ratio against the surrounding background per WCAG 2.4.11.",
+      "reference": "WCAG 2.2 — 2.4.7 Focus Visible (AA): keyboard focus indicator must be visible",
+      "wcag_criterion": "2.4.7",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 43,
+        "y": 19,
+        "w": 55,
+        "h": 3
+      }
+    },
+    {
+      "id": "05",
+      "title": "Legend items in chart use color-only differentiation",
+      "severity": "Medium",
+      "location": "Call count breakdown legend (top right): Total calls, Answered calls, Missed calls, Unanswered transferred calls, Outbound (connected)",
+      "problem": "The legend uses small colored dots (various shades of purple/blue) as the only means to distinguish between five call categories. Users with color vision deficiencies may not differentiate between the similar purple hues used for 'Missed calls', 'Unanswered transferred calls', and 'Outbound (connected)'.",
+      "critical_reason": "WCAG 1.4.1 prohibits using color as the sole means of conveying information. The similar purple tones are particularly problematic as they may appear identical to users with tritanopia or general color deficiency.",
+      "recommendation": "Use distinct shapes (circle, square, triangle, diamond, cross) for each legend item in addition to color. Alternatively, use patterns or ensure each color has sufficient luminance difference (at least 3:1 between adjacent legend colors).",
+      "reference": "WCAG 2.2 — 1.4.1 Use of Color (A): information must not be conveyed by color alone",
+      "wcag_criterion": "1.4.1",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 92,
+        "y": 57,
+        "w": 15,
+        "h": 7
+      }
+    },
+    {
+      "id": "06",
+      "title": "Zero-value metrics dominate the view creating noise",
+      "severity": "Medium",
+      "location": "Call count breakdown: multiple boxes showing '0 Answered', '0 Missed', '0 Abandoned', '0 Unanswered transfer', etc.",
+      "problem": "The majority of displayed metrics show zero values, yet they occupy the same visual prominence as the meaningful data (6 Total calls, 6 Outbound calls). This creates a poor signal-to-noise ratio where the user must scan through many irrelevant zeros to find actionable insights.",
+      "critical_reason": "The Signal-to-Noise Ratio principle states that maximizing relevant information and minimizing clutter improves comprehension. Showing 15+ zero-value metrics at full size violates this, increasing time to insight and user frustration.",
+      "recommendation": "Collapse or de-emphasize zero-value metrics by default—show them as a muted summary line ('12 other categories: 0 calls') with an expand option. Highlight non-zero metrics with stronger visual weight to guide attention to meaningful data.",
+      "reference": "Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter",
+      "annotation": {
+        "x": 60,
+        "y": 65,
+        "w": 30,
+        "h": 20
+      }
+    },
+    {
+      "id": "07",
+      "title": "Duplicated navigation sections in sidebar",
+      "severity": "Medium",
+      "location": "Left sidebar: 'AI Assistants', 'Reports', 'Playbooks' sections appear twice",
+      "problem": "The left sidebar contains duplicate navigation groups—'AI Assistants', 'Reports (New)', and 'Playbooks' with sub-items appear both in the upper and lower portions of the sidebar. This creates confusion about whether these are different sections or the same content, violating consistency expectations.",
+      "critical_reason": "Nielsen's Heuristic #4 (Consistency and Standards) states that users should not have to wonder whether different words, situations, or actions mean the same thing. Duplication breaks the user's mental model of navigation structure.",
+      "recommendation": "Remove the duplicate navigation group. If the lower section is meant for a different context (e.g., personal vs. team), differentiate with clear section headers like 'Team Navigation' vs. 'Personal Workspace'. Ensure each item appears only once in the navigation hierarchy.",
+      "reference": "Don't Make Me Think (Krug) — Billboard Design 101: users scan, not read",
+      "annotation": {
+        "x": 9,
+        "y": 68,
+        "w": 15,
+        "h": 25
+      }
+    },
+    {
+      "id": "08",
+      "title": "Banner warning text is small and dismissal target is minimal",
+      "severity": "Medium",
+      "location": "Top yellow warning banner about external messages",
+      "problem": "The warning banner about not being able to send external messages contains a small 'Click here' link and a tiny 'X' close button. The close button appears to be under 24×24px, making it difficult to tap on touch devices. The 'Click here' link text is also non-descriptive.",
+      "critical_reason": "WCAG 2.5.8 requires a minimum target size of 24×24 CSS pixels for interactive elements. Fitts' Law also indicates that smaller targets increase error rates and interaction time, particularly on mobile or touch interfaces.",
+      "recommendation": "Increase the close button to at least 44×44px touch target (24×24px minimum per WCAG). Replace 'Click here' with descriptive text like 'Learn how to register your company'. Add adequate padding around interactive elements.",
+      "reference": "WCAG 2.2 — 2.5.8 Target Size Minimum (AA): interactive targets must be at least 24x24 CSS pixels",
+      "wcag_criterion": "2.5.8",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 50,
+        "y": 2,
+        "w": 95,
+        "h": 3
+      }
+    },
+    {
+      "id": "09",
+      "title": "Tab navigation lacks clear active state contrast",
+      "severity": "Low",
+      "location": "Tabs: Calls, Moments, Duration, Texts",
+      "problem": "The active 'Calls' tab uses only a subtle underline and slight color change to indicate the selected state. The difference between active and inactive tabs is minimal, making it hard to quickly identify which tab is currently viewed, especially for users with low vision.",
+      "critical_reason": "The Aesthetic-Usability Effect aside, clear visual feedback about the current system status is essential per Nielsen's Heuristic #1 (Visibility of System Status). Insufficient differentiation between active and inactive states slows orientation.",
+      "recommendation": "Strengthen the active tab indicator with a thicker underline (3-4px), bolder font weight, and a higher-contrast color. Consider adding a subtle background color to the active tab to create a stronger selected state. Ensure the indicator has at least 3:1 contrast with the surrounding area.",
+      "reference": "Universal Principles of Design — Visibility: system status and available actions must be visible",
+      "annotation": {
+        "x": 30,
+        "y": 25,
+        "w": 22,
+        "h": 3
+      }
+    },
+    {
+      "id": "10",
+      "title": "Export action is visually deprioritized and easily missed",
+      "severity": "Low",
+      "location": "'Export (.csv)' link with dropdown chevron, top right of chart section",
+      "problem": "The Export (.csv) action is styled as a subtle text link in the upper right corner of the chart area, making it easy to overlook. For a data analytics dashboard where export is a primary action, this is inappropriately deprioritized.",
+      "critical_reason": "Norman's Signifier principle states that visible cues must indicate where to act. Key actions should have appropriate visual affordance proportional to their importance in the user's workflow. Analytics users frequently need to export data.",
+      "recommendation": "Style the export action as a secondary button with a border, icon, and clearer affordance. Position it in a consistent action bar above or beside the chart title. Use an export/download icon alongside the text for faster recognition.",
+      "reference": "The Design of Everyday Things (Norman) — Signifier: visible cues must indicate where to act",
+      "annotation": {
+        "x": 93,
+        "y": 30,
+        "w": 12,
+        "h": 3
+      }
+    }
+  ]
+}

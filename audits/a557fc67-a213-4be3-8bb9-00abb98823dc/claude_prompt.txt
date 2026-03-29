@@ -1,0 +1,258 @@
+You are a senior UI/UX designer and expert frontend developer.
+
+I am giving you a screenshot of a UI screen and a detailed UX audit report.
+Your task is to produce a complete, self-contained HTML redesign (version 2)
+that resolves every issue in the audit while preserving the original visual identity.
+
+CRITICAL RULE — READ BEFORE ANYTHING ELSE:
+Fixing an issue takes absolute priority over preserving layout or placement.
+If a fix requires moving an element, restructuring a section, hiding a component,
+or changing how content is presented — DO IT. The audit findings are non-negotiable.
+Preservation means keeping the brand identity (colors, typography, component style).
+It does NOT mean keeping broken elements in the same broken position.
+
+====================================================================
+MANDATORY FIX CHECKLIST  —  VERIFY EACH BEFORE WRITING A SINGLE LINE OF HTML
+====================================================================
+
+Before you write the HTML, mentally confirm that your design addresses EVERY item
+in this list. If your HTML does not contain a concrete, visible solution for a
+High or Medium issue, your response is incomplete — revise it until it does.
+Some fixes require structural changes (relocating, collapsing, or restructuring
+UI elements). Make those structural changes — do not style over them.
+
+HIGH PRIORITY  (must be resolved — zero exceptions):
+  NOTE: 'fixing' means the issue is GONE from the redesign — not styled differently.
+  If the fix says to move, collapse, or restructure something, do exactly that.
+
+  [01] Color-only data encoding in call volume chart
+       Problem:          The chart uses a purple fill and line as the sole means of conveying data trends, with no pattern, texture, or supplementary labeling on data points. Users with color vision deficiencies cannot distinguish or interpret the data accurately.
+       What to implement: Add data point markers (circles, squares) along the line, provide on-hover tooltips with exact values, and include a dashed or patterned fill option. Consider adding direct value labels at key inflection points.
+       Affects:          Call volume over time line chart
+       WCAG:             1.4.1 Level A
+
+  [02] Call count breakdown is visually overwhelming and hard to parse
+       Problem:          The call count breakdown uses a complex nested box layout with over 15 data points crammed into a single view. The hierarchy is unclear—boxes of varying sizes with thin borders and small text create significant cognitive load. Users must mentally map parent-child relationships between metrics.
+       What to implement: Restructure using a clear tree or flow diagram with progressive disclosure—collapse zero-value branches by default. Use indentation, stronger visual hierarchy with bolder headings, and allow drill-down interaction rather than showing everything at once.
+       Affects:          Call count breakdown section with nested boxes
+
+  [03] Low contrast text on light backgrounds throughout data sections
+       Problem:          Multiple text labels in the call count breakdown appear in light gray or muted tones against white/light backgrounds. Text like '0 Unanswered', '0 Callbacks requested' appears to have insufficient contrast ratios, likely below the 4.5:1 minimum for normal-sized text.
+       What to implement: Increase text color to at least #595959 on white backgrounds to meet 4.5:1 contrast ratio. For the larger '6' numeral which functions as a heading, ensure it meets at least 3:1 for large text. Audit all metric labels with a contrast checker tool.
+       Affects:          Call count breakdown labels such as '0 (0%) Inbound calls', '0 New calls', and various metric labels
+       WCAG:             1.4.3 Level AA
+
+  [04] Dropdown filters lack visible focus indicators
+       Problem:          The filter pill buttons along the top do not show any visible focus indicator styling in their current state. Keyboard-only users navigating through these controls would not know which filter is currently focused, creating a significant navigation barrier.
+       What to implement: Add a 2px solid outline in a contrasting color (e.g., dark purple #6C47FF) with a 2px offset around each filter when focused. Ensure the focus ring has at least a 3:1 contrast ratio against the surrounding background per WCAG 2.4.11.
+       Affects:          Filter bar: 'This office', 'Past 30 days', 'Keyword', 'Moment', 'Duration', 'Internal and external'
+       WCAG:             2.4.7 Level AA
+
+MEDIUM PRIORITY  (must be resolved — no exceptions):
+  NOTE: Same rule — fix means the issue does not exist in the output HTML.
+
+  [05] Legend items in chart use color-only differentiation
+       Problem:          The legend uses small colored dots (various shades of purple/blue) as the only means to distinguish between five call categories. Users with color vision deficiencies may not differentiate between the similar purple hues used for 'Missed calls', 'Unanswered transferred calls', and 'Outbound (connected)'.
+       What to implement: Use distinct shapes (circle, square, triangle, diamond, cross) for each legend item in addition to color. Alternatively, use patterns or ensure each color has sufficient luminance difference (at least 3:1 between adjacent legend colors).
+       Affects:          Call count breakdown legend (top right): Total calls, Answered calls, Missed calls, Unanswered transferred calls, Outbound (connected)
+       WCAG:             1.4.1 Level A
+
+  [06] Zero-value metrics dominate the view creating noise
+       Problem:          The majority of displayed metrics show zero values, yet they occupy the same visual prominence as the meaningful data (6 Total calls, 6 Outbound calls). This creates a poor signal-to-noise ratio where the user must scan through many irrelevant zeros to find actionable insights.
+       What to implement: Collapse or de-emphasize zero-value metrics by default—show them as a muted summary line ('12 other categories: 0 calls') with an expand option. Highlight non-zero metrics with stronger visual weight to guide attention to meaningful data.
+       Affects:          Call count breakdown: multiple boxes showing '0 Answered', '0 Missed', '0 Abandoned', '0 Unanswered transfer', etc.
+
+  [07] Duplicated navigation sections in sidebar
+       Problem:          The left sidebar contains duplicate navigation groups—'AI Assistants', 'Reports (New)', and 'Playbooks' with sub-items appear both in the upper and lower portions of the sidebar. This creates confusion about whether these are different sections or the same content, violating consistency expectations.
+       What to implement: Remove the duplicate navigation group. If the lower section is meant for a different context (e.g., personal vs. team), differentiate with clear section headers like 'Team Navigation' vs. 'Personal Workspace'. Ensure each item appears only once in the navigation hierarchy.
+       Affects:          Left sidebar: 'AI Assistants', 'Reports', 'Playbooks' sections appear twice
+
+  [08] Banner warning text is small and dismissal target is minimal
+       Problem:          The warning banner about not being able to send external messages contains a small 'Click here' link and a tiny 'X' close button. The close button appears to be under 24×24px, making it difficult to tap on touch devices. The 'Click here' link text is also non-descriptive.
+       What to implement: Increase the close button to at least 44×44px touch target (24×24px minimum per WCAG). Replace 'Click here' with descriptive text like 'Learn how to register your company'. Add adequate padding around interactive elements.
+       Affects:          Top yellow warning banner about external messages
+       WCAG:             2.5.8 Level AA
+
+LOW PRIORITY  (implement where possible):
+  [09] Tab navigation lacks clear active state contrast — Strengthen the active tab indicator with a thicker underline (3-4px), bolder font weight, and a higher-contrast color. Consider adding a subtle background color to the active tab to create a stronger selected state. Ensure the indicator has at least 3:1 contrast with the surrounding area.
+  [10] Export action is visually deprioritized and easily missed — Style the export action as a secondary button with a border, icon, and clearer affordance. Position it in a consistent action bar above or beside the chart title. Use an export/download icon alongside the text for faster recognition.
+
+====================================================================
+STEP 1 — LAYOUT & COMPOSITION  (reason through this BEFORE anything else)
+====================================================================
+
+Layout and content distribution are non-negotiable design decisions.
+Do not assume the original layout is correct — reason from first principles.
+Ask yourself: does each element sit in the right zone for its purpose?
+If not, move it. The composition must serve the user's primary goal.
+
+1. VISUAL HIERARCHY
+   The most important action or information must be visually dominant.
+   Use size, weight, contrast, and position to establish a clear reading order.
+   Secondary content must be visually subordinate — smaller, lighter, lower.
+   (Malewicz — Designing User Interfaces: contrast creates hierarchy)
+   (Refactoring UI: use size and weight to communicate importance, not just color)
+
+2. F-PATTERN & READING FLOW
+   Users scan left-to-right, top-to-bottom in an F-shape on content-heavy screens.
+   Place primary actions and key labels at the start of scan lines.
+   Never interrupt the scan path with secondary, promotional, or personalisation content.
+   (Nielsen Norman Group — F-Pattern reading behavior)
+
+3. PROXIMITY & GROUPING (Gestalt)
+   Related elements must be spatially close. Unrelated elements need clear separation.
+   If two elements answer different user questions, they belong in different zones.
+   Never mix contextual content with navigational content in the same region.
+   (Psych 101 — Gestalt: Law of Proximity, Law of Similarity)
+
+4. CONTENT PRIORITISATION
+   Identify the user's single primary goal on this screen.
+   Every element that does not serve that goal directly must be secondary in
+   visual weight and position. Upsell, personalisation, and promotional content
+   must never compete with or interrupt the primary task flow.
+   (Don't Make Me Think — Krug: do not make users think about what to do next)
+   (Psychology of Design — Hick's Law: fewer competing choices = faster decisions)
+
+5. SPATIAL ZONES
+   Divide the screen into logical zones: navigation, primary content, secondary
+   context, actions. Each zone has exactly one job.
+   If an element is in the wrong zone, move it to the correct zone or defer it
+   to a modal or drawer. The layout must match the user's mental model of the task.
+   (Universal Principles of Design — Progressive Disclosure)
+
+6. SIGNAL-TO-NOISE
+   Every element must earn its place. If an element does not directly help the
+   user complete their current task, reduce its visual weight or remove it from
+   the primary viewport. Clutter is a UX failure, not a neutral default.
+   (Universal Principles of Design — Signal-to-Noise Ratio)
+
+COMPOSITION RULE: If the original layout violates these principles — with or
+without an explicit audit finding — correct it. Do not replicate bad composition
+because it existed in the screenshot. A version 2 must be compositionally sound.
+
+====================================================================
+STEP 2 — VISUAL IDENTITY  (preserve brand, not broken placement)
+====================================================================
+
+Once composition is decided, preserve these brand elements exactly:
+  - Colors: every background, text, brand, accent, and surface hex value
+  - Typography: font families, sizes, weights, line-heights, letter-spacing
+  - Spacing scale: the relative rhythm of padding/margin (not the positions)
+  - Shapes: border-radius, border styles, shadows, elevation
+  - Icons: style, weight, and size (placement may change if composition requires)
+  - Components: card designs, button styles, badge styles, input styles
+
+NOTE: Layout and element positioning are governed by Step 1, not this list.
+Preserving the brand does NOT mean preserving where broken things sit.
+The output must feel like a version 2 — same brand, better UX.
+
+====================================================================
+FULL AUDIT REPORT  —  Analytics - All Calls Dashboard
+====================================================================
+Overall Score:        5.8/10  —  Fair
+Accessibility Score:  5.2/10  (WCAG 2.2 AA)
+Issues Found:         10  (4 High · 4 Medium · 2 Low)
+
+EXECUTIVE SUMMARY
+The analytics dashboard presents a dense amount of call data but suffers from significant visual complexity and information overload. The call count breakdown section is particularly cluttered with nested boxes and small text that challenges readability. Several accessibility concerns around contrast, color-only data encoding, and interactive element labeling reduce usability for diverse user groups.
+
+ALL ISSUES  (full detail for reference):
+
+[01] HIGH  —  Color-only data encoding in call volume chart
+     Location:  Call volume over time line chart
+     Problem:   The chart uses a purple fill and line as the sole means of conveying data trends, with no pattern, texture, or supplementary labeling on data points. Users with color vision deficiencies cannot distinguish or interpret the data accurately.
+     Fix:       Add data point markers (circles, squares) along the line, provide on-hover tooltips with exact values, and include a dashed or patterned fill option. Consider adding direct value labels at key inflection points.
+     Source:    WCAG 2.2 — 1.4.1 Use of Color (A): information must not be conveyed by color alone
+     WCAG:      1.4.1  Level A
+
+[02] HIGH  —  Call count breakdown is visually overwhelming and hard to parse
+     Location:  Call count breakdown section with nested boxes
+     Problem:   The call count breakdown uses a complex nested box layout with over 15 data points crammed into a single view. The hierarchy is unclear—boxes of varying sizes with thin borders and small text create significant cognitive load. Users must mentally map parent-child relationships between metrics.
+     Fix:       Restructure using a clear tree or flow diagram with progressive disclosure—collapse zero-value branches by default. Use indentation, stronger visual hierarchy with bolder headings, and allow drill-down interaction rather than showing everything at once.
+     Source:    Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter
+
+[03] HIGH  —  Low contrast text on light backgrounds throughout data sections
+     Location:  Call count breakdown labels such as '0 (0%) Inbound calls', '0 New calls', and various metric labels
+     Problem:   Multiple text labels in the call count breakdown appear in light gray or muted tones against white/light backgrounds. Text like '0 Unanswered', '0 Callbacks requested' appears to have insufficient contrast ratios, likely below the 4.5:1 minimum for normal-sized text.
+     Fix:       Increase text color to at least #595959 on white backgrounds to meet 4.5:1 contrast ratio. For the larger '6' numeral which functions as a heading, ensure it meets at least 3:1 for large text. Audit all metric labels with a contrast checker tool.
+     Source:    WCAG 2.2 — 1.4.3 Contrast Minimum (AA): normal text requires 4.5:1 contrast ratio
+     WCAG:      1.4.3  Level AA
+
+[04] HIGH  —  Dropdown filters lack visible focus indicators
+     Location:  Filter bar: 'This office', 'Past 30 days', 'Keyword', 'Moment', 'Duration', 'Internal and external'
+     Problem:   The filter pill buttons along the top do not show any visible focus indicator styling in their current state. Keyboard-only users navigating through these controls would not know which filter is currently focused, creating a significant navigation barrier.
+     Fix:       Add a 2px solid outline in a contrasting color (e.g., dark purple #6C47FF) with a 2px offset around each filter when focused. Ensure the focus ring has at least a 3:1 contrast ratio against the surrounding background per WCAG 2.4.11.
+     Source:    WCAG 2.2 — 2.4.7 Focus Visible (AA): keyboard focus indicator must be visible
+     WCAG:      2.4.7  Level AA
+
+[05] MEDIUM  —  Legend items in chart use color-only differentiation
+     Location:  Call count breakdown legend (top right): Total calls, Answered calls, Missed calls, Unanswered transferred calls, Outbound (connected)
+     Problem:   The legend uses small colored dots (various shades of purple/blue) as the only means to distinguish between five call categories. Users with color vision deficiencies may not differentiate between the similar purple hues used for 'Missed calls', 'Unanswered transferred calls', and 'Outbound (connected)'.
+     Fix:       Use distinct shapes (circle, square, triangle, diamond, cross) for each legend item in addition to color. Alternatively, use patterns or ensure each color has sufficient luminance difference (at least 3:1 between adjacent legend colors).
+     Source:    WCAG 2.2 — 1.4.1 Use of Color (A): information must not be conveyed by color alone
+     WCAG:      1.4.1  Level A
+
+[06] MEDIUM  —  Zero-value metrics dominate the view creating noise
+     Location:  Call count breakdown: multiple boxes showing '0 Answered', '0 Missed', '0 Abandoned', '0 Unanswered transfer', etc.
+     Problem:   The majority of displayed metrics show zero values, yet they occupy the same visual prominence as the meaningful data (6 Total calls, 6 Outbound calls). This creates a poor signal-to-noise ratio where the user must scan through many irrelevant zeros to find actionable insights.
+     Fix:       Collapse or de-emphasize zero-value metrics by default—show them as a muted summary line ('12 other categories: 0 calls') with an expand option. Highlight non-zero metrics with stronger visual weight to guide attention to meaningful data.
+     Source:    Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter
+
+[07] MEDIUM  —  Duplicated navigation sections in sidebar
+     Location:  Left sidebar: 'AI Assistants', 'Reports', 'Playbooks' sections appear twice
+     Problem:   The left sidebar contains duplicate navigation groups—'AI Assistants', 'Reports (New)', and 'Playbooks' with sub-items appear both in the upper and lower portions of the sidebar. This creates confusion about whether these are different sections or the same content, violating consistency expectations.
+     Fix:       Remove the duplicate navigation group. If the lower section is meant for a different context (e.g., personal vs. team), differentiate with clear section headers like 'Team Navigation' vs. 'Personal Workspace'. Ensure each item appears only once in the navigation hierarchy.
+     Source:    Don't Make Me Think (Krug) — Billboard Design 101: users scan, not read
+
+[08] MEDIUM  —  Banner warning text is small and dismissal target is minimal
+     Location:  Top yellow warning banner about external messages
+     Problem:   The warning banner about not being able to send external messages contains a small 'Click here' link and a tiny 'X' close button. The close button appears to be under 24×24px, making it difficult to tap on touch devices. The 'Click here' link text is also non-descriptive.
+     Fix:       Increase the close button to at least 44×44px touch target (24×24px minimum per WCAG). Replace 'Click here' with descriptive text like 'Learn how to register your company'. Add adequate padding around interactive elements.
+     Source:    WCAG 2.2 — 2.5.8 Target Size Minimum (AA): interactive targets must be at least 24x24 CSS pixels
+     WCAG:      2.5.8  Level AA
+
+[09] LOW  —  Tab navigation lacks clear active state contrast
+     Location:  Tabs: Calls, Moments, Duration, Texts
+     Problem:   The active 'Calls' tab uses only a subtle underline and slight color change to indicate the selected state. The difference between active and inactive tabs is minimal, making it hard to quickly identify which tab is currently viewed, especially for users with low vision.
+     Fix:       Strengthen the active tab indicator with a thicker underline (3-4px), bolder font weight, and a higher-contrast color. Consider adding a subtle background color to the active tab to create a stronger selected state. Ensure the indicator has at least 3:1 contrast with the surrounding area.
+     Source:    Universal Principles of Design — Visibility: system status and available actions must be visible
+
+[10] LOW  —  Export action is visually deprioritized and easily missed
+     Location:  'Export (.csv)' link with dropdown chevron, top right of chart section
+     Problem:   The Export (.csv) action is styled as a subtle text link in the upper right corner of the chart area, making it easy to overlook. For a data analytics dashboard where export is a primary action, this is inappropriately deprioritized.
+     Fix:       Style the export action as a secondary button with a border, icon, and clearer affordance. Position it in a consistent action bar above or beside the chart title. Use an export/download icon alongside the text for faster recognition.
+     Source:    The Design of Everyday Things (Norman) — Signifier: visible cues must indicate where to act
+
+====================================================================
+SELF-CHECK — RUN THIS BEFORE OUTPUTTING THE HTML
+====================================================================
+
+  [ ] [01] Color-only data encoding in call volume chart — is the fix visible and functional in the HTML?
+  [ ] [02] Call count breakdown is visually overwhelming and hard to parse — is the fix visible and functional in the HTML?
+  [ ] [03] Low contrast text on light backgrounds throughout data sections — is the fix visible and functional in the HTML?
+  [ ] [04] Dropdown filters lack visible focus indicators — is the fix visible and functional in the HTML?
+  [ ] [05] Legend items in chart use color-only differentiation — is the fix visible and functional in the HTML?
+  [ ] [06] Zero-value metrics dominate the view creating noise — is the fix visible and functional in the HTML?
+  [ ] [07] Duplicated navigation sections in sidebar — is the fix visible and functional in the HTML?
+  [ ] [08] Banner warning text is small and dismissal target is minimal — is the fix visible and functional in the HTML?
+
+If any checkbox above cannot be ticked, revise your HTML before outputting it.
+
+====================================================================
+OUTPUT REQUIREMENTS
+====================================================================
+
+- Output a single, complete, self-contained HTML file.
+- All CSS must be in a <style> block in the <head> — no external stylesheets.
+- No CDN links, no JavaScript frameworks, no external images.
+  Use inline SVG for icons. Use data URIs only if absolutely necessary.
+- Preserve all informational content (text, labels, data). Do not silently drop
+  information the user needs. However: if a fix requires relocating, collapsing,
+  or restructuring a UI element, you MUST do so — placing it in a better position
+  is not removing it. The audit fix always wins over original placement.
+- Do NOT add new features, sections, or content not present in the original.
+- JavaScript is allowed only for interactions clearly present in the original.
+  Keep it minimal and inline.
+- The file must open in a browser as a fully working static page.
+- Start your response with <!DOCTYPE html> and end the HTML with </html>.
+- Do NOT reference Mobbin or any third-party design gallery. Use Saasfactor if needed.
