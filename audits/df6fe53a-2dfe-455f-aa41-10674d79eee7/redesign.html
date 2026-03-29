@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics – All Calls | Dialpad</title>
+<style>
+/* ── Reset ──────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 13px;
+  color: #1a1a2e;
+  background: #f7f7fb;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; font-size: inherit; cursor: pointer; }
+ul, ol { list-style: none; }
+
+/* ── Variables ───────────────────────────────────── */
+:root {
+  --purple:       #6C47FF;
+  --purple-pale:  #f0edff;
+  --purple-mid:   #9b7dff;
+  --text:         #1a1a2e;
+  --text-sec:     #595959;   /* [03] ≥4.5:1 on white */
+  --text-muted:   #767676;   /* [03] ≥4.5:1 on white */
+  --border:       #e2e2e8;
+  --bg:           #f7f7fb;
+  --sidebar:      #f8f8fc;
+  --white:        #ffffff;
+  --radius:       6px;
+  --radius-lg:    10px;
+}
+
+/* ── [04] Global focus ring ─────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   [08] WARNING BANNER — big close target, descriptive link
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#warning-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff8e1;
+  border-bottom: 2px solid #f9c900;
+  padding: 0 16px 0 20px;
+  min-height: 48px;
+  flex-shrink: 0;
+}
+.wb-icon { color: #d97706; flex-shrink: 0; line-height: 0; }
+.wb-text { flex: 1; font-size: 13px; color: var(--text-sec); line-height: 1.5; }
+.wb-text strong { color: var(--text); }
+.wb-link { color: var(--purple); font-weight: 600; text-decoration: underline; }
+.wb-link:hover { text-decoration: none; }
+/* [08] min 44×44 touch target */
+.wb-close {
+  flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-sec);
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.wb-close:hover { background: rgba(0,0,0,0.07); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   APP BODY
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.app-body { display: flex; flex: 1; overflow: hidden; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   GLOBAL NAV  —  icon rail + text panel (two columns)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ── 1. Narrow icon rail — far left ──────────────── */
+.icon-rail {
+  width: 44px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  z-index: 2;
+}
+
+/* Dialpad logo tile at top */
+.rail-logo {
+  width: 44px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.rail-logo-mark {
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg, #e91e63 0%, #9c27b0 100%);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 14px; font-weight: 900;
+  letter-spacing: -0.5px;
+}
+
+/* Icon buttons in the rail */
+.rail-icons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0;
+  flex: 1;
+  width: 100%;
+}
+.rail-btn {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: none;
+  color: #9da3ae;
+  border-radius: 8px;
+  transition: background 0.13s, color 0.13s;
+  position: relative;
+}
+.rail-btn:hover { background: var(--purple-pale); color: var(--purple); }
+.rail-btn.is-active {
+  background: var(--purple-pale);
+  color: var(--purple);
+}
+/* Active dot indicator */
+.rail-btn.is-active::after {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 50%; transform: translateY(-50%);
+  width: 3px; height: 20px;
+  background: var(--purple);
+  border-radius: 0 2px 2px 0;
+}
+
+/* Avatar at rail bottom */
+.rail-bottom {
+  padding: 10px 0 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  width: 100%;
+}
+.rail-avatar {
+  width: 30px; height: 30px;
+  background: linear-gradient(135deg, var(--purple) 0%, var(--purple-mid) 100%);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 11px; font-weight: 700;
+  cursor: pointer;
+}
+
+/* ── 2. Text nav panel — beside the icon rail ────── */
+.nav-panel {
+  width: 168px;
+  flex-shrink: 0;
+  background: #f8f8fc;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Workspace dropdown */
+.ws-header { padding: 9px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.workspace-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 5px 7px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 13px;
+  transition: border-color 0.15s;
+}
+.workspace-btn:hover { border-color: var(--purple-mid); }
+.ws-icon {
+  width: 20px; height: 20px;
+  background: linear-gradient(135deg, #e91e63 0%, #9c27b0 100%);
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 10px; font-weight: 900; flex-shrink: 0;
+}
+.ws-name { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Nav sections */
+.nav-section { border-bottom: 1px solid var(--border); padding: 4px 0; }
+.nav-section:last-of-type { border-bottom: none; }
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 12px;
+  color: var(--text-sec);
+  font-size: 13px;
+  transition: background 0.12s, color 0.12s;
+  gap: 6px;
+}
+.nav-link:hover { background: rgba(108,71,255,0.06); color: var(--text); }
+.nav-link.is-active {
+  background: var(--purple-pale);
+  color: var(--purple);
+  font-weight: 600;
+}
+.nav-link--sub { padding-left: 24px; font-size: 12px; color: var(--text-muted); }
+.nav-link--sub:hover { color: var(--text); }
+
+.section-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px 3px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  color: var(--text-muted); text-transform: uppercase;
+}
+.section-add {
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: none;
+  color: var(--text-muted); font-size: 16px;
+  border-radius: 3px;
+  transition: background 0.12s;
+  line-height: 1;
+}
+.section-add:hover { background: rgba(0,0,0,0.08); color: var(--text); }
+.no-filters { padding: 2px 12px 8px; font-size: 12px; color: var(--text-muted); }
+
+.badge-new {
+  font-size: 9px; font-weight: 800;
+  background: var(--purple); color: white;
+  padding: 1px 5px; border-radius: 99px;
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MAIN CONTENT
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--white);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  padding: 12px 32px;
+  font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* Page header */
+.page-hdr { padding: 20px 32px 0; }
+.page-hdr-row { display: flex; align-items: flex-start; justify-content: space-between; }
+.page-title { font-size: 22px; font-weight: 700; color: var(--text); }
+.pin-btn { background: none; border: none; padding: 4px; color: var(--purple); }
+.page-desc { margin-top: 5px; font-size: 13px; color: var(--text-sec); }
+.link-p { color: var(--purple); text-decoration: underline; font-weight: 500; }
+.link-p:hover { text-decoration: none; }
+.data-ts { margin-top: 3px; font-size: 11px; color: var(--text-muted); }
+
+/* [04] Filter bar */
+.filter-bar {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 14px 32px 10px;
+}
+.filter-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--text-sec);
+  font-size: 12px; font-weight: 500;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.filter-pill:hover { border-color: var(--purple); color: var(--purple); }
+.filter-pill.is-active { background: var(--purple-pale); border-color: var(--purple); color: var(--purple); }
+/* [04] Explicit focus ring on pills */
+.filter-pill:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+/* Save search bar */
+.save-bar {
+  margin: 0 32px 2px;
+  padding: 7px 12px;
+  background: #fffde7;
+  border: 1px solid #f0e68c;
+  border-radius: var(--radius);
+  font-size: 12px; color: var(--text-sec);
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.save-bar a { color: var(--purple); font-weight: 500; }
+.view-calls-btn {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 5px;
+  border: none; background: none;
+  color: var(--purple); font-size: 12px; font-weight: 500;
+}
+
+/* [09] Tabs — stronger active state */
+.tabs {
+  display: flex;
+  padding: 0 32px;
+  border-bottom: 2px solid var(--border);
+  margin-top: 14px;
+  flex-shrink: 0;
+}
+.tab-btn {
+  padding: 10px 16px;
+  background: none; border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  font-size: 13px; font-weight: 500;
+  color: var(--text-muted);
+  transition: color 0.12s, border-color 0.12s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.is-active {
+  color: var(--purple);
+  font-weight: 700;           /* [09] bolder */
+  border-bottom-color: var(--purple); /* [09] 3px, high-contrast */
+}
+
+/* Content area */
+.content-area { padding: 20px 32px 40px; }
+
+/* Section card */
+.s-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.s-card-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.s-title { font-size: 14px; font-weight: 600; color: var(--text); }
+
+/* [10] Export button — proper secondary button with icon */
+.export-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--white);
+  color: var(--text-sec);
+  font-size: 12px; font-weight: 500;
+  transition: border-color 0.13s, color 0.13s, background 0.13s;
+}
+.export-btn:hover { border-color: var(--purple); color: var(--purple); background: var(--purple-pale); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   [01] CHART — markers, tooltip, value label
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.chart-wrap {
+  padding: 8px 16px 12px;
+  position: relative;
+  user-select: none;
+}
+.chart-wrap svg { width: 100%; height: auto; display: block; }
+.data-pt { cursor: pointer; transition: r 0.1s; }
+.data-pt:hover { r: 5; }
+
+#chart-tip {
+  position: absolute;
+  background: #1a1a2e;
+  color: #fff;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 20;
+  transform: translate(-50%, -100%);
+  margin-top: -8px;
+  display: none;
+}
+#chart-tip::after {
+  content: '';
+  position: absolute;
+  top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1a1a2e;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   [05] LEGEND — distinct shapes per category
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.legend {
+  display: flex; flex-wrap: wrap; gap: 8px 20px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.legend-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-sec);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   [02][03][06] CALL COUNT BREAKDOWN
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.bd-body { padding: 18px 18px 20px; }
+.bd-root { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+
+/* Summary card */
+.bd-summary {
+  flex-shrink: 0;
+  min-width: 130px;
+  background: var(--purple-pale);
+  border: 1px solid rgba(108,71,255,0.22);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  text-align: center;
+}
+.bd-big-num {
+  font-size: 38px; font-weight: 800; color: var(--purple); line-height: 1;
+}
+.bd-big-lbl { font-size: 12px; font-weight: 600; color: var(--text-sec); margin-top: 4px; }
+.bd-handled {
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid rgba(108,71,255,0.2);
+  font-size: 12px; color: var(--text-sec);
+}
+.bd-handled-val { font-weight: 700; color: var(--text); font-size: 13px; }
+
+/* Branch columns */
+.bd-cols {
+  flex: 1; min-width: 320px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+
+/* Branch card */
+.branch-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.branch-card.is-zero { opacity: 0.7; }
+
+.branch-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 14px;
+  background: var(--bg);
+}
+.branch-num { font-size: 20px; font-weight: 800; color: var(--text); line-height: 1; }
+.branch-num.is-zero { color: var(--text-muted); font-size: 18px; }
+.branch-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-sec); margin-top: 2px; }
+.branch-pct {
+  font-size: 11px; font-weight: 700; padding: 2px 7px;
+  background: var(--purple-pale); color: var(--purple);
+  border-radius: 99px;
+}
+.branch-pct.is-zero { background: var(--bg); color: var(--text-muted); }
+
+/* Sub-metrics */
+.sub-list { padding: 6px 14px 4px; }
+.sub-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid #f3f3f6;
+}
+.sub-row:last-child { border-bottom: none; }
+/* [03] Sufficient contrast on all metric text */
+.sub-val { font-size: 14px; font-weight: 700; color: var(--text); min-width: 22px; }
+.sub-val.is-zero { font-weight: 500; font-size: 13px; color: var(--text-muted); }
+.sub-lbl { flex: 1; font-size: 12px; color: var(--text-sec); }
+.sub-pct { font-size: 11px; color: var(--text-muted); }
+
+/* [06] Zero-value toggle */
+.zero-toggle {
+  display: flex; align-items: center; gap: 6px;
+  width: 100%; padding: 8px 14px;
+  border: none; border-top: 1px dashed var(--border);
+  background: none; color: var(--text-muted);
+  font-size: 12px; text-align: left;
+  transition: color 0.12s, background 0.12s;
+}
+.zero-toggle:hover { color: var(--purple); background: var(--purple-pale); }
+.toggle-icon { transition: transform 0.2s; flex-shrink: 0; }
+.toggle-icon.open { transform: rotate(180deg); }
+.zero-section { display: none; }
+.zero-section.is-open { display: block; }
+.zero-section .sub-list { padding-top: 4px; }
+.zero-section .sub-row { opacity: 0.72; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════
+     [08] Warning Banner
+     ════════════════════════════════════════════════ -->
+<div id="warning-banner" role="alert" aria-live="polite">
+  <span class="wb-icon">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M8 1.5L14.5 13.5H1.5L8 1.5z" fill="#fde68a" stroke="#d97706" stroke-width="1.2" stroke-linejoin="round"/>
+      <line x1="8" y1="6" x2="8" y2="9.5" stroke="#92400e" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="8" cy="11.6" r="0.85" fill="#92400e"/>
+    </svg>
+  </span>
+  <p class="wb-text">
+    <strong>You are not able to send external messages.</strong>
+    For more details on how to register your company and numbers, visit our Help Center.
+    <!-- [08] Descriptive link text replacing "Click here" -->
+    <a href="#" class="wb-link">Learn how to register your company</a>
+  </p>
+  <!-- [08] 44×44 minimum touch target -->
+  <button class="wb-close" aria-label="Dismiss this warning" onclick="document.getElementById('warning-banner').remove()">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <line x1="2" y1="2" x2="12" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="12" y1="2" x2="2"  y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+  </button>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     APP BODY
+     ════════════════════════════════════════════════ -->
+<div class="app-body">
+
+  <!-- ══════════════════════════════════════════════
+       GLOBAL NAV  —  icon rail (far left) + text panel
+       ══════════════════════════════════════════════ -->
+
+  <!-- ── Column 1: narrow icon rail ─────────────── -->
+  <div class="icon-rail" role="navigation" aria-label="Feature navigation">
+
+    <!-- Dialpad logo -->
+    <div class="rail-logo" aria-label="Dialpad">
+      <div class="rail-logo-mark" aria-hidden="true">d</div>
+    </div>
+
+    <!-- Feature icon buttons -->
+    <div class="rail-icons">
+      <!-- Calls -->
+      <button class="rail-btn" title="Calls" aria-label="Calls">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <path d="M14.2 11.8c-.8-.5-1.8-1-2.4-1s-.8.4-1.2.8c-.4.4-.8.8-1.2.8s-1.2-.7-2.2-1.7C6.2 9.7 5.5 9 5.5 8.6c0-.4.4-.8.8-1.2.4-.4.8-.8.8-1.2 0-.6-.5-1.6-1-2.4C5.5 3 5 2.7 4.4 2.8c-.5 0-.9.3-1.3.7C2.7 3.9 2 4.6 2 5.5c0 1.4.7 3.3 2.3 5.3C6 12.8 7.8 14.4 9.8 15.2c1.9.8 3.7 1.1 5 1.1.9 0 1.7-.6 2.1-1 .4-.4.7-.9.8-1.4.1-.5-.1-1-.9-1.6-.2-.2-.4-.3-.6-.5z" fill="currentColor"/>
+        </svg>
+      </button>
+      <!-- Contacts -->
+      <button class="rail-btn" title="Contacts" aria-label="Contacts">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <circle cx="9" cy="7" r="3.2" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M2.5 16c0-2.5 2.9-4.5 6.5-4.5s6.5 2 6.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <!-- Settings -->
+      <button class="rail-btn" title="Settings" aria-label="Settings">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <circle cx="9" cy="9" r="2.6" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M9 1.5v2M9 14.5v2M1.5 9h2M14.5 9h2M3.6 3.6l1.4 1.4M13 13l1.4 1.4M14.4 3.6L13 5M5 13l-1.4 1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <!-- AI/Sparkle -->
+      <button class="rail-btn" title="AI Assistants" aria-label="AI Assistants">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <path d="M9 2L10.2 6.8 15 8l-4.8 1.2L9 14l-1.2-4.8L3 8l4.8-1.2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <!-- Analytics — ACTIVE -->
+      <button class="rail-btn is-active" title="Analytics" aria-label="Analytics" aria-current="page">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <rect x="2"  y="10.5" width="3.5" height="6"   rx="1" fill="currentColor"/>
+          <rect x="7.3" y="6.5"  width="3.5" height="10"  rx="1" fill="currentColor"/>
+          <rect x="12.5" y="2"   width="3.5" height="14.5" rx="1" fill="currentColor"/>
+        </svg>
+      </button>
+      <!-- History / Recents -->
+      <button class="rail-btn" title="Recents" aria-label="Recents">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M9 5.5V9.5L11.5 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <!-- Video -->
+      <button class="rail-btn" title="Meetings" aria-label="Meetings">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <rect x="1.5" y="4.5" width="11" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M12.5 7.5L16.5 5.5V12.5L12.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <!-- Playbooks / Box -->
+      <button class="rail-btn" title="Playbooks" aria-label="Playbooks">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <path d="M9 2L16 5.5V12.5L9 16L2 12.5V5.5L9 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M9 2v14M2 5.5l7 3.5 7-3.5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- User avatar at bottom of rail -->
+    <div class="rail-bottom">
+      <div class="rail-avatar" aria-label="Your profile" tabindex="0" role="button">F</div>
+    </div>
+  </div>
+
+  <!-- ── Column 2: text navigation panel ─────────── -->
+  <nav class="nav-panel" aria-label="Section navigation">
+
+    <!-- Workspace dropdown -->
+    <div class="ws-header">
+      <button class="workspace-btn" aria-haspopup="listbox" aria-label="Current workspace: ASMobbin. Click to switch.">
+        <div class="ws-icon" aria-hidden="true">D</div>
+        <span class="ws-name">ASMobbin</span>
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Primary links -->
+    <div class="nav-section">
+      <a href="#" class="nav-link is-active" aria-current="page">All calls</a>
+      <a href="#" class="nav-link">My calls</a>
+      <a href="#" class="nav-link">All digital</a>
+    </div>
+
+    <!-- My searches -->
+    <div class="nav-section">
+      <div class="section-hdr">
+        My searches (0)
+        <button class="section-add" aria-label="Add saved search">+</button>
+      </div>
+      <p class="no-filters">No filters created</p>
+    </div>
+
+    <!-- [07] Single instance of AI / Reports / Playbooks -->
+    <div class="nav-section">
+      <a href="#" class="nav-link">AI Assistants</a>
+      <a href="#" class="nav-link">
+        Reports&nbsp;<span class="badge-new">New</span>
+      </a>
+      <a href="#" class="nav-link">Playbooks</a>
+      <a href="#" class="nav-link nav-link--sub">Teams &amp; groups</a>
+      <a href="#" class="nav-link nav-link--sub">Agents</a>
+      <a href="#" class="nav-link nav-link--sub">Playbooks</a>
+    </div>
+
+  </nav>
+
+  <!-- ── Main content ─────────────────────────────── -->
+  <main class="main-content" id="main">
+    <div class="breadcrumb" aria-label="Breadcrumb navigation">
+      Analytics / Summary Data / All calls
+    </div>
+
+    <div class="page-hdr">
+      <div class="page-hdr-row">
+        <h1 class="page-title">All calls</h1>
+        <button class="pin-btn" aria-label="Pin this view">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <path d="M11 2l5 5-5.5 1.5-2 7.5-1-1 1.5-5.5L3.5 8 11 2z" fill="currentColor" stroke="currentColor" stroke-width="0.5" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <p class="page-desc">
+        Explore what's happening on your team's Dialpad calls with
+        <a href="#" class="link-p">Dialpad AI</a>.
+        <a href="#" class="link-p">Need help?</a>
+      </p>
+      <p class="data-ts">All data is in US/Pacific &nbsp;·&nbsp; Updated Thu Feb 12, 2:43 AM</p>
+    </div>
+
+    <!-- [04] Filter bar — focus ring via :focus-visible -->
+    <div class="filter-bar" role="group" aria-label="Data filters">
+      <button class="filter-pill is-active" aria-pressed="true" aria-label="Filter: This office (active)">
+        This office
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="filter-pill is-active" aria-pressed="true" aria-label="Filter: Past 30 days (active)">
+        Past 30 days
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="filter-pill" aria-pressed="false" aria-label="Filter: Keyword">
+        Keyword
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="filter-pill" aria-pressed="false" aria-label="Filter: Moment">
+        Moment
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="filter-pill is-active" aria-pressed="true" aria-label="Filter: Duration (active)">
+        Duration
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="filter-pill" aria-pressed="false" aria-label="Filter: Internal and external">
+        Internal and external
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Save search bar -->
+    <div class="save-bar" role="region" aria-label="Save this search">
+      <span>Would you like to save this search?</span>
+      <a href="#" class="link-p">Clear</a>
+      <span aria-hidden="true">·</span>
+      <a href="#" class="link-p">Save this search</a>
+      <button class="view-calls-btn">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M10.5 9c-.6-.3-1.3-.8-1.7-.8s-.7.3-1 .6c-.3.3-.6.6-1 .6-.4 0-1-.5-1.8-1.3-.8-.8-1.3-1.4-1.3-1.8 0-.4.3-.7.6-1 .3-.3.6-.6.6-1 0-.5-.5-1.1-.8-1.7-.4-.6-.8-.8-1.2-.7-.3 0-.6.2-.9.5C2.7 3 2 3.6 2 4.4c0 1.1.6 2.6 1.8 4C5 9.8 6.5 11 7.9 11.4c1.4.5 2.8.7 3.8.7.6 0 1.2-.4 1.5-.7.3-.3.5-.6.5-.9.1-.4-.1-.7-.7-1.4-.1-.1-.3-.1-.5-.1z" fill="currentColor"/>
+        </svg>
+        View calls with these filters
+      </button>
+    </div>
+
+    <!-- [09] Tabs — bolder active state -->
+    <div class="tabs" role="tablist" aria-label="Analytics views">
+      <button class="tab-btn is-active" role="tab" aria-selected="true"  id="tab-calls"    aria-controls="panel-calls">Calls</button>
+      <button class="tab-btn"           role="tab" aria-selected="false" id="tab-moments"  aria-controls="panel-moments">Moments</button>
+      <button class="tab-btn"           role="tab" aria-selected="false" id="tab-duration" aria-controls="panel-duration">Duration</button>
+      <button class="tab-btn"           role="tab" aria-selected="false" id="tab-texts"    aria-controls="panel-texts">Texts</button>
+    </div>
+
+    <!-- ══ TAB PANEL: Calls ══════════════════════════ -->
+    <div class="content-area" role="tabpanel" id="panel-calls" aria-labelledby="tab-calls">
+
+      <!-- ── Call volume chart ── -->
+      <div class="s-card">
+        <div class="s-card-hdr">
+          <h2 class="s-title">Call volume over time</h2>
+          <!-- [10] Export as proper secondary button with icon -->
+          <button class="export-btn" aria-label="Export call volume data as CSV file">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+              <path d="M6.5 1v6.5M4 5.5L6.5 8.5L9 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M1 9.5V11a1 1 0 001 1h9a1 1 0 001-1V9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            Export (.csv)
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+              <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- [01] SVG chart with data point markers, peak label, tooltip -->
+        <div class="chart-wrap" id="chart-wrap">
+          <!--
+            Plot area:  x: 52→840  (width=788),  y: 30→172  (height=142)
+            16 points:  step = 788/15 = 52.53
+            Y scale:    value 0 → y=172,  value 6 → y=30
+                        y = 172 - val*(142/6) = 172 - val*23.67
+            All values = 0 except index 14 (Feb 10) = 6
+
+            X coords (rounded):
+              0=52, 1=105, 2=157, 3=210, 4=262, 5=315, 6=367, 7=420,
+              8=472, 9=525, 10=577, 11=630, 12=682, 13=735, 14=788, 15=840
+          -->
+          <svg id="vol-chart"
+               viewBox="0 0 860 216"
+               xmlns="http://www.w3.org/2000/svg"
+               role="img"
+               aria-label="Line chart: call volume Jan 13 – Feb 12. All days zero except Feb 10 which peaks at 6 calls.">
+            <defs>
+              <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stop-color="#6C47FF" stop-opacity="0.22"/>
+                <stop offset="85%"  stop-color="#6C47FF" stop-opacity="0.04"/>
+                <stop offset="100%" stop-color="#6C47FF" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Y-axis gridlines + labels -->
+            <!-- y=0  → 172 -->
+            <line x1="52" y1="172" x2="840" y2="172" stroke="#e8e8f0" stroke-width="1"/>
+            <!-- y=2  → 124 -->
+            <line x1="52" y1="124" x2="840" y2="124" stroke="#e8e8f0" stroke-width="1" stroke-dasharray="4 4"/>
+            <!-- y=4  → 77 -->
+            <line x1="52" y1="77"  x2="840" y2="77"  stroke="#e8e8f0" stroke-width="1" stroke-dasharray="4 4"/>
+            <!-- y=6  → 30 -->
+            <line x1="52" y1="30"  x2="840" y2="30"  stroke="#e8e8f0" stroke-width="1" stroke-dasharray="4 4"/>
+
+            <!-- Y-axis labels -->
+            <text x="46" y="175" text-anchor="end" font-size="11" fill="#767676">0</text>
+            <text x="46" y="127" text-anchor="end" font-size="11" fill="#767676">2</text>
+            <text x="46" y="80"  text-anchor="end" font-size="11" fill="#767676">4</text>
+            <text x="46" y="33"  text-anchor="end" font-size="11" fill="#767676">6</text>
+
+            <!-- Area fill (all points at y=172 except pt14=Feb10 at y=30) -->
+            <path d="
+              M 52,172
+              L 105,172 L 157,172 L 210,172 L 262,172
+              L 315,172 L 367,172 L 420,172 L 472,172
+              L 525,172 L 577,172 L 630,172 L 682,172
+              L 735,172 L 788,30 L 840,172 Z
+            " fill="url(#areaGrad)"/>
+
+            <!-- Line -->
+            <path d="
+              M 52,172
+              L 105,172 L 157,172 L 210,172 L 262,172
+              L 315,172 L 367,172 L 420,172 L 472,172
+              L 525,172 L 577,172 L 630,172 L 682,172
+              L 735,172 L 788,30 L 840,172
+            " fill="none" stroke="#6C47FF" stroke-width="2" stroke-linejoin="round"/>
+
+            <!-- [01] Data point markers on every data point -->
+            <circle class="data-pt" cx="52"  cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 13" data-val="0"/>
+            <circle class="data-pt" cx="105" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 15" data-val="0"/>
+            <circle class="data-pt" cx="157" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 17" data-val="0"/>
+            <circle class="data-pt" cx="210" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 19" data-val="0"/>
+            <circle class="data-pt" cx="262" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 21" data-val="0"/>
+            <circle class="data-pt" cx="315" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 23" data-val="0"/>
+            <circle class="data-pt" cx="367" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 25" data-val="0"/>
+            <circle class="data-pt" cx="420" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 27" data-val="0"/>
+            <circle class="data-pt" cx="472" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 29" data-val="0"/>
+            <circle class="data-pt" cx="525" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Jan 31" data-val="0"/>
+            <circle class="data-pt" cx="577" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Feb 2"  data-val="0"/>
+            <circle class="data-pt" cx="630" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Feb 4"  data-val="0"/>
+            <circle class="data-pt" cx="682" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Feb 6"  data-val="0"/>
+            <circle class="data-pt" cx="735" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Feb 8"  data-val="0"/>
+            <!-- [01] Peak: larger marker + direct value label -->
+            <circle class="data-pt" cx="788" cy="30"  r="6"   fill="#6C47FF" stroke="white" stroke-width="2.5" data-date="Feb 10" data-val="6"/>
+            <text x="788" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#6C47FF">6</text>
+            <circle class="data-pt" cx="840" cy="172" r="3.5" fill="white" stroke="#6C47FF" stroke-width="1.5" data-date="Feb 12" data-val="0"/>
+
+            <!-- X-axis tick labels -->
+            <text x="52"  y="193" text-anchor="middle" font-size="10" fill="#767676">13</text>
+            <text x="157" y="193" text-anchor="middle" font-size="10" fill="#767676">17</text>
+            <text x="262" y="193" text-anchor="middle" font-size="10" fill="#767676">21</text>
+            <text x="367" y="193" text-anchor="middle" font-size="10" fill="#767676">25</text>
+            <text x="472" y="193" text-anchor="middle" font-size="10" fill="#767676">29</text>
+            <!-- Jan label -->
+            <text x="262" y="208" text-anchor="middle" font-size="10" font-weight="600" fill="#595959">Jan</text>
+            <text x="577" y="193" text-anchor="middle" font-size="10" fill="#767676">2</text>
+            <text x="682" y="193" text-anchor="middle" font-size="10" fill="#767676">6</text>
+            <text x="788" y="193" text-anchor="middle" font-size="10" fill="#767676">10</text>
+            <text x="840" y="193" text-anchor="middle" font-size="10" fill="#767676">12</text>
+            <!-- Feb label -->
+            <text x="710" y="208" text-anchor="middle" font-size="10" font-weight="600" fill="#595959">Feb</text>
+          </svg>
+          <!-- Tooltip element -->
+          <div id="chart-tip" role="tooltip" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <!-- ── Call count breakdown ── -->
+      <div class="s-card">
+        <div class="s-card-hdr">
+          <h2 class="s-title">Call count breakdown</h2>
+        </div>
+
+        <!-- [05] Legend with DISTINCT SHAPES (not color-only) -->
+        <div class="legend" aria-label="Legend">
+          <div class="legend-item">
+            <!-- circle = Total calls -->
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="#6C47FF"/></svg>
+            <span>Total calls</span>
+          </div>
+          <div class="legend-item">
+            <!-- square = Answered -->
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="1.5" y="1.5" width="11" height="11" rx="1.5" fill="#22c55e"/></svg>
+            <span>Answered calls</span>
+          </div>
+          <div class="legend-item">
+            <!-- triangle = Missed -->
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><polygon points="7,1.5 13,12.5 1,12.5" fill="#ef4444"/></svg>
+            <span>Missed calls</span>
+          </div>
+          <div class="legend-item">
+            <!-- diamond = Unanswered transferred -->
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><polygon points="7,1 13,7 7,13 1,7" fill="#f59e0b"/></svg>
+            <span>Unanswered transferred calls</span>
+          </div>
+          <div class="legend-item">
+            <!-- cross = Outbound connected -->
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+              <line x1="2" y1="2" x2="12" y2="12" stroke="#3b82f6" stroke-width="2.8" stroke-linecap="round"/>
+              <line x1="12" y1="2" x2="2"  y2="12" stroke="#3b82f6" stroke-width="2.8" stroke-linecap="round"/>
+            </svg>
+            <span>Outbound (connected)</span>
+          </div>
+        </div>
+
+        <!-- [02][03][06] Restructured breakdown — progressive disclosure -->
+        <div class="bd-body">
+          <div class="bd-root">
+
+            <!-- Summary card — circle marker = Total calls -->
+            <div class="bd-summary" aria-label="Total call summary">
+              <div class="bd-big-num">6</div>
+              <div class="bd-big-lbl">
+                <!-- [05] circle marker matches legend -->
+                <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-right:4px;flex-shrink:0"><circle cx="5" cy="5" r="4.5" fill="#6C47FF"/></svg>
+                Total calls
+              </div>
+              <div class="bd-handled">
+                <span class="bd-handled-val">5</span> (83.3%) Handled
+              </div>
+            </div>
+
+            <!-- Branch columns -->
+            <div class="bd-cols">
+
+              <!-- Inbound: 0 — de-emphasized, zeros collapsed [06] -->
+              <div class="branch-card is-zero" aria-label="Inbound calls — all zero">
+                <div class="branch-hdr">
+                  <div>
+                    <div class="branch-num is-zero">0</div>
+                    <div class="branch-lbl">Inbound calls</div>
+                  </div>
+                  <span class="branch-pct is-zero">0%</span>
+                </div>
+                <button class="zero-toggle"
+                        onclick="toggleZeros('inbound-z', this)"
+                        aria-expanded="false"
+                        aria-controls="inbound-z">
+                  <svg class="toggle-icon" width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                    <path d="M2 4L5.5 7.5L9 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  Show 8 sub-metrics (all zero)
+                </button>
+                <div id="inbound-z" class="zero-section" aria-hidden="true">
+                  <div class="sub-list">
+                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">New calls</span><span class="sub-pct">0%</span></div>
+                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Transfer from Other User or Group</span></div>
+                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Transfer from Same Group</span></div>
+                    <!-- square = Answered -->
+                    <div class="sub-row">
+                      <span class="sub-val is-zero">0</span>
+                      <span class="sub-lbl">
+                        <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-right:3px;flex-shrink:0"><rect x="0.5" y="0.5" width="8" height="8" rx="1" fill="#22c55e"/></svg>
+                        Answered
+                      </span>
+                    </div>
+                    <!-- no marker — Unanswered is a parent bucket, not a legend category itself -->
+                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Unanswered</span></div>
+                    <!-- triangle = Missed -->
+                    <div class="sub-row">
+                      <span class="sub-val is-zero">0</span>
+                      <span class="sub-lbl">
+                        <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-right:3px;flex-shrink:0"><polygon points="4.5,0.5 8.5,8.5 0.5,8.5" fill="#ef4444"/></svg>
+                        Missed
+                      </span>
+                    </div>
+                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Abandoned</span></div>
+                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Callbacks requested</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Outbound: 6 — highlighted, non-zeros prominent [06] -->
+              <div class="branch-card" aria-label="Outbound calls breakdown">
+                <div class="branch-hdr">
+                  <div>
+                    <div class="branch-num">6</div>
+                    <div class="branch-lbl">Outbound calls</div>
+                  </div>
+                  <span class="branch-pct">100%</span>
+                </div>
+                <div class="sub-list">
+                  <div class="sub-row">
+                    <span class="sub-val">6</span>
+                    <span class="sub-lbl">User initiated</span>
+                    <span class="sub-pct">100%</span>
+                  </div>
+                  <!-- cross = Outbound (connected) -->
+                  <div class="sub-row">
+                    <span class="sub-val">5</span>
+                    <span class="sub-lbl">
+                      <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-right:3px;flex-shrink:0">
+                        <line x1="1" y1="1" x2="8" y2="8" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="8" y1="1" x2="1" y2="8" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+                      </svg>
+                      Connected
+                    </span>
+                    <span class="sub-pct">83.3%</span>
+                  </div>
+                  <div class="sub-row">
+                    <span class="sub-val">1</span>
+                    <span class="sub-lbl">Cancelled</span>
+                    <span class="sub-pct">16.7%</span>
+                  </div>
+                </div>
+                <button class="zero-toggle"
+                        onclick="toggleZeros('outbound-z', this)"
+                        aria-expanded="false"
+                        aria-controls="outbound-z">
+                  <svg class="toggle-icon" width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                    <path d="M2 4L5.5 7.5L9 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  Show 6 zero-value metrics
+                </button>
+                <div id="outbound-z" class="zero-section" aria-hidden="true">
+                  <div class="sub-list">
+                    <!-- triangle = Missed -->
+                    <div class="sub-row">
+                      <span class="sub-val is-zero">0</span>
+                      <span class="sub-lbl">
+                        <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-right:3px;flex-shrink:0"><polygon points="4.5,0.5 8.5,8.5 0.5,8.5" fill="#ef4444"/></svg>
+                        Missed
+                      </span>
+                    </div>
+                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Abandoned</span></div>
+                    <!-- diamond = Unanswered transfer -->
+                    <div class="sub-row">
+                      <span class="sub-val is-zero">0</span>
+                      <span class="sub-lbl">
+                        <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true" style="display:inline-block;vertical-align:middle;margin-right:3px;flex-shrink:0"><polygon points="4.5,0 9,4.5 4.5,9 0,4.5" fill="#f59e0b"/></svg>
+                        Unanswered transfer
+                      </span>
+                    </div>
+                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Other voicemail</span></div>
+                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Callback attempts</span><span class="sub-pct">0%</span></div>
+                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Successful callbacks</span></div>
+                    <div class="sub-row"><span class="sub-val is-zero">0</span><span class="sub-lbl">Unsuccessful callbacks</span></div>
+                  </div>
+                </div>
+              </div>
+
+            </div><!-- end bd-cols -->
+          </div><!-- end bd-root -->
+        </div>
+      </div>
+
+      <!-- Dialpad meetings placeholder -->
+      <div class="s-card">
+        <div class="s-card-hdr">
+          <h2 class="s-title">Dialpad meetings over time</h2>
+          <button class="export-btn" aria-label="Export meetings data as CSV">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+              <path d="M6.5 1v6.5M4 5.5L6.5 8.5L9 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M1 9.5V11a1 1 0 001 1h9a1 1 0 001-1V9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            Export (.csv)
+          </button>
+        </div>
+        <div style="height:72px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:13px;">
+          No meeting data for the selected period
+        </div>
+      </div>
+
+    </div><!-- /#panel-calls -->
+  </main>
+</div><!-- /.app-body -->
+
+<script>
+/* ─── [06] Toggle zero-value sections ─────────────── */
+function toggleZeros(id, btn) {
+  var sec  = document.getElementById(id);
+  var icon = btn.querySelector('.toggle-icon');
+  var open = sec.classList.toggle('is-open');
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  sec.setAttribute('aria-hidden',   open ? 'false' : 'true');
+  if (icon) icon.classList.toggle('open', open);
+
+  // Update button text
+  var text = btn.childNodes[btn.childNodes.length - 1];
+  if (text && text.nodeType === 3) {
+    text.textContent = open
+      ? ' Hide zero-value metrics'
+      : (id === 'inbound-z'
+          ? ' Show 8 sub-metrics (all zero)'
+          : ' Show 6 zero-value metrics');
+  }
+}
+
+/* ─── [01] Chart tooltip ───────────────────────────── */
+(function () {
+  var wrap = document.getElementById('chart-wrap');
+  var tip  = document.getElementById('chart-tip');
+  if (!wrap || !tip) return;
+
+  document.querySelectorAll('.data-pt').forEach(function (pt) {
+    pt.addEventListener('mouseenter', function (e) {
+      var date = this.getAttribute('data-date');
+      var val  = this.getAttribute('data-val');
+      tip.textContent = date + ': ' + val + ' call' + (val === '1' ? '' : 's');
+
+      var svgRect  = document.getElementById('vol-chart').getBoundingClientRect();
+      var wrapRect = wrap.getBoundingClientRect();
+      var ptRect   = this.getBoundingClientRect();
+
+      var cx = ptRect.left + ptRect.width  / 2 - wrapRect.left;
+      var cy = ptRect.top  - wrapRect.top;
+
+      tip.style.left    = cx + 'px';
+      tip.style.top     = cy + 'px';
+      tip.style.display = 'block';
+    });
+    pt.addEventListener('mouseleave', function () {
+      tip.style.display = 'none';
+    });
+    pt.setAttribute('tabindex', '0');
+    pt.setAttribute('role', 'button');
+    pt.addEventListener('focus', function () { this.dispatchEvent(new MouseEvent('mouseenter')); });
+    pt.addEventListener('blur',  function () { this.dispatchEvent(new MouseEvent('mouseleave')); });
+  });
+})();
+
+/* ─── [09] Tab switching ───────────────────────────── */
+document.querySelectorAll('.tab-btn').forEach(function (tab) {
+  tab.addEventListener('click', function () {
+    document.querySelectorAll('.tab-btn').forEach(function (t) {
+      t.classList.remove('is-active');
+      t.setAttribute('aria-selected', 'false');
+    });
+    this.classList.add('is-active');
+    this.setAttribute('aria-selected', 'true');
+  });
+});
+</script>
+</body>
+</html>
