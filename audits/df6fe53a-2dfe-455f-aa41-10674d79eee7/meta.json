@@ -1,0 +1,19 @@
+{
+  "sid": "df6fe53a-2dfe-455f-aa41-10674d79eee7",
+  "date": "2026-03-29T05:07:44.103401Z",
+  "product_name": "Attio",
+  "screen_name": "Company Record Detail - sweetgreen",
+  "overall_score": 7.4,
+  "score_label": "Good",
+  "accessibility_score": 5.8,
+  "filename": "Attio Web 249.png",
+  "website_url": "https://attio.com/",
+  "high": 4,
+  "medium": 3,
+  "low": 3,
+  "total_issues": 10,
+  "has_script": false,
+  "has_dribbble": false,
+  "has_redesign": false,
+  "status": "ready"
+}
