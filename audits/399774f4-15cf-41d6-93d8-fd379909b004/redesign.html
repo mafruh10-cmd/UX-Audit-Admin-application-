@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maria Johnson (Sample Contact) — HubSpot</title>
+<style>
+  /* ===== CSS VARIABLES — HubSpot brand palette ===== */
+  :root {
+    --hs-orange:        #FF7A59;
+    --hs-orange-dark:   #E8623A;
+    --hs-navy:          #2D3E50;
+    --hs-navy-light:    #3D5166;
+    --hs-blue-mid:      #516F90;
+    --hs-blue-light:    #7C98B6;
+    --hs-teal:          #00BDA5;
+    --hs-teal-dark:     #00A4A6;
+    --hs-link:          #0091AE;
+    --hs-link-hover:    #007A94;
+    --hs-bg:            #F5F8FA;
+    --hs-surface:       #FFFFFF;
+    --hs-border:        #DFE3EB;
+    --hs-border-dark:   #CBD6E2;
+    --hs-text-primary:  #33475B;
+    /* FIX [02]: secondary text lifted to #595959 for 4.5:1 contrast on white */
+    --hs-text-secondary:#595959;
+    --hs-text-meta:     #4A6785;
+    --hs-red:           #F2545B;
+    --hs-red-light:     #FEF0F0;
+    --hs-yellow:        #F5A623;
+    --hs-green:         #00BDA5;
+    --hs-badge-ai:      #7C4DFF;
+    --hs-trial-bg:      #FFF8F0;
+    --hs-trial-border:  #F5A623;
+    --radius-sm:        4px;
+    --radius-md:        6px;
+    --radius-lg:        8px;
+    --shadow-sm:        0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+    --shadow-md:        0 2px 8px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Lexend', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--hs-bg);
+    color: var(--hs-text-primary);
+    font-size: 13px;
+    line-height: 1.5;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ===== TOPBAR ===== */
+  .topbar {
+    height: 48px;
+    background: var(--hs-navy);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    flex-shrink: 0;
+    z-index: 200;
+  }
+  .topbar-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  .topbar-logo svg { width: 28px; height: 28px; }
+  .topbar-search {
+    flex: 1;
+    max-width: 420px;
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: var(--radius-md);
+    padding: 0 10px;
+    gap: 8px;
+    height: 32px;
+    color: rgba(255,255,255,.7);
+    font-size: 13px;
+  }
+  .topbar-search svg { opacity: .6; flex-shrink: 0; }
+  .topbar-search span { opacity: .6; }
+  .topbar-spacer { flex: 1; }
+  .topbar-actions { display: flex; align-items: center; gap: 4px; }
+  .topbar-btn {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: var(--radius-md);
+    background: transparent;
+    border: none; cursor: pointer;
+    color: rgba(255,255,255,.8);
+    position: relative;
+  }
+  .topbar-btn:hover { background: rgba(255,255,255,.12); }
+  .topbar-notif-badge {
+    position: absolute; top: 4px; right: 4px;
+    width: 8px; height: 8px;
+    background: var(--hs-orange);
+    border-radius: 50%;
+    border: 1.5px solid var(--hs-navy);
+  }
+  .topbar-divider { width: 1px; height: 20px; background: rgba(255,255,255,.2); margin: 0 4px; }
+  .topbar-copilot {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: var(--radius-md);
+    padding: 4px 10px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .topbar-user {
+    display: flex; align-items: center; gap: 6px;
+    color: rgba(255,255,255,.85);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: var(--radius-md);
+  }
+  .topbar-user:hover { background: rgba(255,255,255,.1); }
+  .topbar-avatar {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--hs-orange);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+  }
+
+  /* ===== TRIAL BANNER — FIX [06]: dismissible, compact, amber not red ===== */
+  #trial-banner {
+    background: var(--hs-trial-bg);
+    border-bottom: 2px solid var(--hs-trial-border);
+    display: flex;
+    align-items: center;
+    padding: 6px 16px;
+    gap: 10px;
+    font-size: 12px;
+    color: #7A4F00;
+    flex-shrink: 0;
+    z-index: 190;
+  }
+  #trial-banner.dismissed { display: none; }
+  .trial-icon { flex-shrink: 0; }
+  .trial-text { flex: 1; }
+  .trial-text strong { font-weight: 700; }
+  .trial-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+  .trial-btn-primary {
+    background: var(--hs-yellow);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .trial-btn-primary:hover { background: #D4891A; }
+  .trial-btn-secondary {
+    background: transparent;
+    color: #7A4F00;
+    border: 1px solid #C68A00;
+    border-radius: var(--radius-md);
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .trial-btn-secondary:hover { background: rgba(196,138,0,.1); }
+  .trial-dismiss {
+    background: transparent; border: none; cursor: pointer;
+    color: #7A4F00; opacity: .6; padding: 4px;
+    display: flex; align-items: center; border-radius: 4px;
+  }
+  .trial-dismiss:hover { opacity: 1; background: rgba(196,138,0,.1); }
+
+  /* ===== APP SHELL ===== */
+  .app-shell {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ===== LEFT NAV SIDEBAR — FIX [01]: tooltips + labels ===== */
+  .nav-sidebar {
+    width: 52px;
+    background: var(--hs-navy-light);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 0;
+    gap: 2px;
+    flex-shrink: 0;
+    overflow: visible;
+    z-index: 100;
+  }
+  .nav-item {
+    position: relative;
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: var(--radius-md);
+    color: rgba(255,255,255,.65);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    /* FIX [01] */
+    background: transparent;
+    border: none;
+  }
+  .nav-item:hover, .nav-item.active {
+    background: rgba(255,255,255,.15);
+    color: #fff;
+  }
+  .nav-item.active {
+    background: rgba(255,121,89,.25);
+    color: var(--hs-orange);
+  }
+  /* Tooltip — FIX [01] */
+  .nav-item::after {
+    content: attr(aria-label);
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--hs-navy);
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: var(--radius-md);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .15s;
+    z-index: 9999;
+    box-shadow: var(--shadow-md);
+  }
+  .nav-item:hover::after, .nav-item:focus::after {
+    opacity: 1;
+  }
+  .nav-spacer { flex: 1; }
+  .nav-sep { width: 28px; height: 1px; background: rgba(255,255,255,.12); margin: 4px 0; }
+
+  /* ===== MAIN AREA ===== */
+  .main-area {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* ===== LEFT CONTACT PANEL ===== */
+  .contact-panel {
+    width: 320px;
+    background: var(--hs-surface);
+    border-right: 1px solid var(--hs-border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  /* Breadcrumb */
+  .contact-breadcrumb {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px 0;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--hs-text-secondary);
+  }
+  .contact-breadcrumb a {
+    color: var(--hs-link);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .contact-breadcrumb a:hover { text-decoration: underline; }
+  /* FIX [09]: top-level renamed to "Contact Actions" */
+  .contact-breadcrumb-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-actions {
+    display: flex; align-items: center; gap: 4px;
+    background: var(--hs-surface);
+    border: 1px solid var(--hs-border-dark);
+    border-radius: var(--radius-md);
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--hs-text-primary);
+    cursor: pointer;
+  }
+  .btn-actions:hover { background: var(--hs-bg); }
+
+  /* Contact header */
+  .contact-header {
+    padding: 12px 16px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    border-bottom: 1px solid var(--hs-border);
+  }
+  .contact-header-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+  }
+  .contact-avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: var(--hs-orange);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 20px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .contact-name-block { flex: 1; }
+  .contact-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--hs-text-primary);
+    line-height: 1.3;
+  }
+  .contact-sub {
+    font-size: 12px;
+    color: var(--hs-text-secondary); /* FIX [02] */
+    margin-top: 2px;
+  }
+  .contact-email {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px;
+    color: var(--hs-link);
+    margin-top: 4px;
+    text-decoration: none;
+  }
+  .contact-email:hover { text-decoration: underline; }
+
+  /* Quick Action Buttons — FIX [04]: 44×44px targets */
+  .quick-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--hs-border);
+    flex-wrap: wrap;
+  }
+  .quick-action-btn {
+    /* FIX [04]: minimum 44×44px hit area */
+    min-width: 44px; min-height: 44px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 3px;
+    border: 1px solid var(--hs-border-dark);
+    border-radius: var(--radius-md);
+    background: var(--hs-surface);
+    color: var(--hs-text-primary);
+    cursor: pointer;
+    padding: 6px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    transition: background .15s, border-color .15s;
+  }
+  .quick-action-btn:hover { background: var(--hs-bg); border-color: var(--hs-blue-mid); }
+  .quick-action-btn svg { flex-shrink: 0; }
+
+  /* Section header */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-header-left {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 700;
+    color: var(--hs-text-primary);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .section-header-right { display: flex; align-items: center; gap: 6px; }
+  .section-caret {
+    transition: transform .2s;
+    color: var(--hs-text-secondary);
+  }
+  .section-caret.open { transform: rotate(90deg); }
+  .section-body { padding: 0 16px 12px; }
+  .section-body.hidden { display: none; }
+
+  /* About this contact — FIX [09]: renamed to "Edit Properties" */
+  .about-actions {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-sm {
+    background: transparent;
+    border: 1px solid var(--hs-border-dark);
+    border-radius: var(--radius-sm);
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--hs-text-primary);
+    cursor: pointer;
+  }
+  .btn-sm:hover { background: var(--hs-bg); }
+  .icon-btn-sm {
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; cursor: pointer;
+    color: var(--hs-text-secondary);
+    border-radius: var(--radius-sm);
+  }
+  .icon-btn-sm:hover { background: var(--hs-bg); color: var(--hs-text-primary); }
+
+  /* Communication subscriptions — FIX [10]: actionable empty state */
+  .subscription-empty {
+    background: var(--hs-bg);
+    border: 1px dashed var(--hs-border-dark);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    text-align: center;
+  }
+  .subscription-empty p {
+    font-size: 12px;
+    color: var(--hs-text-secondary);
+    margin-bottom: 8px;
+  }
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--hs-surface);
+    border: 1px solid var(--hs-border-dark);
+    border-radius: var(--radius-md);
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--hs-link);
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .btn-ghost:hover { background: var(--hs-bg); }
+
+  /* Website activity */
+  .stat-row {
+    display: flex; gap: 16px;
+    padding: 8px 0;
+  }
+  .stat-card {
+    flex: 1;
+    background: var(--hs-bg);
+    border: 1px solid var(--hs-border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    text-align: center;
+  }
+  .stat-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--hs-text-primary);
+    line-height: 1.2;
+  }
+  .stat-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--hs-text-secondary); /* FIX [02] */
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-top: 2px;
+  }
+  .meta-line {
+    font-size: 12px;
+    color: var(--hs-text-secondary); /* FIX [02] */
+    margin-top: 2px;
+  }
+  .meta-line strong { color: var(--hs-text-primary); font-weight: 600; }
+
+  /* ===== CENTER PANEL ===== */
+  .center-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--hs-bg);
+  }
+
+  /* Tabs */
+  .tab-bar {
+    background: var(--hs-surface);
+    border-bottom: 1px solid var(--hs-border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    flex-shrink: 0;
+  }
+  .tab {
+    padding: 12px 16px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--hs-text-secondary);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+    transition: color .15s, border-color .15s;
+    text-decoration: none;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tab:hover { color: var(--hs-text-primary); }
+  .tab.active {
+    color: var(--hs-teal);
+    border-bottom-color: var(--hs-teal);
+  }
+  .tab-spacer { flex: 1; }
+  .tab-customize {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600;
+    color: var(--hs-teal);
+    cursor: pointer;
+    padding: 8px 0;
+  }
+
+  /* Center content scroll area */
+  .center-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+  }
+
+  /* Data Highlights */
+  .data-highlights {
+    background: var(--hs-surface);
+    border: 1px solid var(--hs-border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .data-highlights-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .data-highlights-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--hs-text-primary);
+  }
+  .data-highlights-actions { display: flex; gap: 6px; align-items: center; }
+  .highlight-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .highlight-item {}
+  .highlight-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--hs-text-secondary); /* FIX [02] */
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    margin-bottom: 3px;
+  }
+  .highlight-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--hs-text-primary);
+    line-height: 1.4;
+  }
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: capitalize;
+  }
+  .badge-lead {
+    background: #EAF0FB;
+    color: #2C5282;
+  }
+  .badge-teal {
+    background: #E6F8F7;
+    color: #00827A;
+  }
+
+  /* Recent activities */
+  .activities-card {
+    background: var(--hs-surface);
+    border: 1px solid var(--hs-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .activities-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--hs-border);
+  }
+  .activities-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--hs-text-primary);
+  }
+  .activities-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--hs-border);
+  }
+  .search-input {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--hs-bg);
+    border: 1px solid var(--hs-border-dark);
+    border-radius: var(--radius-md);
+    padding: 6px 10px;
+    font-size: 12px;
+    color: var(--hs-text-secondary);
+  }
+  .filter-chip {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--hs-bg);
+    border: 1px solid var(--hs-border-dark);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--hs-text-primary);
+    cursor: pointer;
+  }
+  .filter-chip-close {
+    display: flex; align-items: center;
+    color: var(--hs-text-secondary);
+    cursor: pointer;
+  }
+  .date-range-btn {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 5px;
+    background: transparent;
+    border: 1px solid var(--hs-border-dark);
+    border-radius: var(--radius-md);
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--hs-text-primary);
+    cursor: pointer;
+  }
+  .collapse-all-btn {
+    color: var(--hs-link);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    background: none; border: none;
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* Activity items — FIX [03]: two-line wrap */
+  .activity-list { padding: 0; }
+  .activity-item {
+    border-bottom: 1px solid var(--hs-border);
+    padding: 0;
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+  .activity-icon-col {
+    display: flex; align-items: flex-start; justify-content: center;
+    padding-top: 2px;
+    flex-shrink: 0;
+    width: 24px;
+  }
+  .activity-icon {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .activity-icon-note { background: #FFF3CC; color: #A07000; }
+  .activity-icon-task { background: #E8F0FE; color: #1A56DB; }
+  .activity-icon-call { background: #E6F8F7; color: #0A7C6B; }
+  .activity-icon-meeting { background: #F0EDFF; color: #6B46C1; }
+  .activity-chevron {
+    flex-shrink: 0;
+    color: var(--hs-text-secondary);
+    cursor: pointer;
+    margin-top: 1px;
+  }
+  .activity-content { flex: 1; min-width: 0; }
+  .activity-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .activity-title {
+    font-size: 13px;
+    color: var(--hs-text-primary);
+    line-height: 1.45;
+    /* FIX [03]: allow two-line wrap — no truncation to one line */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex: 1;
+  }
+  .activity-title a { color: var(--hs-link); text-decoration: none; font-weight: 600; }
+  .activity-title a:hover { text-decoration: underline; }
+  .activity-time {
+    font-size: 11px;
+    color: var(--hs-text-secondary); /* FIX [02] */
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  /* FIX [07]: overdue uses ⚠ icon + bold + not color-only */
+  .overdue-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--hs-red-light);
+    border: 1px solid #FBBEBE;
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #B91C1C;
+  }
+  .overdue-badge svg { flex-shrink: 0; }
+  .activity-body {
+    padding: 0 16px 12px 50px;
+    display: none;
+  }
+  .activity-body.open { display: block; }
+  .activity-body-inner {
+    background: var(--hs-bg);
+    border: 1px solid var(--hs-border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+  }
+  .task-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .task-meta-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--hs-text-secondary); /* FIX [02] */
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 2px;
+  }
+  .task-meta-value {
+    font-size: 12px;
+    color: var(--hs-text-primary);
+    font-weight: 500;
+  }
+  .call-outcome-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--hs-text-secondary); /* FIX [02] */
+    margin-bottom: 4px;
+  }
+  .call-outcome-value {
+    font-size: 12px;
+    color: var(--hs-text-primary);
+    line-height: 1.5;
+  }
+  .activity-source-tag {
+    display: inline-flex; align-items: center;
+    background: #F0F0F5;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--hs-text-secondary);
+    margin-left: 6px;
+  }
+
+  /* ===== RIGHT PANEL — FIX [05]: collapsible ===== */
+  .right-panel {
+    width: 300px;
+    background: var(--hs-surface);
+    border-left: 1px solid var(--hs-border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex-shrink: 0;
+    transition: width .25s ease, opacity .25s ease;
+  }
+  .right-panel.collapsed {
+    width: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+  /* Toggle button */
+  .right-panel-toggle {
+    position: relative;
+  }
+  .panel-toggle-btn {
+    position: absolute;
+    left: -16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 32px;
+    background: var(--hs-surface);
+    border: 1px solid var(--hs-border);
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--hs-text-secondary);
+    z-index: 10;
+  }
+  .panel-toggle-btn:hover { background: var(--hs-bg); color: var(--hs-text-primary); }
+
+  /* AI Summary — FIX [08]: structured with bullets + bold key phrases */
+  .ai-summary-card {
+    margin: 12px;
+    border: 1px solid var(--hs-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .ai-summary-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px;
+    background: linear-gradient(135deg, #F8F0FF 0%, #EEF6FF 100%);
+    border-bottom: 1px solid var(--hs-border);
+  }
+  .ai-summary-title-row {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ai-summary-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--hs-text-primary);
+  }
+  .badge-ai {
+    background: var(--hs-badge-ai);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: .02em;
+  }
+  .ai-meta {
+    font-size: 10px;
+    color: var(--hs-text-secondary);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .ai-summary-body { padding: 12px; }
+  /* FIX [08] structured AI summary */
+  .ai-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--hs-blue-mid);
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .ai-bullets {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .ai-bullets li {
+    font-size: 12px;
+    color: var(--hs-text-primary);
+    line-height: 1.45;
+    padding-left: 14px;
+    position: relative;
+  }
+  .ai-bullets li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: var(--hs-teal);
+    font-weight: 700;
+  }
+  .ai-bullets li strong { color: var(--hs-text-primary); font-weight: 700; }
+  .ai-divider { height: 1px; background: var(--hs-border); margin: 10px 0; }
+  .ai-next-steps .ai-bullets li::before { color: var(--hs-orange); }
+  .ai-feedback {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--hs-border);
+  }
+  .ai-feedback-btn {
+    display: flex; align-items: center; gap: 4px;
+    background: transparent;
+    border: 1px solid var(--hs-border-dark);
+    border-radius: var(--radius-sm);
+    padding: 3px 8px;
+    font-size: 11px;
+    color: var(--hs-text-secondary);
+    cursor: pointer;
+  }
+  .ai-feedback-btn:hover { background: var(--hs-bg); color: var(--hs-text-primary); }
+  .btn-ask-question {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--hs-surface);
+    border: 1px solid var(--hs-orange);
+    color: var(--hs-orange);
+    border-radius: var(--radius-md);
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 0 12px 12px;
+    width: calc(100% - 24px);
+    justify-content: center;
+  }
+  .btn-ask-question:hover { background: #FFF5F2; }
+
+  /* Companies */
+  .companies-section { padding: 0 12px 12px; }
+  .companies-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 8px 0 4px;
+    border-top: 1px solid var(--hs-border);
+  }
+  .companies-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--hs-text-primary);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .btn-add {
+    display: flex; align-items: center; gap: 4px;
+    background: transparent;
+    border: none;
+    color: var(--hs-link);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-add:hover { text-decoration: underline; }
+  .company-card {
+    border: 1px solid var(--hs-border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .company-logo {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    background: var(--hs-orange);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .company-info { flex: 1; }
+  .company-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--hs-link);
+    text-decoration: none;
+  }
+  .company-name:hover { text-decoration: underline; }
+  .company-domain {
+    font-size: 11px;
+    color: var(--hs-link);
+    display: flex; align-items: center; gap: 4px;
+    margin-top: 2px;
+  }
+  .company-phone { font-size: 11px; color: var(--hs-text-secondary); margin-top: 1px; }
+  .badge-primary {
+    display: inline-flex;
+    background: var(--hs-bg);
+    border: 1px solid var(--hs-border-dark);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--hs-text-secondary);
+    margin-bottom: 4px;
+  }
+  .view-company-link {
+    font-size: 11px;
+    color: var(--hs-link);
+    text-decoration: none;
+    display: block;
+    margin-top: 8px;
+    font-weight: 600;
+  }
+  .view-company-link:hover { text-decoration: underline; }
+
+  /* Section collapsible controls in right panel */
+  .rp-section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px 6px;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid var(--hs-border);
+  }
+  .rp-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--hs-text-primary);
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* Toggle right panel button in toolbar */
+  .toggle-right-panel-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--hs-surface);
+    border: 1px solid var(--hs-border-dark);
+    border-radius: var(--radius-md);
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--hs-link);
+    cursor: pointer;
+  }
+  .toggle-right-panel-btn:hover { background: var(--hs-bg); }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--hs-border-dark); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--hs-blue-light); }
+</style>
+</head>
+<body>
+
+<!-- ===== TOPBAR ===== -->
+<header class="topbar">
+  <a class="topbar-logo" href="#" aria-label="HubSpot Home">
+    <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="14" cy="14" r="14" fill="#FF7A59"/>
+      <path d="M17.5 8.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm0 7a5.5 5.5 0 0 1 5.5 5.5H12a5.5 5.5 0 0 1 5.5-5.5z" fill="white"/>
+      <path d="M10.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 1.5A6.5 6.5 0 0 0 4 19h13a6.5 6.5 0 0 0-6.5-6.5z" fill="white" opacity="0.7"/>
+    </svg>
+    HubSpot
+  </a>
+
+  <div class="topbar-search" role="search" aria-label="Search HubSpot">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M7 12A5 5 0 1 0 7 2a5 5 0 0 0 0 10zm4.243-.757 2.757 2.757-1.414 1.414-2.757-2.757A6.97 6.97 0 0 1 7 14 7 7 0 1 1 14 7a6.97 6.97 0 0 1-1.757 4.243z"/></svg>
+    <span>Search HubSpot</span>
+  </div>
+
+  <div class="topbar-spacer"></div>
+
+  <div class="topbar-actions" role="toolbar" aria-label="Top navigation actions">
+    <button class="topbar-btn" aria-label="Upgrade plan">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l2.5 5H16l-4 4 1.5 5.5L8 12.5 2.5 15.5 4 10 0 6h5.5L8 1z"/></svg>
+      <span style="font-size:11px;font-weight:700;color:#FFD700;margin-left:2px;">Upgrade</span>
+    </button>
+    <div class="topbar-divider"></div>
+    <button class="topbar-btn" aria-label="Make a call"><svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.568 17.568 0 0 0 4.168 6.608 17.569 17.569 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.678.678 0 0 0-.58-.122l-2.19.547a1.745 1.745 0 0 1-1.657-.459L5.482 8.062a1.745 1.745 0 0 1-.46-1.657l.548-2.19a.678.678 0 0 0-.122-.58L3.654 1.328z"/></svg></button>
+    <button class="topbar-btn" aria-label="Meetings"><svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm6.5 7v-2H8v2H6.5zM10 11v-2h-1.5v2H10zM3 9v2h1.5V9H3zm2.5 0v2H7V9H5.5zM3 7v2h1.5V7H3zm2.5 0v2H7V7H5.5zm2 0v2H9V7H7.5zm2.5 0v2h1.5V7H10zm0-2v2h1.5V5H10zm-5 0v2H7V5H5zm2.5 0v2H9V5H7.5z"/></svg></button>
+    <button class="topbar-btn" aria-label="Help and support"><svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm-.857-5.857V9.286a.857.857 0 1 1 1.714 0v.857a.857.857 0 0 1-1.714 0zM8 7A1 1 0 0 1 7 6V5a1 1 0 1 1 2 0v1a1 1 0 0 1-1 1z"/></svg></button>
+    <button class="topbar-btn" aria-label="Settings"><svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.434.901-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.892 3.434-.901 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.892-1.64-.901-3.434-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.474l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg></button>
+    <button class="topbar-btn" aria-label="Notifications" style="position:relative;">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/></svg>
+      <span class="topbar-notif-badge"></span>
+    </button>
+    <div class="topbar-divider"></div>
+    <button class="topbar-copilot" aria-label="Open Copilot">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 1z"/></svg>
+      Copilot
+    </button>
+    <div class="topbar-user" role="button" aria-label="User menu — SLMobbin" tabindex="0">
+      <div class="topbar-avatar" aria-hidden="true">SL</div>
+      SLMobbin
+      <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/></svg>
+    </div>
+  </div>
+</header>
+
+<!-- FIX [06]: Dismissible, compact amber trial banner replacing full-width red banner -->
+<div id="trial-banner" role="alert" aria-live="polite">
+  <span class="trial-icon">
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="#D97706"><path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>
+  </span>
+  <span class="trial-text"><strong>Your Service Hub Enterprise trial has ended.</strong> Have questions or need help?</span>
+  <div class="trial-actions">
+    <button class="trial-btn-primary" onclick="void(0)">Talk to Sales</button>
+    <button class="trial-btn-secondary" onclick="void(0)">Switch trial view</button>
+    <button class="trial-dismiss" onclick="document.getElementById('trial-banner').classList.add('dismissed')" aria-label="Dismiss trial banner">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ===== APP SHELL ===== -->
+<div class="app-shell">
+
+  <!-- FIX [01]: Nav sidebar with aria-labels + tooltips on hover -->
+  <nav class="nav-sidebar" role="navigation" aria-label="Main navigation">
+    <button class="nav-item" aria-label="Bookmark / Saved items" tabindex="0">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5V2zm2-1a1 1 0 0 0-1 1v12.566l4.723-2.482a.5.5 0 0 1 .554 0L13 14.566V2a1 1 0 0 0-1-1H4z"/></svg>
+    </button>
+    <button class="nav-item active" aria-label="Contacts" tabindex="0">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/></svg>
+    </button>
+    <button class="nav-item" aria-label="Companies" tabindex="0">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1 1.5A1.5 1.5 0 0 1 2.5 0h11A1.5 1.5 0 0 1 15 1.5V5H1V1.5zM0 6h16v8.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 14.5V6z"/></svg>
+    </button>
+    <button class="nav-item" aria-label="Deals" tabindex="0">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 13A6 6 0 1 1 8 2a6 6 0 0 1 0 12zm-.5-4.5V10h1v1.5h-1zm.5-2A1.5 1.5 0 1 1 8 5a1.5 1.5 0 0 1 0 2.5z"/></svg>
+    </button>
+    <button class="nav-item" aria-label="Conversations / Inbox" tabindex="0">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6-.097 1.016-.417 2.13-.771 2.966-.079.186.074.394.273.362 2.256-.37 3.597-.938 4.18-1.234A9.06 9.06 0 0 0 8 15z"/></svg>
+    </button>
+    <button class="nav-item" aria-label="Reports and Analytics" tabindex="0">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M0 0h1v15h15v1H0V0zm10 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V4.9l-3.613 4.417a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61L13.445 4H10.5a.5.5 0 0 1-.5-.5z"/></svg>
+    </button>
+    <div class="nav-sep"></div>
+    <button class="nav-item" aria-label="Marketing Hub" tabindex="0">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002-.014.002H7.022zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM6.936 9.28a5.88 5.88 0 0 0-1.23-.247A7.35 7.35 0 0 0 5 9c-4 0-5 3-5 4 0 .667.333 1 1 1h4.216A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816zM4.92 10A5.493 5.493 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275zM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
+    </button>
+    <button class="nav-item" aria-label="Sales Hub" tabindex="0">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3A1.5 1.5 0 0 1 15 10.5v3A1.5 1.5 0 0 1 13.5 15h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
+    </button>
+    <button class="nav-item" aria-label="Service Hub" tabindex="0">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
+    </button>
+    <div class="nav-sep"></div>
+    <button class="nav-item" aria-label="Integrations and Apps" tabindex="0">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z"/></svg>
+    </button>
+    <div class="nav-spacer"></div>
+    <button class="nav-item" aria-label="Expand navigation sidebar" tabindex="0">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/></svg>
+    </button>
+  </nav>
+
+  <!-- ===== MAIN AREA ===== -->
+  <div class="main-area">
+
+    <!-- ===== LEFT CONTACT PANEL ===== -->
+    <aside class="contact-panel" aria-label="Contact details">
+      <!-- Breadcrumb -->
+      <div class="contact-breadcrumb">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M15 2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2zM0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2z"/></svg>
+        <a href="#" aria-label="Back to Contacts list">Contacts</a>
+        <div class="contact-breadcrumb-actions">
+          <!-- FIX [09]: renamed to "Contact Actions" -->
+          <button class="btn-actions" aria-label="Contact Actions dropdown" aria-haspopup="true" aria-expanded="false">
+            Contact Actions
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Contact header -->
+      <div class="contact-header">
+        <div class="contact-header-top">
+          <div class="contact-avatar" aria-hidden="true" role="img">MJ</div>
+          <div class="contact-name-block">
+            <div class="contact-name">Maria Johnson<br><span style="font-size:12px;font-weight:400;">(Sample Contact)</span></div>
+            <div class="contact-sub">Salesperson at HubSpot</div>
+            <a href="mailto:emailmaria@hubspot.com" class="contact-email" aria-label="Send email to emailmaria@hubspot.com">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2zm13 2.383-4.708 2.825L15 11.105V5.383zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741zM1 11.105l4.708-2.897L1 5.383v5.722z"/></svg>
+              emailmaria@hubspot.com
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- FIX [04]: Quick actions with 44×44px targets + text labels -->
+      <div class="quick-actions" role="toolbar" aria-label="Quick contact actions">
+        <button class="quick-action-btn" aria-label="Add a note">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M2.5 1A1.5 1.5 0 0 0 1 2.5v11A1.5 1.5 0 0 0 2.5 15h6.086a1.5 1.5 0 0 0 1.06-.44l4.915-4.914A1.5 1.5 0 0 0 15 8.586V2.5A1.5 1.5 0 0 0 13.5 1h-11zm6 8.5a1 1 0 0 1 1-1h4.396l-5.396 5.396V9.5z"/></svg>
+          Note
+        </button>
+        <button class="quick-action-btn" aria-label="Log or send an email">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414.05 3.555zM0 4.697v7.104l5.803-3.558L0 4.697zM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586l-1.239-.756zm3.436-.586L16 11.801V4.697l-5.803 3.547z"/></svg>
+          Email
+        </button>
+        <button class="quick-action-btn" aria-label="Log a call">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.568 17.568 0 0 0 4.168 6.608 17.569 17.569 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.678.678 0 0 0-.58-.122l-2.19.547a1.745 1.745 0 0 1-1.657-.459L5.482 8.062a1.745 1.745 0 0 1-.46-1.657l.548-2.19a.678.678 0 0 0-.122-.58L3.654 1.328z"/></svg>
+          Call
+        </button>
+        <button class="quick-action-btn" aria-label="Create a task">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/><path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm15 0a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2z"/></svg>
+          Task
+        </button>
+        <button class="quick-action-btn" aria-label="Schedule a meeting">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>
+          Meeting
+        </button>
+        <button class="quick-action-btn" aria-label="More actions">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
+          More
+        </button>
+      </div>
+
+      <!-- About this contact — FIX [09]: section-level renamed to "Edit Properties" -->
+      <div>
+        <div class="section-header" onclick="toggleSection('about-body', this)" aria-expanded="true">
+          <div class="section-header-left">
+            <svg class="section-caret open" width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
+            About this contact
+          </div>
+          <div class="about-actions">
+            <!-- FIX [09]: renamed to "Edit Properties" -->
+            <button class="btn-sm" aria-label="Edit contact properties" onclick="event.stopPropagation()">Edit Properties</button>
+            <button class="icon-btn-sm" aria-label="Configure contact section" onclick="event.stopPropagation()">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.434.901-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.892 3.434-.901 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.892-1.64-.901-3.434-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.474l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="section-body" id="about-body">
+          <p class="meta-line"><strong>No properties added</strong> — click Edit Properties to configure.</p>
+        </div>
+      </div>
+
+      <!-- FIX [10]: Communication subscriptions — actionable empty state -->
+      <div>
+        <div class="section-header" onclick="toggleSection('subs-body', this)" aria-expanded="true">
+          <div class="section-header-left">
+            <svg class="section-caret open" width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
+            Communication subscriptions
+          </div>
+        </div>
+        <div class="section-body" id="subs-body">
+          <div class="subscription-empty">
+            <p>No communication preferences set for Maria Johnson.</p>
+            <button class="btn-ghost" aria-label="Set communication preferences for Maria Johnson">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z"/></svg>
+              Set preferences
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Website activity -->
+      <div>
+        <div class="section-header" onclick="toggleSection('web-body', this)" aria-expanded="true">
+          <div class="section-header-left">
+            <svg class="section-caret open" width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
+            Website activity
+          </div>
+        </div>
+        <div class="section-body" id="web-body">
+          <div class="stat-row">
+            <div class="stat-card">
+              <div class="stat-value">1</div>
+              <div class="stat-label">Site Visits</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">0</div>
+              <div class="stat-label">Pages Viewed</div>
+            </div>
+          </div>
+          <p class="meta-line" style="margin-top:8px;">
+            <strong>Most recent visit:</strong><br>
+            Tue, Aug 19, 2025 12:03 PM GMT+7
+          </p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===== CENTER PANEL ===== -->
+    <main class="center-panel" aria-label="Contact activities">
+
+      <!-- Tabs -->
+      <nav class="tab-bar" role="tablist" aria-label="Contact view tabs">
+        <a class="tab active" role="tab" aria-selected="true" href="#" tabindex="0">Overview</a>
+        <a class="tab" role="tab" aria-selected="false" href="#" tabindex="-1">Activities</a>
+        <a class="tab" role="tab" aria-selected="false" href="#" tabindex="-1">Intelligence</a>
+        <div class="tab-spacer"></div>
+        <!-- FIX [05]: toggle for right panel -->
+        <button class="toggle-right-panel-btn" onclick="toggleRightPanel()" id="rp-toggle-btn" aria-label="Toggle AI Summary panel" aria-expanded="true">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M1 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4zm1 0v8h2V4H2zm5-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H8zm0 1h7v8H8V4z"/></svg>
+          AI Summary
+        </button>
+        <a class="tab-customize" href="#" aria-label="Customize this view">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.434.901-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.892 3.434-.901 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.892-1.64-.901-3.434-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319z"/></svg>
+          Customize
+        </a>
+      </nav>
+
+      <!-- Scrollable content -->
+      <div class="center-scroll">
+
+        <!-- Data Highlights — FIX [02]: all secondary labels use #595959 -->
+        <div class="data-highlights">
+          <div class="data-highlights-header">
+            <h2 class="data-highlights-title">Data highlights</h2>
+            <div class="data-highlights-actions">
+              <button class="icon-btn-sm" aria-label="Configure data highlights">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.434.901-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.892 3.434-.901 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.892-1.64-.901-3.434-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319z"/></svg>
+              </button>
+              <button class="icon-btn-sm" aria-label="Navigate data highlights">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="highlight-grid">
+            <div class="highlight-item">
+              <div class="highlight-label">Create Date</div>
+              <div class="highlight-value">08/01/2025<br><span style="font-weight:400;font-size:12px;">1:57 PM GMT+7</span></div>
+            </div>
+            <div class="highlight-item">
+              <div class="highlight-label">Lifecycle Stage</div>
+              <div class="highlight-value"><span class="badge badge-lead">Lead</span></div>
+            </div>
+            <div class="highlight-item">
+              <div class="highlight-label">Last Activity Date</div>
+              <div class="highlight-value">08/19/2025<br><span style="font-weight:400;font-size:12px;">12:08 PM GMT+7</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activities — FIX [03] + [07] -->
+        <div class="activities-card">
+          <div class="activities-header">
+            <h2 class="activities-title">Recent activities</h2>
+            <button class="collapse-all-btn" aria-label="Collapse all activity items" onclick="collapseAll()">
+              Collapse all
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/></svg>
+            </button>
+          </div>
+
+          <div class="activities-toolbar">
+            <div class="search-input" role="search" aria-label="Search activities">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M7 12A5 5 0 1 0 7 2a5 5 0 0 0 0 10zm4.243-.757 2.757 2.757-1.414 1.414-2.757-2.757A6.97 6.97 0 0 1 7 14 7 7 0 1 1 14 7a6.97 6.97 0 0 1-1.757 4.243z"/></svg>
+              <span>Search activities</span>
+            </div>
+            <div class="filter-chip" role="button" aria-pressed="true" aria-label="Filter: 5 activities selected">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/></svg>
+              (5) Activity
+              <span class="filter-chip-close" aria-label="Remove activity filter">
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg>
+              </span>
+            </div>
+            <button class="date-range-btn" aria-label="Filter by date range: All time so far">
+              All time so far
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/></svg>
+            </button>
+          </div>
+
+          <ul class="activity-list" role="list" aria-label="Activity timeline">
+
+            <!-- Activity: Note -->
+            <li class="activity-item" role="listitem">
+              <div class="activity-row">
+                <div class="activity-icon-col">
+                  <button class="activity-chevron" onclick="toggleActivity('note-body', this)" aria-expanded="true" aria-label="Expand note activity">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
+                  </button>
+                </div>
+                <div class="activity-icon activity-icon-note" aria-hidden="true">
+                  <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M2.5 1A1.5 1.5 0 0 0 1 2.5v11A1.5 1.5 0 0 0 2.5 15h6.086a1.5 1.5 0 0 0 1.06-.44l4.915-4.914A1.5 1.5 0 0 0 15 8.586V2.5A1.5 1.5 0 0 0 13.5 1h-11z"/></svg>
+                </div>
+                <div class="activity-content">
+                  <div class="activity-title-row">
+                    <!-- FIX [03]: two-line wrap, full source in secondary tag -->
+                    <div class="activity-title">
+                      Sam Lee created a <strong>note</strong><span class="activity-source-tag">HubSpot</span>
+                    </div>
+                    <span class="activity-time">Aug 19, 2025 at 12:08 PM GMT+7</span>
+                  </div>
+                </div>
+              </div>
+              <div class="activity-body open" id="note-body">
+                <div class="activity-body-inner">
+                  <p style="font-size:12px;color:var(--hs-text-primary);">Will need a discussion!</p>
+                </div>
+              </div>
+            </li>
+
+            <!-- Activity: Task — FIX [07]: overdue uses ⚠ + bold text -->
+            <li class="activity-item" role="listitem">
+              <div class="activity-row">
+                <div class="activity-icon-col">
+                  <button class="activity-chevron" onclick="toggleActivity('task-body', this)" aria-expanded="true" aria-label="Expand task activity">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
+                  </button>
+                </div>
+                <div class="activity-icon activity-icon-task" aria-hidden="true">
+                  <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/><path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm15 0a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2z"/></svg>
+                </div>
+                <div class="activity-content">
+                  <div class="activity-title-row">
+                    <div class="activity-title">
+                      <strong>Task</strong> created via HubSpot Processing<span class="activity-source-tag">HubSpot Processing</span>
+                    </div>
+                    <!-- FIX [07]: overdue badge with ⚠ icon + bold text (not color alone) -->
+                    <span class="overdue-badge" role="status" aria-label="Overdue: Aug 1, 2025 at 3:57 PM GMT+7">
+                      <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>
+                      <strong>Overdue:</strong> Aug 1 · 3:57 PM
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="activity-body open" id="task-body">
+                <div class="activity-body-inner">
+                  <p style="font-size:13px;font-weight:600;color:var(--hs-text-primary);margin-bottom:8px;">
+                    (Sample task) Prepare quote for Maria Johnson (Sample Contact)
+                  </p>
+                  <div class="task-meta-grid">
+                    <div>
+                      <div class="task-meta-label">Due date</div>
+                      <div class="task-meta-value">Aug 1, 2025 · 3:57 PM GMT+7</div>
+                    </div>
+                    <div>
+                      <div class="task-meta-label">Task Type</div>
+                      <div class="task-meta-value">To-do</div>
+                    </div>
+                    <div>
+                      <div class="task-meta-label">Priority</div>
+                      <div class="task-meta-value">None</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </li>
+
+            <!-- Activity: Logged Call — FIX [03]: full title, no truncation -->
+            <li class="activity-item" role="listitem">
+              <div class="activity-row">
+                <div class="activity-icon-col">
+                  <button class="activity-chevron" onclick="toggleActivity('call-body', this)" aria-expanded="true" aria-label="Expand logged call activity">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
+                  </button>
+                </div>
+                <div class="activity-icon activity-icon-call" aria-hidden="true">
+                  <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.568 17.568 0 0 0 4.168 6.608 17.569 17.569 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.678.678 0 0 0-.58-.122l-2.19.547a1.745 1.745 0 0 1-1.657-.459L5.482 8.062a1.745 1.745 0 0 1-.46-1.657l.548-2.19a.678.678 0 0 0-.122-.58L3.654 1.328z"/></svg>
+                </div>
+                <div class="activity-content">
+                  <div class="activity-title-row">
+                    <!-- FIX [03]: full description, source moved to secondary tag -->
+                    <div class="activity-title">
+                      <strong>Logged call</strong> to <a href="#">Maria Johnson (Sample Contact)</a><span class="activity-source-tag">HubSpot Processing</span>
+                    </div>
+                    <span class="activity-time">Aug 1, 2025</span>
+                  </div>
+                </div>
+              </div>
+              <div class="activity-body open" id="call-body">
+                <div class="activity-body-inner">
+                  <div class="call-outcome-label">Call outcome</div>
+                  <div class="call-outcome-value">
+                    (Sample call) Brought Maria through our latest product line. She's interested and is going to get back to me.
+                  </div>
+                </div>
+              </div>
+            </li>
+
+            <!-- Activity: Meeting — FIX [03]: full description -->
+            <li class="activity-item" role="listitem">
+              <div class="activity-row">
+                <div class="activity-icon-col">
+                  <button class="activity-chevron" onclick="toggleActivity('meet-body', this)" aria-expanded="false" aria-label="Expand meeting activity">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
+                  </button>
+                </div>
+                <div class="activity-icon activity-icon-meeting" aria-hidden="true">
+                  <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5z"/></svg>
+                </div>
+                <div class="activity-content">
+                  <div class="activity-title-row">
+                    <!-- FIX [03]: full source shown — no truncation -->
+                    <div class="activity-title">
+                      Had a <strong>meeting</strong> with <a href="#">Maria Johnson (Sample Contact)</a><span class="activity-source-tag">HubSpot</span>
+                    </div>
+                    <span class="activity-time">Aug 1, 2025</span>
+                  </div>
+                </div>
+              </div>
+              <div class="activity-body" id="meet-body">
+                <div class="activity-body-inner">
+                  <p style="font-size:12px;color:var(--hs-text-secondary);">Meeting details available on expand.</p>
+                </div>
+              </div>
+            </li>
+
+          </ul>
+        </div>
+      </div>
+    </main>
+
+    <!-- ===== RIGHT PANEL — FIX [05]: collapsible by user ===== -->
+    <aside class="right-panel" id="right-panel" aria-label="AI Summary and Companies">
+
+      <!-- FIX [08]: Structured AI Summary with sections, bullets, bold key phrases -->
+      <div class="rp-section-header" onclick="toggleSection('ai-body', this)" aria-expanded="true">
+        <div class="rp-section-title">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="color:var(--hs-badge-ai)"><path d="M8 1a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 1z"/></svg>
+          Breeze record summary
+        </div>
+        <svg class="section-caret open" width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
+      </div>
+
+      <div id="ai-body">
+        <div class="ai-summary-card">
+          <div class="ai-summary-header">
+            <div class="ai-summary-title-row">
+              <span class="ai-summary-title">Contact summary</span>
+              <span class="badge-ai">+ AI</span>
+            </div>
+            <div class="ai-meta">
+              Generated Aug 19, 2025
+              <button aria-label="Regenerate AI summary" style="background:none;border:none;cursor:pointer;color:var(--hs-link);padding:0;">
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/><path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- FIX [08]: Structured body with headers, bullets, bold key phrases -->
+          <div class="ai-summary-body">
+            <div class="ai-section-label">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.857-5.857V9.286a.857.857 0 1 1 1.714 0v.857a.857.857 0 0 1-1.714 0zM8 7A1 1 0 0 1 7 6V5a1 1 0 1 1 2 0v1a1 1 0 0 1-1 1z"/></svg>
+              Key Insights
+            </div>
+            <ul class="ai-bullets" role="list">
+              <li>On Aug 1, 2025, a call discussed the latest product line — Maria <strong>expressed interest</strong> and committed to follow up.</li>
+              <li>An email sent the same day introduced <strong>swimwear offerings</strong> and promoted additional beach accessories.</li>
+              <li>A meeting was scheduled to further discuss the new product line.</li>
+              <li>A <strong>conversation session took place on Aug 10, 2025</strong>.</li>
+            </ul>
+
+            <div class="ai-divider"></div>
+
+            <div class="ai-section-label ai-next-steps">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/><path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm15 0a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2z"/></svg>
+              Next Steps
+            </div>
+            <ul class="ai-bullets ai-next-steps" role="list">
+              <li>A task to <strong>prepare a quote</strong> for Maria was created — <strong>task not started</strong> and currently overdue.</li>
+              <li>Follow up with Maria regarding her decision after reviewing the product line.</li>
+            </ul>
+          </div>
+
+          <div class="ai-feedback" role="group" aria-label="AI summary feedback">
+            <button class="ai-feedback-btn" aria-label="This summary is helpful">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M6.956 1.745C7.021.81 7.908.087 8.864.325l.261.066c.463.116.874.456 1.012.965.22.816.533 2.511.062 4.51a18.43 18.43 0 0 1 .818-.506 10.9 10.9 0 0 1 1.85-.812c.713-.246 1.588-.352 2.228-.106.633.245 1.11.868 1.162 1.61.045.63-.282 1.188-.882 1.312l-.294.065c.206.07.418.139.617.21.992.358 1.613 1.498 1.334 2.498-.363 1.3-1.535 1.527-2.5 1.527h-.064c.245.574.596 1.329.796 1.969.538 1.718-.773 3.07-2.298 2.687l-.135-.033c-1.755-.43-3.234-.953-4.225-1.47C8.266 14.648 8 14.344 8 14v-6c0-.38.271-.685.604-.791C8.343 5.28 8 4.5 8 4s.296-1.27.956-2.255zM4 8v6a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2v2z"/></svg>
+              Helpful
+            </button>
+            <button class="ai-feedback-btn" aria-label="This summary is not helpful">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8.864 15.674c-.956.24-1.843-.484-1.908-1.42-.072-.975-.372-2.738-.8-3.68H1a1 1 0 0 1-1-1V8a1 1 0 0 1 .078-.38l2.512-5.935C2.806 1.js 3.403.513 4 .513h1.5a1 1 0 0 1 1 1v1.374l.695-.695a1 1 0 0 1 .707-.293h.293a1 1 0 0 1 1 1v6.008a1 1 0 0 1-.293.707l-2.293 2.293a1 1 0 0 1-.707.293H8.5a1 1 0 0 1-.978-.796z"/></svg>
+              Not helpful
+            </button>
+            <button class="ai-feedback-btn" aria-label="Copy AI summary">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/></svg>
+              Copy
+            </button>
+          </div>
+        </div>
+
+        <button class="btn-ask-question" aria-label="Ask Breeze AI a question about this contact">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm-.857-5.857V9.286a.857.857 0 1 1 1.714 0v.857a.857.857 0 0 1-1.714 0zM8 7A1 1 0 0 1 7 6V5a1 1 0 1 1 2 0v1a1 1 0 0 1-1 1z"/></svg>
+          + Ask a question
+        </button>
+      </div>
+
+      <!-- Companies -->
+      <div class="rp-section-header" onclick="toggleSection('companies-body', this)" aria-expanded="true">
+        <div class="rp-section-title">
+          Companies (1)
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="btn-add" aria-label="Add a company association" onclick="event.stopPropagation()">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z"/></svg>
+            Add
+          </button>
+          <svg class="section-caret open" width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
+        </div>
+      </div>
+      <div class="companies-section" id="companies-body">
+        <div class="company-card" role="article" aria-label="HubSpot — Primary company">
+          <div>
+            <span class="badge-primary">Primary</span>
+            <div style="display:flex;gap:8px;align-items:flex-start;margin-top:4px;">
+              <div class="company-logo" aria-hidden="true" role="img">H</div>
+              <div class="company-info">
+                <a href="#" class="company-name">HubSpot</a>
+                <div class="company-domain">
+                  hubspot.com
+                  <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M15 2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2zM0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2z"/></svg>
+                </div>
+                <div class="company-phone">Phone: --</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <a href="#" class="view-company-link" aria-label="View associated HubSpot company record">View associated Company →</a>
+      </div>
+
+    </aside>
+  </div><!-- end main-area -->
+</div><!-- end app-shell -->
+
+<script>
+  // Section toggle (collapsible panels)
+  function toggleSection(id, header) {
+    var body = document.getElementById(id);
+    var caret = header.querySelector('.section-caret');
+    if (!body) return;
+    var isHidden = body.classList.contains('hidden') || body.style.display === 'none';
+    if (isHidden) {
+      body.style.display = '';
+      body.classList.remove('hidden');
+      if (caret) caret.classList.add('open');
+      header.setAttribute('aria-expanded', 'true');
+    } else {
+      body.style.display = 'none';
+      body.classList.add('hidden');
+      if (caret) caret.classList.remove('open');
+      header.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  // Activity expand/collapse
+  function toggleActivity(id, btn) {
+    var body = document.getElementById(id);
+    if (!body) return;
+    var isOpen = body.classList.contains('open');
+    if (isOpen) {
+      body.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+      btn.style.transform = '';
+    } else {
+      body.classList.add('open');
+      btn.setAttribute('aria-expanded', 'true');
+      btn.style.transform = 'rotate(90deg)';
+    }
+  }
+  // Init chevron rotations for pre-open items
+  document.querySelectorAll('.activity-body.open').forEach(function(body) {
+    var item = body.closest('.activity-item');
+    if (item) {
+      var btn = item.querySelector('.activity-chevron');
+      if (btn) btn.style.transform = 'rotate(90deg)';
+    }
+  });
+
+  // Collapse all activities
+  function collapseAll() {
+    document.querySelectorAll('.activity-body').forEach(function(b) { b.classList.remove('open'); });
+    document.querySelectorAll('.activity-chevron').forEach(function(b) { b.style.transform = ''; b.setAttribute('aria-expanded','false'); });
+  }
+
+  // FIX [05]: Toggle right panel
+  function toggleRightPanel() {
+    var panel = document.getElementById('right-panel');
+    var btn = document.getElementById('rp-toggle-btn');
+    var isCollapsed = panel.classList.contains('collapsed');
+    if (isCollapsed) {
+      panel.classList.remove('collapsed');
+      btn.setAttribute('aria-expanded', 'true');
+    } else {
+      panel.classList.add('collapsed');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  }
+</script>
+</body>
+</html>
