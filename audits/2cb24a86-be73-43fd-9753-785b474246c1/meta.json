@@ -1,0 +1,19 @@
+{
+  "sid": "2cb24a86-be73-43fd-9753-785b474246c1",
+  "date": "2026-03-29T11:16:14.049952Z",
+  "product_name": "Shopify",
+  "screen_name": "Analytics Dashboard",
+  "overall_score": 7.1,
+  "score_label": "Good",
+  "accessibility_score": 5.8,
+  "filename": "Shopify Web 394.png",
+  "website_url": "https://www.shopify.com/",
+  "high": 3,
+  "medium": 5,
+  "low": 2,
+  "total_issues": 10,
+  "has_script": false,
+  "has_dribbble": false,
+  "has_redesign": false,
+  "status": "ready"
+}

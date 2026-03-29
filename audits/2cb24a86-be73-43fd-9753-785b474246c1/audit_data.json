@@ -1,0 +1,178 @@
+{
+  "product_name": "Shopify",
+  "screen_name": "Analytics Dashboard",
+  "overall_score": 7.1,
+  "score_label": "Good",
+  "summary": "The Shopify Analytics dashboard provides a well-structured overview of key business metrics with clear card-based layouts and comparison period indicators. However, there are notable accessibility concerns around color-only data differentiation in charts, low-contrast secondary text, and a lack of visible focus indicators. Some UX improvements could be made to better guide users toward actionable insights rather than presenting raw data alone.",
+  "accessibility_score": 5.8,
+  "issues": [
+    {
+      "id": "01",
+      "title": "Chart data series distinguished by color alone",
+      "severity": "High",
+      "location": "Line charts in Total sales, Online store sessions, Total orders, and Average order value cards",
+      "problem": "The current period (solid blue line) and comparison period (dotted gray line) are differentiated primarily through color. Users with color vision deficiencies may not be able to distinguish between the two data series, leading to misinterpretation of trend data.",
+      "critical_reason": "WCAG 1.4.1 requires that color is not used as the only visual means of conveying information. Color-blind users (~8% of males) would be unable to differentiate these critical business metrics.",
+      "recommendation": "Use distinct line patterns (solid vs. dashed) with different stroke weights, and add direct labels or data markers (circles, squares) to each line. The legend already shows solid vs. dotted but ensure the actual chart lines are visually distinct enough at all sizes.",
+      "reference": "WCAG 2.2 — 1.4.1 Use of Color (A): information must not be conveyed by color alone",
+      "wcag_criterion": "1.4.1",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 30,
+        "y": 55,
+        "w": 25,
+        "h": 30
+      }
+    },
+    {
+      "id": "02",
+      "title": "Low contrast on secondary text and axis labels",
+      "severity": "High",
+      "location": "Chart axis labels (Jan 2, Jan 4, Jan 6, $0, $20, $40) and comparison period date ranges",
+      "problem": "The gray axis labels and date range text in chart legends appear to have insufficient contrast against the white background, likely falling below the 4.5:1 minimum ratio for normal-sized text. This makes data interpretation difficult for users with low vision.",
+      "critical_reason": "WCAG 1.4.3 mandates a minimum 4.5:1 contrast ratio for normal text. Low-contrast axis labels impair the readability of chart data, which is the primary purpose of this screen.",
+      "recommendation": "Increase the text color darkness to at least #767676 or darker on white backgrounds to meet the 4.5:1 ratio. For the smaller axis labels, consider using a slightly larger font size as well to aid readability.",
+      "reference": "WCAG 2.2 — 1.4.3 Contrast Minimum (AA): normal text requires 4.5:1 contrast ratio",
+      "wcag_criterion": "1.4.3",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 30,
+        "y": 43,
+        "w": 25,
+        "h": 5
+      }
+    },
+    {
+      "id": "03",
+      "title": "No visible keyboard focus indicators",
+      "severity": "High",
+      "location": "All interactive elements including buttons (Last 7 days, Compare, Customize, Fullscreen), navigation items, and copy icons",
+      "problem": "There are no visible focus indicators on any interactive elements in the screenshot. Keyboard-only users and assistive technology users cannot determine which element currently has focus, making the dashboard essentially unusable without a mouse.",
+      "critical_reason": "WCAG 2.4.7 requires a visible focus indicator for all keyboard-operable elements. Without focus visibility, keyboard users experience the Gulf of Execution — they cannot determine where they are or what action they can perform.",
+      "recommendation": "Add a clearly visible focus ring (minimum 2px solid outline in a contrasting color) to all interactive elements. Use CSS :focus-visible to show focus for keyboard users while hiding it for mouse interactions.",
+      "reference": "WCAG 2.2 — 2.4.7 Focus Visible (AA): keyboard focus indicator must be visible",
+      "wcag_criterion": "2.4.7",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 22,
+        "y": 15,
+        "w": 20,
+        "h": 4
+      }
+    },
+    {
+      "id": "04",
+      "title": "Icon-only copy buttons lack visible text labels",
+      "severity": "Medium",
+      "location": "Copy/clipboard icons in the top-right corner of each metric card (Total sales, Sales by channel, Online store sessions, etc.)",
+      "problem": "Each card has a small icon button in the upper-right corner with no visible label or tooltip. Users must guess the button's function, and screen reader users may not have adequate context if aria-labels are missing.",
+      "critical_reason": "Per Norman's Signifier principle, visible cues must indicate where to act and what the action does. Icon-only buttons increase cognitive load as users must interpret ambiguous symbols without context.",
+      "recommendation": "Add a visible tooltip on hover/focus that describes the action (e.g., 'Copy chart data'). Ensure each button has an accessible name via aria-label. Consider adding a text label alongside the icon for clarity.",
+      "reference": "The Design of Everyday Things (Norman) — Signifier: visible cues must indicate where to act",
+      "annotation": {
+        "x": 42,
+        "y": 20,
+        "w": 3,
+        "h": 3
+      }
+    },
+    {
+      "id": "05",
+      "title": "Sales by channel card lacks chart or breakdown visualization",
+      "severity": "Medium",
+      "location": "Center card in top row — 'Sales by channel' showing only 'Draft Orders $34.00'",
+      "problem": "The Sales by channel card displays a single text value without any visual breakdown (pie chart, bar chart, or list). When there is only one channel, the card feels empty and underutilized. When multiple channels exist, a text-only presentation would not scale well.",
+      "critical_reason": "According to the Signal-to-Noise Ratio principle, the visual treatment should match the information density. The card takes up significant screen real estate but communicates very little, creating an inefficient use of dashboard space.",
+      "recommendation": "Add a proportional visualization (horizontal bar or donut chart) to show channel distribution. For single-channel scenarios, display a message encouraging channel diversification or show the channel as a proportional bar at 100%.",
+      "reference": "Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter",
+      "annotation": {
+        "x": 57,
+        "y": 33,
+        "w": 23,
+        "h": 30
+      }
+    },
+    {
+      "id": "06",
+      "title": "Dash indicators provide no actionable context for trend changes",
+      "severity": "Medium",
+      "location": "Em-dash (—) symbols next to metric values ($34.00 —, 2 —, 0% —, 3 —, $18.00 —)",
+      "problem": "Each KPI displays an em-dash next to the value, presumably indicating no change or insufficient data for comparison. This is ambiguous — users cannot tell if it means 0% change, no data available, or a calculation error. The lack of explanation creates uncertainty.",
+      "critical_reason": "Nielsen's Heuristic #1 (Visibility of System Status) requires the system to keep users informed about what is going on. Ambiguous symbols force users to guess, increasing cognitive load per Krug's 'Don't Make Me Think' principle.",
+      "recommendation": "Replace the em-dash with explicit text such as '0% change', 'No comparison data', or 'N/A' with a tooltip explanation. Use color-coded arrows (↑ green, ↓ red) with percentage text when comparison data is available.",
+      "reference": "Don't Make Me Think (Krug) — Billboard Design 101: users scan, not read",
+      "annotation": {
+        "x": 24,
+        "y": 23,
+        "w": 8,
+        "h": 3
+      }
+    },
+    {
+      "id": "07",
+      "title": "No empty state guidance for zero-conversion funnel",
+      "severity": "Medium",
+      "location": "Online store conversion rate card showing 0% with 0 sessions across all funnel stages",
+      "problem": "The conversion rate card shows all zeros with no contextual help or guidance. New store owners seeing this will not understand whether their setup is incomplete, tracking is broken, or they simply have no traffic. This is a missed opportunity for onboarding support.",
+      "critical_reason": "Progressive Disclosure suggests showing contextually relevant information at each step. An all-zero state should provide actionable next steps to reduce the Gulf of Execution — helping users understand what they need to do to generate traffic.",
+      "recommendation": "Display an empty state message like 'No sessions recorded yet. Make sure your online store is published and tracking is enabled.' Include a link to relevant setup documentation or marketing tools.",
+      "reference": "Universal Principles of Design — Progressive Disclosure: show only what is needed at each step",
+      "annotation": {
+        "x": 30,
+        "y": 70,
+        "w": 25,
+        "h": 25
+      }
+    },
+    {
+      "id": "08",
+      "title": "Touch target size may be insufficient for small icon buttons",
+      "severity": "Medium",
+      "location": "Copy/clipboard icons on each card and the Auto-refresh toggle",
+      "problem": "The small copy icons in each card appear to be approximately 16-20px, which is below the WCAG 2.5.8 minimum target size of 24x24px. This makes them difficult to tap on touch devices and hard to click precisely with a mouse.",
+      "critical_reason": "WCAG 2.5.8 requires a minimum target size of 24x24 CSS pixels for pointer inputs. Fitts' Law also dictates that smaller targets take longer to acquire and produce more errors.",
+      "recommendation": "Increase the clickable area of icon buttons to at least 44x44px (iOS guideline) or minimum 24x24px (WCAG). This can be done with padding around the icon without changing its visual size.",
+      "reference": "WCAG 2.2 — 2.5.8 Target Size Minimum (AA): interactive targets must be at least 24x24 CSS pixels",
+      "wcag_criterion": "2.5.8",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 91,
+        "y": 20,
+        "w": 3,
+        "h": 3
+      }
+    },
+    {
+      "id": "09",
+      "title": "Date range filter lacks clear visual hierarchy as primary control",
+      "severity": "Low",
+      "location": "'Last 7 days' and 'Compare: Previous period' buttons below the Analytics heading",
+      "problem": "The date range filter buttons use a subtle outlined style that doesn't visually distinguish them as the primary control for the entire dashboard. Users may not immediately recognize these as the key filters that govern all displayed data.",
+      "critical_reason": "Per Refactoring UI principles, visual hierarchy should guide users to the most important controls first. The date range selector fundamentally changes all data on screen and should be more visually prominent than other secondary controls.",
+      "recommendation": "Give the date range selector slightly more visual weight — consider a filled background or a more prominent position. Ensure the 'Compare' toggle is clearly secondary. Add a subtle background highlight to indicate the active filter state.",
+      "reference": "Refactoring UI — Use color to support hierarchy, not communicate it alone",
+      "annotation": {
+        "x": 27,
+        "y": 15,
+        "w": 25,
+        "h": 4
+      }
+    },
+    {
+      "id": "10",
+      "title": "Inconsistent card heights create visual imbalance",
+      "severity": "Low",
+      "location": "Bottom row of metric cards — Online store conversion rate, Total orders, Average order value",
+      "problem": "The conversion rate card in the bottom-left is taller than its siblings due to the funnel breakdown content, while the Total orders and Average order value cards have charts. This creates visual imbalance and makes scanning across the row less efficient.",
+      "critical_reason": "Gestalt's Law of Similarity suggests that elements of similar visual weight and size are perceived as related. Inconsistent card heights break this pattern and can make users perceive the taller card as more important when it may not be.",
+      "recommendation": "Normalize card heights within each row by setting a consistent minimum height, or reorganize the conversion funnel data into its own full-width section. Alternatively, collapse the funnel details behind an expandable section.",
+      "reference": "Psych 101 (Kleinman) — Gestalt: Law of Similarity",
+      "annotation": {
+        "x": 50,
+        "y": 70,
+        "w": 80,
+        "h": 30
+      }
+    }
+  ]
+}
