@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elegant Portfolio — Analytics</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#f0ebe3;
+  --surface:#ffffff;
+  --surface-2:#f8f5f1;
+  --border:#e3ddd7;
+  --border-light:#ede9e3;
+  --text-primary:#1a1714;
+  --text-secondary:#595959;
+  --text-muted:#767676;
+  --orange:#f97316;
+  --orange-soft:rgba(249,115,22,.1);
+  --blue:#2c63d4;
+  --blue-soft:#eff5ff;
+  --danger:#c62828;
+  --danger-bg:#fff5f5;
+  --danger-border:#fecaca;
+  --warn:#d97706;
+  --radius-sm:6px;
+  --radius-md:10px;
+  --radius-lg:14px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.07);
+  --shadow-md:0 4px 14px rgba(0,0,0,.09);
+}
+
+body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text-primary);font-size:14px;line-height:1.5;min-height:100vh}
+
+/* ── TOP NAV ── */
+.topnav{display:flex;align-items:center;gap:10px;height:48px;padding:0 18px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200}
+.topnav-brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;color:var(--text-primary);flex-shrink:0}
+.brand-icon{width:22px;height:22px;border-radius:6px;background:#1a1714;display:flex;align-items:center;justify-content:center}
+.topnav-sub{font-size:12px;color:var(--text-muted);font-weight:400}
+.topnav-divider{width:1px;height:20px;background:var(--border);flex-shrink:0}
+.tool-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:none;background:transparent;cursor:pointer;border-radius:var(--radius-sm);color:var(--text-secondary);transition:background .15s}
+.tool-btn:hover{background:var(--surface-2)}
+.tool-btn:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.tool-btn.active{background:var(--text-primary);color:#fff}
+.topnav-title{margin:0 auto;font-weight:600;font-size:15px}
+.topnav-close{margin-left:auto;font-size:14px;font-weight:500;color:var(--text-secondary);background:none;border:none;cursor:pointer;padding:4px 10px;border-radius:var(--radius-sm);transition:background .15s}
+.topnav-close:hover{background:var(--surface-2)}
+.topnav-close:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+
+/* ── LAYOUT ── */
+.main{display:flex;height:calc(100vh - 48px);overflow:hidden;position:relative}
+
+/* ── PANEL TOGGLE ── */
+.panel-toggle{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  z-index:100;
+  width:22px;height:52px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-left:none;
+  border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-secondary);
+  transition:left .28s ease,background .15s;
+  padding:0;
+}
+.panel-toggle:hover{background:var(--surface-2);color:var(--text-primary)}
+.panel-toggle:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.panel-toggle.is-collapsed{border-left:1px solid var(--border)}
+
+/* ── CHAT PANEL ── */
+.chat-panel{
+  width:340px;min-width:340px;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  transition:width .28s ease,min-width .28s ease,opacity .2s ease;
+}
+.chat-panel.collapsed{width:0;min-width:0;opacity:0;pointer-events:none;border-right:none}
+
+/* chat content */
+.chat-content{flex:1;overflow-y:auto;padding:18px 18px 10px;overscroll-behavior:contain}
+
+/* summary */
+.summary-heading{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;margin-bottom:14px}
+.summary-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:18px}
+.summary-table th{text-align:left;font-size:11.5px;font-weight:600;color:var(--text-secondary);padding:0 0 7px;border-bottom:1px solid var(--border)}
+.summary-table td{padding:9px 0;border-bottom:1px solid var(--border-light);vertical-align:middle}
+.summary-table tr:last-child td{border-bottom:none}
+.rating-cell{display:flex;align-items:center;gap:6px}
+.stars{display:flex;gap:1px;font-size:12px;color:#f59e0b;line-height:1}
+.stars .empty{color:#d1d5db}
+.rating-num{font-size:11.5px;font-weight:600;color:var(--text-secondary);background:#f1ede8;border-radius:4px;padding:1px 5px;white-space:nowrap}
+
+/* divider */
+hr.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
+
+/* chat message */
+.chat-msg{font-size:13.5px;color:var(--text-primary);line-height:1.6;margin-bottom:10px}
+.chat-list{list-style:none;margin:6px 0 14px}
+.chat-list li{position:relative;padding-left:14px;font-size:13.5px;line-height:1.5;margin-bottom:4px}
+.chat-list li::before{content:'';position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;background:var(--text-secondary)}
+
+/* action icon row */
+.icon-row{display:flex;align-items:center;gap:1px;margin-bottom:14px}
+.icon-btn{
+  position:relative;
+  display:flex;align-items:center;justify-content:center;
+  width:30px;height:30px;
+  border:none;background:transparent;cursor:pointer;
+  border-radius:var(--radius-sm);color:var(--text-secondary);
+  transition:background .14s,color .14s;
+}
+.icon-btn:hover{background:var(--surface-2);color:var(--text-primary)}
+.icon-btn:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+/* tooltip */
+.icon-btn .tip{
+  position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);
+  background:var(--text-primary);color:#fff;font-size:11px;white-space:nowrap;
+  padding:3px 8px;border-radius:4px;pointer-events:none;opacity:0;transition:opacity .15s;
+}
+.icon-btn .tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:var(--text-primary)}
+.icon-btn:hover .tip,.icon-btn:focus-visible .tip{opacity:1}
+
+/* scroll-down */
+.scroll-btn{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--border);border-radius:50%;background:var(--surface);cursor:pointer;color:var(--text-secondary);margin-bottom:12px;transition:background .15s}
+.scroll-btn:hover{background:var(--surface-2)}
+.scroll-btn:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+
+/* CTA row — both equal outline pills matching reference */
+.cta-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.cta-pill{background:transparent;color:var(--text-primary);border:1.5px solid #d0cac3;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:500;cursor:pointer;transition:border-color .14s,background .14s}
+.cta-pill:hover{border-color:var(--text-secondary);background:var(--surface-2)}
+.cta-pill:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+
+/* chat footer */
+.chat-footer{border-top:1px solid var(--border);display:flex;flex-direction:column}
+/* nav rows */
+.footer-nav-item{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;background:none;border:none;width:100%;text-align:left;transition:background .14s;border-bottom:1px solid var(--border-light)}
+.footer-nav-item:hover{background:var(--surface-2)}
+.footer-nav-item:focus-visible{outline:2px solid var(--orange);outline-offset:-2px}
+.footer-nav-item.active{background:#f0ede9;color:var(--text-primary);font-weight:500}
+.footer-nav-item.active svg{color:var(--text-primary)}
+/* chat input area */
+.chat-input-area{padding:10px 12px 12px;display:flex;flex-direction:column;gap:0}
+.chat-input-row{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:22px;padding:4px 6px 4px 10px;background:var(--surface-2)}
+.chat-add-btn{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:16px;line-height:1;flex-shrink:0;border-radius:50%;transition:background .14s}
+.chat-add-btn:hover{background:var(--border)}
+.chat-divider-v{width:1px;height:16px;background:var(--border);margin:0 2px;flex-shrink:0}
+.chat-mini-btn{display:flex;align-items:center;gap:3px;background:none;border:none;cursor:pointer;font-size:12px;color:var(--text-secondary);padding:2px 6px;border-radius:var(--radius-sm);transition:background .14s;flex-shrink:0;white-space:nowrap}
+.chat-mini-btn:hover{background:var(--border)}
+.chat-mini-btn:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.chat-input{flex:1;border:none;background:transparent;font-size:13px;color:var(--text-primary);outline:none;min-width:0;padding:2px 4px}
+.chat-input::placeholder{color:var(--text-muted)}
+.chat-audio-btn{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:none;background:none;cursor:pointer;color:var(--text-muted);border-radius:50%;transition:background .14s;flex-shrink:0}
+.chat-audio-btn:hover{background:var(--border)}
+.send-btn{width:28px;height:28px;background:var(--text-primary);border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;transition:opacity .14s;margin-left:2px}
+.send-btn:hover{opacity:.8}
+.send-btn:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+
+/* ── ANALYTICS PANEL ── */
+.analytics-panel{flex:1;overflow-y:auto;padding:18px 20px 24px;display:flex;flex-direction:column;gap:14px}
+
+/* metric cards row */
+.metric-row{display:flex;gap:10px;flex-wrap:nowrap}
+.metric-card{
+  flex:1;min-width:0;
+  background:var(--surface);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:14px 16px;
+  cursor:pointer;outline:none;
+  transition:border-color .15s,box-shadow .15s;
+  position:relative;
+}
+.metric-card:hover{border-color:#c5bfb8}
+.metric-card:focus-visible{outline:2.5px solid var(--orange);outline-offset:3px;box-shadow:0 0 0 5px rgba(249,115,22,.12)}
+.metric-card.is-selected{border-color:var(--orange);box-shadow:0 0 0 3px var(--orange-soft)}
+.metric-card.is-danger{border-color:var(--danger-border);background:var(--danger-bg)}
+.metric-label{font-size:12.5px;font-weight:500;color:var(--text-secondary);margin-bottom:5px;display:flex;align-items:center;gap:4px}
+.metric-card.is-selected .metric-label{color:var(--orange)}
+.metric-card.is-danger .metric-label{color:var(--danger)}
+.metric-value{font-size:23px;font-weight:700;color:var(--text-primary);line-height:1.2}
+.metric-card.is-danger .metric-value{color:var(--danger)}
+/* badge */
+.metric-badge{position:absolute;top:10px;right:10px;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:#fee2e2;color:var(--danger)}
+/* benchmark */
+.metric-bench{margin-top:6px;font-size:11.5px;font-weight:500;color:var(--danger)}
+.bench-avg{color:var(--text-muted);font-weight:400}
+/* info icon + tooltip */
+.info-icon{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#f1ede8;color:var(--text-muted);font-size:9px;font-weight:700;cursor:help;flex-shrink:0}
+.info-wrap{position:relative;display:inline-flex}
+.info-tt{
+  position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  width:210px;background:var(--text-primary);color:#fff;font-size:12px;font-weight:400;
+  line-height:1.55;padding:8px 11px;border-radius:7px;
+  pointer-events:none;opacity:0;transition:opacity .18s;z-index:999;white-space:normal;
+}
+.info-tt::before{content:'';position:absolute;bottom:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:var(--text-primary)}
+.info-wrap:hover .info-tt,.info-wrap:focus-within .info-tt{opacity:1}
+
+/* ── CHART ── */
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 18px 10px}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+.chart-title{font-size:13px;font-weight:600;color:var(--text-primary)}
+.chart-hint{font-size:11.5px;color:var(--text-muted);display:flex;align-items:center;gap:4px}
+.chart-wrap{position:relative;height:210px;cursor:crosshair}
+#vpvChart{display:block;width:100%;height:100%}
+.chart-tip{
+  position:absolute;background:var(--text-primary);color:#fff;font-size:12px;font-weight:500;
+  padding:5px 10px;border-radius:6px;pointer-events:none;opacity:0;transition:opacity .1s;
+  transform:translate(-50%,-110%);white-space:nowrap;z-index:10;
+}
+.chart-tip.on{opacity:1}
+
+/* ── TABLES ── */
+.tables-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.dtable{width:100%;border-collapse:collapse;font-size:13px}
+.dtable thead tr{border-bottom:1px solid var(--border)}
+.dtable th{padding:9px 14px;text-align:left}
+.sort-btn{
+  background:none;border:none;cursor:pointer;
+  font-size:12px;font-weight:600;color:var(--text-secondary);
+  display:flex;align-items:center;gap:4px;padding:0;width:100%;
+  transition:color .14s;
+}
+.sort-btn:hover{color:var(--text-primary)}
+.sort-btn:focus-visible{outline:2px solid var(--orange);outline-offset:2px;border-radius:3px}
+.th-right .sort-btn{justify-content:flex-end}
+.sort-ic{font-size:10px;color:#b5aea6;flex-shrink:0}
+.dtable td{padding:9px 14px;border-bottom:1px solid #f0ece7;vertical-align:middle}
+.dtable tbody tr:last-child td{border-bottom:none}
+.dtable tbody tr{cursor:pointer;transition:background .1s}
+.dtable tbody tr:hover{background:#faf7f3}
+.dtable tbody tr.hl-row{background:var(--blue-soft)}
+.td-r{text-align:right}
+.bar-wrap{display:flex;align-items:center;gap:8px}
+.bar-bg{flex:1;height:5px;background:#ede9e3;border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;background:#bfdbfe;transition:width .3s}
+.bar-fill.b1{background:#93c5fd}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<header class="topnav">
+  <div class="topnav-brand">
+    <div class="brand-icon">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M7 2C7 2 4 5 4 8.5C4 10.4 5.3 12 7 12C8.7 12 10 10.4 10 8.5C10 5 7 2 7 2Z" fill="#f97316"/>
+      </svg>
+    </div>
+    Elegant Portfolio
+    <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2.5 4.5L5.5 7.5L8.5 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span class="topnav-sub">Previewing last saved version</span>
+  </div>
+  <div class="topnav-divider"></div>
+  <!-- tool icons -->
+  <button class="tool-btn" aria-label="History"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 4.5V8L9.5 9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
+  <button class="tool-btn" aria-label="Save"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="2.5" y="2" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><rect x="5" y="2" width="5" height="3.5" rx="0.5" fill="currentColor" opacity="0.35"/></svg></button>
+  <button class="tool-btn" aria-label="Preview site"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 1.5C7.5 1.5 5.5 4 5.5 7.5C5.5 11 7.5 13.5 7.5 13.5M7.5 1.5C7.5 1.5 9.5 4 9.5 7.5C9.5 11 7.5 13.5 7.5 13.5M1.5 7.5H13.5" stroke="currentColor" stroke-width="1.3"/></svg></button>
+  <button class="tool-btn" aria-label="Cloud sync"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M4 11C2.9 11 2 10.1 2 9C2 8 2.8 7.1 3.8 7C3.6 6.6 3.5 6.2 3.5 5.8C3.5 4.2 4.8 3 6.3 3C7.5 3 8.5 3.7 9 4.6C9.3 4.5 9.6 4.4 10 4.4C11.4 4.4 12.5 5.5 12.5 6.9V7C13.3 7.3 14 8.1 14 9C14 10.1 13.1 11 12 11H4Z" stroke="currentColor" stroke-width="1.3"/></svg></button>
+  <button class="tool-btn" aria-label="View code"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M5 5L2.5 7.5L5 10M10 5L12.5 7.5L10 10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <button class="tool-btn active" aria-label="Analytics" aria-current="page"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1.5 11L5.5 7L8 9.5L13.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <button class="tool-btn" aria-label="Add panel"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 2.5V12.5M2.5 7.5H12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+  <span class="topnav-title">Analytics</span>
+  <button class="topnav-close">Close</button>
+</header>
+
+<!-- MAIN -->
+<div class="main" id="mainLayout">
+
+  <!-- PANEL TOGGLE — fix [05] collapse affordance -->
+  <button class="panel-toggle" id="panelToggle" aria-label="Hide AI recommendations panel" title="Toggle AI panel">
+    <svg id="toggleChevron" width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M7 2L4 5.5L7 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+
+  <!-- ──── CHAT PANEL ──── -->
+  <aside class="chat-panel" id="chatPanel" aria-label="AI recommendations panel">
+    <div class="chat-content">
+
+      <!-- Summary table — fixes [01][09] star ratings + numeric values for ALL rows -->
+      <div class="summary-heading">
+        <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+          <rect x="1" y="5" width="4" height="10" rx="1" fill="#ef4444"/>
+          <rect x="6.5" y="7.5" width="4" height="7.5" rx="1" fill="#f59e0b"/>
+          <rect x="12" y="3" width="4" height="12" rx="1" fill="#22c55e"/>
+        </svg>
+        Summary
+      </div>
+
+      <table class="summary-table" aria-label="Website quality summary: current vs potential scores">
+        <thead>
+          <tr>
+            <th scope="col">Category</th>
+            <th scope="col">Current</th>
+            <th scope="col">Potential</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Design</td>
+            <td>
+              <div class="rating-cell">
+                <span class="stars" aria-hidden="true">★★★★<span class="empty">☆</span></span>
+                <span class="rating-num" aria-label="4 out of 5">4/5</span>
+              </div>
+            </td>
+            <td>
+              <div class="rating-cell">
+                <span class="stars" aria-hidden="true">★★★★★</span>
+                <span class="rating-num" aria-label="5 out of 5">5/5</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>Functionality</td>
+            <td>
+              <div class="rating-cell">
+                <span class="stars" aria-hidden="true">★★★<span class="empty">☆☆</span></span>
+                <span class="rating-num" aria-label="3 out of 5">3/5</span>
+              </div>
+            </td>
+            <td>
+              <div class="rating-cell">
+                <span class="stars" aria-hidden="true">★★★★★</span>
+                <span class="rating-num" aria-label="5 out of 5">5/5</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>Polish/Details</td>
+            <td>
+              <div class="rating-cell">
+                <span class="stars" aria-hidden="true">★★★<span class="empty">☆☆</span></span>
+                <span class="rating-num" aria-label="3 out of 5">3/5</span>
+              </div>
+            </td>
+            <td>
+              <div class="rating-cell">
+                <span class="stars" aria-hidden="true">★★★★★</span>
+                <span class="rating-num" aria-label="5 out of 5">5/5</span>
+              </div>
+            </td>
+          </tr>
+          <!-- Overall row — fix [09]: consistent, both stars + numeric -->
+          <tr style="font-weight:700">
+            <td>Overall</td>
+            <td>
+              <div class="rating-cell">
+                <span class="stars" aria-hidden="true">★★★★<span class="empty">☆</span></span>
+                <span class="rating-num" aria-label="7.5 out of 10"><strong>7.5</strong></span>
+              </div>
+            </td>
+            <td>
+              <div class="rating-cell">
+                <span class="stars" aria-hidden="true">★★★★★</span>
+                <span class="rating-num" aria-label="9.5 out of 10"><strong>9.5</strong></span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <hr class="sep">
+
+      <!-- AI response text -->
+      <p class="chat-msg">Would you like me to create a plan to address any of these improvements? The quickest wins would be:</p>
+      <ul class="chat-list">
+        <li>Adding scroll-triggered animations</li>
+        <li>Adding a functional contact form</li>
+        <li>Adding a mobile navigation menu</li>
+        <li>Creating project detail pages</li>
+      </ul>
+
+      <!-- fix [04] Icon buttons — aria-labels + visible tooltips -->
+      <div class="icon-row" role="toolbar" aria-label="Response actions">
+        <button class="icon-btn" aria-label="Undo last action">
+          <span class="tip" role="tooltip">Undo</span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3.5 7C3.5 4.8 5.3 3 7.5 3C9.7 3 11.5 4.8 11.5 7C11.5 9.2 9.7 11 7.5 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M5.5 5L3.5 7L1.5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="icon-btn" aria-label="Mark response as helpful (thumbs up)">
+          <span class="tip" role="tooltip">Helpful</span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4.5 12V6.5L7 2L8.5 2.5V6.5H12L11.5 11C11.3 11.6 10.8 12 10.2 12H4.5ZM4.5 12H3C2.4 12 2 11.6 2 11V7C2 6.4 2.4 6.5 3 6.5H4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="icon-btn" aria-label="Mark response as not helpful (thumbs down)">
+          <span class="tip" role="tooltip">Not helpful</span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 2V7.5L7 12L5.5 11.5V7.5H2L2.5 3C2.7 2.4 3.2 2 3.8 2H9.5ZM9.5 2H11C11.6 2 12 2.4 12 3V7C12 7.6 11.6 7.5 11 7.5H9.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="icon-btn" aria-label="Copy response to clipboard">
+          <span class="tip" role="tooltip">Copy</span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="4.5" y="4.5" width="8" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M4.5 4V2.5C4.5 2 4.9 1.5 5.5 1.5H11.5C12.1 1.5 12.5 2 12.5 2.5V10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </button>
+        <button class="icon-btn" aria-label="More response options">
+          <span class="tip" role="tooltip">More options</span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="3" cy="7" r="1" fill="currentColor"/><circle cx="7" cy="7" r="1" fill="currentColor"/><circle cx="11" cy="7" r="1" fill="currentColor"/></svg>
+        </button>
+      </div>
+
+      <!-- scroll indicator -->
+      <button class="scroll-btn" aria-label="Scroll to latest message">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M3 5.5L6.5 9L10 5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+
+      <!-- fix [10] CTA pills — both outline, matching reference -->
+      <div class="cta-row">
+        <button class="cta-pill">Add contact form</button>
+        <button class="cta-pill">Add mobile menu</button>
+      </div>
+    </div>
+
+    <!-- Footer — stacked nav rows + chat input matching reference -->
+    <div class="chat-footer">
+      <!-- Back to Preview row -->
+      <button class="footer-nav-item" aria-label="Back to Preview">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8 2.5L4.5 6.5L8 10.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back to Preview
+      </button>
+      <!-- Analytics nav row — active -->
+      <button class="footer-nav-item active" aria-current="page">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 10L5 6.5L7.5 9L12 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Analytics
+      </button>
+      <!-- Chat input -->
+      <div class="chat-input-area">
+        <div class="chat-input-row">
+          <button class="chat-add-btn" aria-label="Add attachment or context">+</button>
+          <div class="chat-divider-v"></div>
+          <button class="chat-mini-btn" aria-label="Switch to Visual edits mode">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x=".5" y=".5" width="10" height="10" rx="1.3" stroke="currentColor" stroke-width="1.1"/><path d="M2.5 3.5h6M2.5 6h4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+            Visual edits
+          </button>
+          <div class="chat-divider-v"></div>
+          <button class="chat-mini-btn" aria-label="Switch to Chat mode">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1 1.5h9C10.3 1.5 10.5 1.7 10.5 2v5c0 .3-.2.5-.5.5H3L1 9V2c0-.3.2-.5 0-.5Z" stroke="currentColor" stroke-width="1"/></svg>
+            Chat
+          </button>
+          <input class="chat-input" type="text" placeholder="Ask Lovable…" aria-label="Ask Lovable a question">
+          <button class="chat-audio-btn" aria-label="Voice input">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="4" y="1" width="4" height="6" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M2 6.5C2 9 4.2 10.5 6 10.5C7.8 10.5 10 9 10 6.5M6 10.5V12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          </button>
+          <button class="send-btn" aria-label="Send message">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1 5.5H10M6.5 2L10 5.5L6.5 9" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ──── ANALYTICS PANEL ──── -->
+  <main class="analytics-panel" id="analyticsPanel">
+
+    <!-- METRIC CARDS — fixes [03][07] danger state + focus-visible -->
+    <div class="metric-row" role="list" aria-label="Key metrics">
+
+      <div class="metric-card" role="listitem" tabindex="0" aria-label="Visitors: 14">
+        <div class="metric-label">Visitors</div>
+        <div class="metric-value">14</div>
+      </div>
+
+      <div class="metric-card" role="listitem" tabindex="0" aria-label="Pageviews: 17">
+        <div class="metric-label">Pageviews</div>
+        <div class="metric-value">17</div>
+      </div>
+
+      <div class="metric-card is-selected" role="listitem" tabindex="0" aria-label="Views Per Visit: 1.21, currently selected">
+        <div class="metric-label">Views Per Visit</div>
+        <div class="metric-value">1.21</div>
+      </div>
+
+      <div class="metric-card" role="listitem" tabindex="0" aria-label="Visit Duration: 23 seconds">
+        <div class="metric-label">Visit Duration</div>
+        <div class="metric-value">23s</div>
+      </div>
+
+      <!-- fix [03] Bounce Rate — danger styling + benchmark + tooltip -->
+      <div class="metric-card is-danger" role="listitem" tabindex="0"
+           aria-label="Bounce Rate: 86%, critically high. Industry average is 45%.">
+        <span class="metric-badge">⚠ High</span>
+        <div class="metric-label">
+          Bounce Rate
+          <span class="info-wrap">
+            <span class="info-icon" tabindex="0" role="button" aria-label="What is bounce rate? Tap for info">i</span>
+            <span class="info-tt" role="tooltip">
+              Bounce rate is the % of visitors who leave without interacting.
+              86% is critically high — a healthy rate is typically 40–55%.
+              Lower it by improving page engagement and load speed.
+            </span>
+          </span>
+        </div>
+        <div class="metric-value">86%</div>
+        <div class="metric-bench">
+          ↑ 41% above average
+          <span class="bench-avg"> (industry avg: 45%)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHART — fixes [02][06] contrast labels + data points + tooltip + hint -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Views Per Visit</div>
+        <div class="chart-hint">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.1"/><path d="M6 5V8.5M6 3.5H6.01" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Hover for details
+        </div>
+      </div>
+      <div class="chart-wrap" id="chartWrap">
+        <canvas id="vpvChart" aria-label="Line chart: Views Per Visit from Dec 23–31. Spike to 1.4 on Dec 29."></canvas>
+        <div class="chart-tip" id="chartTip"></div>
+      </div>
+    </div>
+
+    <!-- DATA TABLES — fix [08] sort headers + hover states -->
+    <div class="tables-grid">
+
+      <!-- Source -->
+      <div class="table-card">
+        <table class="dtable" id="tSource" aria-label="Traffic by source">
+          <thead><tr>
+            <th><button class="sort-btn" onclick="sortTbl('tSource',0,this)" aria-label="Sort by Source">Source <span class="sort-ic">↕</span></button></th>
+            <th class="th-right"><button class="sort-btn" onclick="sortTbl('tSource',1,this)" aria-label="Sort by Visitors">Visitors <span class="sort-ic">↕</span></button></th>
+          </tr></thead>
+          <tbody>
+            <tr class="hl-row"><td>Direct</td><td class="td-r"><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill b1" style="width:100%"></div></div>14</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Page -->
+      <div class="table-card">
+        <table class="dtable" id="tPage" aria-label="Traffic by page">
+          <thead><tr>
+            <th><button class="sort-btn" onclick="sortTbl('tPage',0,this)" aria-label="Sort by Page">Page <span class="sort-ic">↕</span></button></th>
+            <th class="th-right"><button class="sort-btn" onclick="sortTbl('tPage',1,this)" aria-label="Sort by Visitors">Visitors <span class="sort-ic">↕</span></button></th>
+          </tr></thead>
+          <tbody>
+            <tr class="hl-row"><td>/</td><td class="td-r"><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill b1" style="width:100%"></div></div>14</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Country -->
+      <div class="table-card">
+        <table class="dtable" id="tCountry" aria-label="Traffic by country">
+          <thead><tr>
+            <th><button class="sort-btn" onclick="sortTbl('tCountry',0,this)" aria-label="Sort by Country">Country <span class="sort-ic">↕</span></button></th>
+            <th class="th-right"><button class="sort-btn" onclick="sortTbl('tCountry',1,this)" aria-label="Sort by Visitors">Visitors <span class="sort-ic">↕</span></button></th>
+          </tr></thead>
+          <tbody>
+            <tr><td>🇺🇸 United States</td><td class="td-r"><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill b1" style="width:57%"></div></div>8</div></td></tr>
+            <tr><td>🇮🇩 Indonesia</td><td class="td-r"><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:43%"></div></div>6</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Device -->
+      <div class="table-card">
+        <table class="dtable" id="tDevice" aria-label="Traffic by device">
+          <thead><tr>
+            <th><button class="sort-btn" onclick="sortTbl('tDevice',0,this)" aria-label="Sort by Device">Device <span class="sort-ic">↕</span></button></th>
+            <th class="th-right"><button class="sort-btn" onclick="sortTbl('tDevice',1,this)" aria-label="Sort by Visitors">Visitors <span class="sort-ic">↕</span></button></th>
+          </tr></thead>
+          <tbody>
+            <tr><td>Mobile</td><td class="td-r"><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill b1" style="width:64.3%"></div></div>64.3%</div></td></tr>
+            <tr><td>Desktop</td><td class="td-r"><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:35.7%"></div></div>35.7%</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div><!-- /.main -->
+
+<script>
+/* ── PANEL TOGGLE — fix [05] ── */
+(function(){
+  const panel   = document.getElementById('chatPanel');
+  const btn     = document.getElementById('panelToggle');
+  const chevron = document.getElementById('toggleChevron');
+  let collapsed = false;
+
+  function updateBtn(){
+    const w = collapsed ? 0 : panel.offsetWidth;
+    btn.style.left = w + 'px';
+    btn.setAttribute('aria-label', collapsed ? 'Show AI recommendations panel' : 'Hide AI recommendations panel');
+    chevron.innerHTML = collapsed
+      ? '<path d="M4 2L7 5.5L4 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
+      : '<path d="M7 2L4 5.5L7 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
+    btn.classList.toggle('is-collapsed', collapsed);
+  }
+
+  btn.addEventListener('click', function(){
+    collapsed = !collapsed;
+    panel.classList.toggle('collapsed', collapsed);
+    updateBtn();
+  });
+
+  panel.addEventListener('transitionend', updateBtn);
+  updateBtn();
+})();
+
+/* ── LINE CHART — fixes [02][06] ── */
+(function(){
+  const canvas = document.getElementById('vpvChart');
+  const wrap   = document.getElementById('chartWrap');
+  const tip    = document.getElementById('chartTip');
+
+  const pts = [
+    {d:'Dec 23', v:0},
+    {d:'Dec 25', v:0},
+    {d:'Dec 27', v:0.12},
+    {d:'Dec 29', v:1.4},
+    {d:'Dec 31', v:0.05},
+  ];
+  const yTicks = [0, 0.35, 0.70, 1.05, 1.40];
+  const pL=52, pR=20, pT=12, pB=40;
+
+  function draw(){
+    const dpr = window.devicePixelRatio||1;
+    const W   = wrap.clientWidth;
+    const H   = wrap.clientHeight;
+    canvas.width  = W*dpr; canvas.height = H*dpr;
+    canvas.style.width = W+'px'; canvas.style.height = H+'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0,0,W,H);
+    const cW = W-pL-pR, cH = H-pT-pB, maxV = 1.4;
+    function xp(i){ return pL + (i/(pts.length-1))*cW; }
+    function yp(v){ return pT + (1-v/maxV)*cH; }
+
+    /* fix [02]: axis label color #595959 — meets 4.5:1 */
+    ctx.font = '11px -apple-system,"Helvetica Neue",Arial,sans-serif';
+    ctx.fillStyle = '#595959';
+
+    /* Y grid + labels */
+    yTicks.forEach(t=>{
+      const y = yp(t);
+      ctx.strokeStyle='#eae5df'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(pL,y); ctx.lineTo(W-pR,y); ctx.stroke();
+      ctx.textAlign='right';
+      ctx.fillText(t===0?'0':t.toFixed(2), pL-8, y+4);
+    });
+
+    /* X labels */
+    ctx.textAlign='center';
+    pts.forEach((p,i)=>{ ctx.fillText(p.d, xp(i), H-pB+17); });
+
+    /* Area fill */
+    const g = ctx.createLinearGradient(0,pT,0,pT+cH);
+    g.addColorStop(0,'rgba(44,99,212,.16)'); g.addColorStop(1,'rgba(44,99,212,.01)');
+    ctx.beginPath();
+    pts.forEach((p,i)=>{ i===0?ctx.moveTo(xp(i),yp(p.v)):ctx.lineTo(xp(i),yp(p.v)); });
+    ctx.lineTo(xp(pts.length-1),yp(0)); ctx.lineTo(xp(0),yp(0)); ctx.closePath();
+    ctx.fillStyle=g; ctx.fill();
+
+    /* Line */
+    ctx.beginPath(); ctx.strokeStyle='#2c63d4'; ctx.lineWidth=2; ctx.lineJoin='round';
+    pts.forEach((p,i)=>{ i===0?ctx.moveTo(xp(i),yp(p.v)):ctx.lineTo(xp(i),yp(p.v)); });
+    ctx.stroke();
+
+    /* fix [06]: visible data point markers */
+    pts.forEach((p,i)=>{
+      const x=xp(i), y=yp(p.v);
+      ctx.beginPath(); ctx.arc(x,y,4.5,0,Math.PI*2);
+      ctx.fillStyle='#2c63d4'; ctx.fill();
+      ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+    });
+  }
+
+  draw();
+  window.addEventListener('resize', draw);
+
+  /* fix [06]: hover tooltip */
+  function nearest(mx){
+    const W=wrap.clientWidth, step=(W-pL-pR)/(pts.length-1);
+    let best=-1, bd=Infinity;
+    pts.forEach((_,i)=>{ const d=Math.abs(mx-(pL+i*step)); if(d<bd){bd=d;best=i;} });
+    return bd<45?best:-1;
+  }
+
+  canvas.addEventListener('mousemove',function(e){
+    const r=canvas.getBoundingClientRect(), mx=e.clientX-r.left;
+    const H=wrap.clientHeight, W=wrap.clientWidth;
+    const cH=H-pT-pB, cW=W-pL-pR, maxV=1.4;
+    const idx=nearest(mx);
+    if(idx>=0){
+      const p=pts[idx];
+      const x=pL+(idx/(pts.length-1))*cW;
+      const y=pT+(1-p.v/maxV)*cH;
+      tip.textContent=p.d+': '+p.v;
+      tip.style.left=x+'px'; tip.style.top=y+'px';
+      tip.classList.add('on');
+    } else { tip.classList.remove('on'); }
+  });
+  canvas.addEventListener('mouseleave',()=>tip.classList.remove('on'));
+})();
+
+/* ── TABLE SORT — fix [08] ── */
+function sortTbl(id,col,btn){
+  const tbl  = document.getElementById(id);
+  const tbody= tbl.querySelector('tbody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  const icon = btn.querySelector('.sort-ic');
+  const wasAsc = icon.textContent==='↑';
+
+  // Reset all icons in this table
+  tbl.querySelectorAll('.sort-ic').forEach(ic=>ic.textContent='↕');
+  icon.textContent = wasAsc?'↓':'↑';
+
+  const asc = !wasAsc;
+  rows.sort((a,b)=>{
+    const av=a.cells[col].textContent.trim().replace(/[^\d.]/g,'');
+    const bv=b.cells[col].textContent.trim().replace(/[^\d.]/g,'');
+    const an=parseFloat(av), bn=parseFloat(bv);
+    if(!isNaN(an)&&!isNaN(bn)) return asc?an-bn:bn-an;
+    return asc
+      ? a.cells[col].textContent.localeCompare(b.cells[col].textContent)
+      : b.cells[col].textContent.localeCompare(a.cells[col].textContent);
+  });
+  rows.forEach(r=>tbody.appendChild(r));
+}
+
+/* ── METRIC CARD CLICK SELECTION — fix [07] ── */
+document.querySelectorAll('.metric-card').forEach(card=>{
+  card.addEventListener('click', function(){
+    document.querySelectorAll('.metric-card').forEach(c=>c.classList.remove('is-selected'));
+    this.classList.add('is-selected');
+  });
+  card.addEventListener('keydown', function(e){
+    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); this.click(); }
+  });
+});
+</script>
+</body>
+</html>
