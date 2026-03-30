@@ -1,0 +1,19 @@
+{
+  "sid": "5a152d8f-34d5-4891-9cfb-958c4156f687",
+  "date": "2026-03-30T06:52:33.171842Z",
+  "product_name": "Manus",
+  "screen_name": "Scheduled Task Creation Chat",
+  "overall_score": 6.8,
+  "score_label": "Fair",
+  "accessibility_score": 5.5,
+  "filename": "Manus Web 154.png",
+  "website_url": "https://manus.im/?index=1",
+  "high": 4,
+  "medium": 5,
+  "low": 1,
+  "total_issues": 10,
+  "has_script": false,
+  "has_dribbble": false,
+  "has_redesign": false,
+  "status": "ready"
+}
