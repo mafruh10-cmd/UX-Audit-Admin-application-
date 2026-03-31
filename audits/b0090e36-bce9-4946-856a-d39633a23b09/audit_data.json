@@ -1,0 +1,176 @@
+{
+  "product_name": "Sprout Social",
+  "screen_name": "Dashboard",
+  "overall_score": 6.4,
+  "score_label": "Fair",
+  "summary": "The Sprout Social dashboard provides a reasonable overview of publishing activity and recent posts, but suffers from information overload, weak visual hierarchy among competing sections, and several accessibility concerns. Icon-only buttons on the right sidebar lack labels, contrast issues exist in secondary text, and the dense 'Looking for Something Else?' section undermines progressive disclosure principles.",
+  "accessibility_score": 5.5,
+  "issues": [
+    {
+      "id": "01",
+      "title": "Right icon bar buttons lack visible text labels",
+      "severity": "High",
+      "location": "Right vertical icon bar (far-right edge of screen)",
+      "problem": "The slim vertical bar on the far right contains multiple icon-only buttons with no visible text labels or tooltips described. Users who cannot identify the icons—including screen reader users—have no way to understand the function of each button.",
+      "critical_reason": "WCAG 1.1.1 requires all non-text content to have a text alternative. Icon-only controls without accessible names create a complete barrier for assistive technology users and increase cognitive load for sighted users who must guess functionality.",
+      "recommendation": "Add aria-label or aria-labelledby attributes to every icon button providing a clear, concise description of its function. Consider adding visible tooltip text on hover/focus and, if space allows, pair icons with short text labels.",
+      "reference": "WCAG 2.2 — 1.1.1 Non-text Content (A): all non-text content must have a text alternative",
+      "wcag_criterion": "1.1.1",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 97,
+        "y": 50,
+        "w": 4,
+        "h": 60
+      }
+    },
+    {
+      "id": "02",
+      "title": "Low contrast on secondary text and metadata",
+      "severity": "High",
+      "location": "Trial status text '26 days remaining in trial', post timestamps, and 'Published from' date range",
+      "problem": "Several secondary text elements—the trial countdown in the header, post timestamps, and the date range label—appear in light gray on white or light backgrounds. These likely fall below the 4.5:1 contrast ratio required for normal-sized text, making them difficult to read for users with low vision.",
+      "critical_reason": "WCAG 1.4.3 mandates a minimum contrast ratio of 4.5:1 for normal text. Insufficient contrast directly harms readability, and per the Psychology of Design, low-contrast text increases cognitive effort and slows information processing.",
+      "recommendation": "Audit all secondary text colors against their backgrounds using a contrast checker. Increase text color darkness to achieve at least 4.5:1 for normal text (e.g., move from #999 to #595959 or darker). Ensure timestamps and metadata remain readable.",
+      "reference": "WCAG 2.2 — 1.4.3 Contrast Minimum (AA): normal text requires 4.5:1 contrast ratio",
+      "wcag_criterion": "1.4.3",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 55,
+        "y": 5,
+        "w": 25,
+        "h": 4
+      }
+    },
+    {
+      "id": "03",
+      "title": "Dense link-heavy 'Looking for Something Else?' section overwhelms users",
+      "severity": "High",
+      "location": "'Looking for Something Else?' section with four columns of links",
+      "problem": "This section presents approximately 22 links across four columns (Your Account, Connect Profile, Integrations, Power Users) all at once. The sheer number of options creates decision paralysis and competes with the primary dashboard content above for attention.",
+      "critical_reason": "Hick's Law states that decision time increases logarithmically with the number of choices. Presenting 22+ links simultaneously overwhelms working memory capacity (Miller's 7±2 chunks) and dilutes the dashboard's primary purpose.",
+      "recommendation": "Replace this section with a single 'Settings & Configuration' link or a search bar. If links must be shown, use progressive disclosure—collapse columns into expandable accordions or move them entirely to a dedicated settings page.",
+      "reference": "Psychology of Design — Hick's Law: too many choices slows decisions",
+      "annotation": {
+        "x": 52,
+        "y": 75,
+        "w": 70,
+        "h": 18
+      }
+    },
+    {
+      "id": "04",
+      "title": "Keyboard focus indicators not visible on interactive elements",
+      "severity": "High",
+      "location": "All interactive elements — sidebar navigation, buttons, links throughout the page",
+      "problem": "There is no evidence of visible focus indicators on any interactive elements in the screenshot. Keyboard-only users and those using assistive technologies cannot determine which element currently has focus, making navigation impossible without a mouse.",
+      "critical_reason": "WCAG 2.4.7 requires that any keyboard-operable interface has a mode of operation where the keyboard focus indicator is visible. Absence of focus styles creates a complete navigational barrier for keyboard users.",
+      "recommendation": "Implement a clearly visible focus ring (e.g., 2px solid outline in a high-contrast color like #005FCC) on all interactive elements including links, buttons, and navigation items. Ensure the focus indicator has a minimum 3:1 contrast ratio against adjacent colors.",
+      "reference": "WCAG 2.2 — 2.4.7 Focus Visible (AA): keyboard focus indicator must be visible",
+      "wcag_criterion": "2.4.7",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 8,
+        "y": 40,
+        "w": 14,
+        "h": 50
+      }
+    },
+    {
+      "id": "05",
+      "title": "Trial urgency banner competes with primary CTA without clear hierarchy",
+      "severity": "Medium",
+      "location": "Header area — '26 days remaining in trial' text and 'Start my subscription' button",
+      "problem": "The trial countdown and subscription CTA sit in the header alongside the welcome greeting, but the visual weight of the CTA button doesn't sufficiently differentiate it from other header elements. The urgency message may also create anxiety without providing value context for why a user should subscribe.",
+      "critical_reason": "Per Refactoring UI, visual hierarchy should use size, weight, and color to direct attention to the most important action. Loss aversion (Psychology of Design) makes trial countdowns effective but only when paired with a clear value proposition.",
+      "recommendation": "Increase the visual prominence of the subscription CTA with a larger button size or contrasting color. Add a brief value statement near the countdown (e.g., 'Keep your analytics and scheduling—start your subscription'). Consider moving it into a dismissible banner below the header for more space.",
+      "reference": "Refactoring UI — Use color to support hierarchy, not communicate it alone",
+      "annotation": {
+        "x": 75,
+        "y": 3,
+        "w": 30,
+        "h": 5
+      }
+    },
+    {
+      "id": "06",
+      "title": "Zero-state cards in 'Today's Publishing' lack actionable guidance",
+      "severity": "Medium",
+      "location": "'Today's Publishing' card showing three '0' counts for Scheduled, Queued, and Sent Posts",
+      "problem": "The publishing card displays three zeros with no contextual guidance or encouragement to take action. New or trial users seeing empty states with bare numbers may feel confused about next steps or perceive the tool as inactive and unhelpful.",
+      "critical_reason": "Per The Design of Everyday Things (Norman), the Gulf of Execution occurs when users cannot figure out how to accomplish their goal. Empty states are a critical onboarding moment—without guidance, users disengage. Sprout Social's trial context makes this especially costly.",
+      "recommendation": "Replace the bare zero counts with an illustrated empty state that includes a clear CTA such as 'Schedule your first post' with a direct link to the publishing composer. Add a brief sentence explaining the value of scheduling.",
+      "reference": "The Design of Everyday Things (Norman) — Gulf of Execution: user cannot figure out how to do what they want",
+      "annotation": {
+        "x": 35,
+        "y": 22,
+        "w": 28,
+        "h": 14
+      }
+    },
+    {
+      "id": "07",
+      "title": "Navigation sidebar has too many top-level items without grouping",
+      "severity": "Medium",
+      "location": "Left sidebar navigation menu listing 10 items: Dashboard through Reviews",
+      "problem": "The sidebar presents 10 navigation items in a flat list with no visual grouping or section dividers. Users must scan the entire list to find their desired destination, increasing cognitive load. Items like 'Bots' and 'Reviews' may be unfamiliar to trial users.",
+      "critical_reason": "Gestalt's Law of Proximity (Psych 101, Kleinman) dictates that items placed close together are perceived as related. Without grouping, users cannot quickly form mental categories, increasing scan time and working memory demands.",
+      "recommendation": "Group navigation items into logical categories (e.g., 'Engage': Smart Inbox, Tasks, Feeds; 'Publish': Publishing; 'Analyze': Reports, Listening) with subtle dividers or section labels. Consider collapsing less-used items like Bots and Reviews under a 'More' section.",
+      "reference": "Psych 101 (Kleinman) — Gestalt: Law of Proximity",
+      "annotation": {
+        "x": 8,
+        "y": 45,
+        "w": 14,
+        "h": 40
+      }
+    },
+    {
+      "id": "08",
+      "title": "'You have new messages!' button lacks context and visual priority",
+      "severity": "Medium",
+      "location": "'You have new messages!' button between the activity cards and recent posts section",
+      "problem": "This notification button appears inline within the dashboard content flow without specifying how many messages are waiting or from which channel. Its placement between sections makes it easy to overlook, and the lack of specificity reduces its urgency and usefulness.",
+      "critical_reason": "Nielsen's Heuristic #1 (Visibility of System Status) requires that users always know what's happening. A vague 'new messages' notification without count or source fails to communicate meaningful status and reduces the signal-to-noise ratio of the dashboard.",
+      "recommendation": "Add a specific message count (e.g., 'You have 3 new messages') and indicate the source channel. Consider using a persistent badge on the Smart Inbox navigation item instead, or a more prominent notification banner at the top of the content area.",
+      "reference": "Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter",
+      "annotation": {
+        "x": 52,
+        "y": 34,
+        "w": 40,
+        "h": 5
+      }
+    },
+    {
+      "id": "09",
+      "title": "Sort dropdown 'Highest Performing' may not be perceivable as interactive",
+      "severity": "Low",
+      "location": "'Sort by: Highest Performing' dropdown in the 'Your Recent Posts' section",
+      "problem": "The sort dropdown may lack sufficient visual affordance to communicate that it is an interactive control. Without a visible border, dropdown arrow, or button styling, users may not realize they can change the sort order of their recent posts.",
+      "critical_reason": "Per The Design of Everyday Things (Norman), affordance and signifiers must clearly communicate how an element can be used. If the dropdown looks like static text, users miss the ability to sort, reducing the utility of the feature.",
+      "recommendation": "Ensure the dropdown has a visible border or container, a downward-pointing chevron icon, and a hover/focus state that clearly signals interactivity. Use standard select styling conventions users expect.",
+      "reference": "The Design of Everyday Things (Norman) — Signifier: visible cues must indicate where to act",
+      "annotation": {
+        "x": 72,
+        "y": 40,
+        "w": 18,
+        "h": 4
+      }
+    },
+    {
+      "id": "10",
+      "title": "Footer banner and branding consume space without user value",
+      "severity": "Low",
+      "location": "Black footer banner at the bottom of the screen",
+      "problem": "The black footer banner with logos and attribution text occupies screen real estate at the bottom of the dashboard without providing any functional value to the user. It may also create a visual dead-end that confuses users about whether there is more content below.",
+      "critical_reason": "Per Universal Principles of Design, the Signal-to-Noise Ratio should be maximized. Non-functional decorative elements reduce the proportion of useful information on screen and can interfere with the user's mental model of the page structure.",
+      "recommendation": "Remove the footer banner from the dashboard view or minimize it to a single line. Reserve branding for the login/marketing pages. If legally required, move attribution to a dedicated 'About' or footer-only page.",
+      "reference": "Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter",
+      "annotation": {
+        "x": 50,
+        "y": 97,
+        "w": 100,
+        "h": 4
+      }
+    }
+  ]
+}
