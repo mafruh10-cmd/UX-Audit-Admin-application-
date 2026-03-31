@@ -1,0 +1,297 @@
+You are a senior UI/UX designer and expert frontend developer.
+
+I am giving you a screenshot of a UI screen and a detailed UX audit report.
+Your task is to produce a complete, self-contained HTML redesign (version 2)
+that resolves every issue in the audit while preserving the original visual identity.
+
+CRITICAL RULE — READ BEFORE ANYTHING ELSE:
+Fixing an issue takes absolute priority over preserving layout or placement.
+If a fix requires moving an element, restructuring a section, hiding a component,
+or changing how content is presented — DO IT. The audit findings are non-negotiable.
+Preservation means keeping the brand identity (colors, typography, component style).
+It does NOT mean keeping broken elements in the same broken position.
+
+====================================================================
+MANDATORY FIX CHECKLIST  —  VERIFY EACH BEFORE WRITING A SINGLE LINE OF HTML
+====================================================================
+
+Before you write the HTML, mentally confirm that your design addresses EVERY item
+in this list. If your HTML does not contain a concrete, visible solution for a
+High or Medium issue, your response is incomplete — revise it until it does.
+Some fixes require structural changes (relocating, collapsing, or restructuring
+UI elements). Make those structural changes — do not style over them.
+
+HIGH PRIORITY  (must be resolved — zero exceptions):
+  NOTE: 'fixing' means the issue is GONE from the redesign — not styled differently.
+  If the fix says to move, collapse, or restructure something, do exactly that.
+
+  [01] Icon-only search button lacks visible text label
+       Problem:          The search function in the header is represented solely by a magnifying glass icon with no visible text label. If the underlying implementation lacks an accessible name (aria-label or sr-only text), screen reader users cannot identify its purpose. Even for sighted users, the small icon provides a limited click target.
+       What to implement: Add an aria-label='Search' to the button element. Consider adding a visible tooltip on hover/focus and increasing the touch target to at least 24×24 CSS pixels to also satisfy WCAG 2.5.8.
+       Affects:          Header — magnifying glass search icon
+       WCAG:             1.1.1 Level A
+
+  [02] Low contrast on secondary metadata text
+       Problem:          The secondary metadata text beneath the username appears in a light grey color on a white background. This likely falls below the 4.5:1 minimum contrast ratio required for normal-sized text, making it difficult to read for users with low vision or in bright lighting conditions.
+       What to implement: Increase the text color to at least #767676 (on white) or darker to meet the 4.5:1 ratio. Verify with a contrast checker tool. If the text is 18px+ bold or 24px+, a 3:1 ratio suffices, but this text appears to be small body size.
+       Affects:          User details line — 'Joined 1 day', 'Seen 3 mins', 'Trust Level basic user', 'Email samlee.mobbin@gmail.com'
+       WCAG:             1.4.3 Level AA
+
+  [03] Excessive empty-state sections create noise and overwhelm
+       Problem:          Six consecutive sections all display empty-state messages ('No replies yet.', 'No topics yet.', etc.) for a brand new user. This creates a wall of redundant, unhelpful content that the user must scroll through, significantly reducing the signal-to-noise ratio and making the page feel barren and discouraging.
+       What to implement: Collapse or hide empty sections entirely for new users, or consolidate them into a single encouraging empty state with a CTA like 'Start your first topic to see your activity here.' Use progressive disclosure to show sections only when data exists.
+       Affects:          Main content area — TOP REPLIES, TOP TOPICS, TOP LINKS, MOST REPLIED TO, MOST LIKED BY, MOST LIKED sections
+
+  [04] No visible focus indicators detectable on interactive elements
+       Problem:          There is no indication of custom focus styling on the interactive elements visible in the screenshot. If the default browser focus outlines have been suppressed (a common pattern), keyboard users will be unable to determine which element is currently focused as they tab through the interface.
+       What to implement: Ensure all interactive elements (links, buttons, tabs) display a clearly visible focus ring with at least 2px outline and sufficient contrast. Test by tabbing through the entire page with keyboard only. Use :focus-visible CSS to show focus for keyboard while hiding for mouse.
+       Affects:          All interactive elements — tabs, sidebar links, header buttons
+       WCAG:             2.4.7 Level AA
+
+MEDIUM PRIORITY  (must be resolved — no exceptions):
+  NOTE: Same rule — fix means the issue does not exist in the output HTML.
+
+  [05] Stats section uses abbreviations without explanation
+       Problem:          The abbreviation '<1m' for 'less than one minute' is not immediately clear to all users. Combined with the dense grid of all-zero statistics, the stats section provides little useful information and may confuse users unfamiliar with the notation.
+       What to implement: Spell out 'Less than 1 minute' or use '< 1 min' with a title attribute for full text. For new users with all-zero stats, consider hiding this section or showing a simplified onboarding message instead.
+       Affects:          STATS section — '<1m read time'
+
+  [06] Sidebar navigation is overly complex for a community forum
+       Problem:          The sidebar presents a long list of navigation options across multiple collapsible sections (primary nav, Categories, Tags, Messages). This high information density increases decision time and cognitive load, especially for new users who may not yet understand the forum's structure.
+       What to implement: Reduce visible sidebar items to the 4-5 most essential links. Move less-used sections like 'Tags' and 'Configure defaults' into a settings or advanced area. Use progressive disclosure to reveal secondary navigation on demand.
+       Affects:          Left sidebar — Topics, My Posts, Review, Admin, More, Categories, Tags, Messages sections
+
+  [07] Email address exposed on profile without privacy control
+       Problem:          The user's full email address is displayed openly on the profile page. There is no visible toggle or privacy control to hide it. This raises privacy concerns and may deter users from engaging if they feel their personal information is exposed.
+       What to implement: Hide the email by default or show it only to the profile owner and admins. Add a visible privacy toggle in the profile or preferences tab allowing users to control email visibility. Show a masked version (s***@gmail.com) if it must appear.
+       Affects:          User details — 'Email samlee.mobbin@gmail.com'
+
+  [08] Heading hierarchy appears to skip levels
+       Problem:          The section headings (STATS, TOP REPLIES, etc.) appear to be styled as uppercase small text, suggesting they may not use proper semantic heading tags or may skip heading levels (e.g., jumping from h1 to h3). This disrupts screen reader navigation which relies on a logical heading hierarchy.
+       What to implement: Ensure section headings use proper semantic HTML (h2 for major sections under the h1 username). Maintain a sequential heading hierarchy without skipping levels. The visual styling can remain uppercase and small while using correct heading semantics.
+       Affects:          Main content — section headings STATS, TOP REPLIES, TOP TOPICS, etc.
+       WCAG:             1.3.1 Level A
+
+LOW PRIORITY  (implement where possible):
+  [09] Active tab indicator relies solely on subtle visual styling — Strengthen the active tab indicator with a bold bottom border (3-4px), contrasting background color, or bolder font weight. Ensure the active state has at least 3:1 contrast against the inactive state per WCAG 1.4.11 non-text contrast.
+  [10] 'Back to School' button purpose is ambiguous in context — Rename the button to clearly indicate its destination, such as 'Back to Courses' or 'Return to [School Name]'. If it's a branding element, separate it visually from navigation controls to avoid confusion.
+
+====================================================================
+STEP 1 — LAYOUT & COMPOSITION  (reason through this BEFORE anything else)
+====================================================================
+
+Layout and content distribution are non-negotiable design decisions.
+Do not assume the original layout is correct — reason from first principles.
+Ask yourself: does each element sit in the right zone for its purpose?
+If not, move it. The composition must serve the user's primary goal.
+
+1. VISUAL HIERARCHY
+   The most important action or information must be visually dominant.
+   Use size, weight, contrast, and position to establish a clear reading order.
+   Secondary content must be visually subordinate — smaller, lighter, lower.
+   (Malewicz — Designing User Interfaces: contrast creates hierarchy)
+   (Refactoring UI: use size and weight to communicate importance, not just color)
+
+2. F-PATTERN & READING FLOW
+   Users scan left-to-right, top-to-bottom in an F-shape on content-heavy screens.
+   Place primary actions and key labels at the start of scan lines.
+   Never interrupt the scan path with secondary, promotional, or personalisation content.
+   (Nielsen Norman Group — F-Pattern reading behavior)
+
+3. PROXIMITY & GROUPING (Gestalt)
+   Related elements must be spatially close. Unrelated elements need clear separation.
+   If two elements answer different user questions, they belong in different zones.
+   Never mix contextual content with navigational content in the same region.
+   (Psych 101 — Gestalt: Law of Proximity, Law of Similarity)
+
+4. CONTENT PRIORITISATION
+   Identify the user's single primary goal on this screen.
+   Every element that does not serve that goal directly must be secondary in
+   visual weight and position. Upsell, personalisation, and promotional content
+   must never compete with or interrupt the primary task flow.
+   (Don't Make Me Think — Krug: do not make users think about what to do next)
+   (Psychology of Design — Hick's Law: fewer competing choices = faster decisions)
+
+5. SPATIAL ZONES
+   Divide the screen into logical zones: navigation, primary content, secondary
+   context, actions. Each zone has exactly one job.
+   If an element is in the wrong zone, move it to the correct zone or defer it
+   to a modal or drawer. The layout must match the user's mental model of the task.
+   (Universal Principles of Design — Progressive Disclosure)
+
+6. SIGNAL-TO-NOISE
+   Every element must earn its place. If an element does not directly help the
+   user complete their current task, reduce its visual weight or remove it from
+   the primary viewport. Clutter is a UX failure, not a neutral default.
+   (Universal Principles of Design — Signal-to-Noise Ratio)
+
+COMPOSITION RULE: If the original layout violates these principles — with or
+without an explicit audit finding — correct it. Do not replicate bad composition
+because it existed in the screenshot. A version 2 must be compositionally sound.
+
+APPLY THESE COMPOSITION DECISIONS TO RESOLVE THE FOLLOWING AUDIT ISSUES:
+Every High and Medium issue in the MANDATORY FIX CHECKLIST above must map to a
+specific, visible structural decision in your layout. Before moving to Step 2,
+trace each issue to a layout zone, spacing decision, or hierarchy change.
+If the fix requires restructuring — restructure. If it requires removing an element
+from the primary viewport — remove it. Composition fixes are not optional.
+
+====================================================================
+STEP 2 — VISUAL IDENTITY  (preserve brand, not broken placement)
+====================================================================
+
+Once composition is decided, preserve these brand elements exactly:
+  - Colors: every background, text, brand, accent, and surface hex value
+  - Typography: font families, sizes, weights, line-heights, letter-spacing
+  - Spacing scale: the relative rhythm of padding/margin (not the positions)
+  - Shapes: border-radius, border styles, shadows, elevation
+  - Icons: style, weight, and size (placement may change if composition requires)
+  - Components: card designs, button styles, badge styles, input styles
+
+NOTE: Layout and element positioning are governed by Step 1, not this list.
+Preserving the brand does NOT mean preserving where broken things sit.
+The output must feel like a version 2 — same brand, better UX.
+
+====================================================================
+FULL AUDIT REPORT  —  User Profile Summary
+====================================================================
+Overall Score:        5.4/10  —  Fair
+Accessibility Score:  5.2/10  (WCAG 2.2 AA)
+Issues Found:         10  (4 High · 4 Medium · 2 Low)
+
+EXECUTIVE SUMMARY
+The profile summary page presents an overwhelming amount of empty-state sections that create unnecessary clutter and reduce signal-to-noise ratio. Accessibility concerns include potential contrast issues on secondary text, icon-only interactive elements lacking accessible labels, and questionable heading hierarchy. The overall information architecture could be significantly streamlined for a new user who has no activity data.
+
+ALL ISSUES  (full detail for reference):
+
+[01] HIGH  —  Icon-only search button lacks visible text label
+     Location:  Header — magnifying glass search icon
+     Problem:   The search function in the header is represented solely by a magnifying glass icon with no visible text label. If the underlying implementation lacks an accessible name (aria-label or sr-only text), screen reader users cannot identify its purpose. Even for sighted users, the small icon provides a limited click target.
+     Fix:       Add an aria-label='Search' to the button element. Consider adding a visible tooltip on hover/focus and increasing the touch target to at least 24×24 CSS pixels to also satisfy WCAG 2.5.8.
+     Source:    WCAG 2.2 — 1.1.1 Non-text Content (A): all non-text content must have a text alternative
+     WCAG:      1.1.1  Level A
+
+[02] HIGH  —  Low contrast on secondary metadata text
+     Location:  User details line — 'Joined 1 day', 'Seen 3 mins', 'Trust Level basic user', 'Email samlee.mobbin@gmail.com'
+     Problem:   The secondary metadata text beneath the username appears in a light grey color on a white background. This likely falls below the 4.5:1 minimum contrast ratio required for normal-sized text, making it difficult to read for users with low vision or in bright lighting conditions.
+     Fix:       Increase the text color to at least #767676 (on white) or darker to meet the 4.5:1 ratio. Verify with a contrast checker tool. If the text is 18px+ bold or 24px+, a 3:1 ratio suffices, but this text appears to be small body size.
+     Source:    WCAG 2.2 — 1.4.3 Contrast (Minimum) (AA): normal text requires 4.5:1 contrast ratio
+     WCAG:      1.4.3  Level AA
+
+[03] HIGH  —  Excessive empty-state sections create noise and overwhelm
+     Location:  Main content area — TOP REPLIES, TOP TOPICS, TOP LINKS, MOST REPLIED TO, MOST LIKED BY, MOST LIKED sections
+     Problem:   Six consecutive sections all display empty-state messages ('No replies yet.', 'No topics yet.', etc.) for a brand new user. This creates a wall of redundant, unhelpful content that the user must scroll through, significantly reducing the signal-to-noise ratio and making the page feel barren and discouraging.
+     Fix:       Collapse or hide empty sections entirely for new users, or consolidate them into a single encouraging empty state with a CTA like 'Start your first topic to see your activity here.' Use progressive disclosure to show sections only when data exists.
+     Source:    Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter
+
+[04] HIGH  —  No visible focus indicators detectable on interactive elements
+     Location:  All interactive elements — tabs, sidebar links, header buttons
+     Problem:   There is no indication of custom focus styling on the interactive elements visible in the screenshot. If the default browser focus outlines have been suppressed (a common pattern), keyboard users will be unable to determine which element is currently focused as they tab through the interface.
+     Fix:       Ensure all interactive elements (links, buttons, tabs) display a clearly visible focus ring with at least 2px outline and sufficient contrast. Test by tabbing through the entire page with keyboard only. Use :focus-visible CSS to show focus for keyboard while hiding for mouse.
+     Source:    WCAG 2.2 — 2.4.7 Focus Visible (AA): keyboard focus indicator must be visible
+     WCAG:      2.4.7  Level AA
+
+[05] MEDIUM  —  Stats section uses abbreviations without explanation
+     Location:  STATS section — '<1m read time'
+     Problem:   The abbreviation '<1m' for 'less than one minute' is not immediately clear to all users. Combined with the dense grid of all-zero statistics, the stats section provides little useful information and may confuse users unfamiliar with the notation.
+     Fix:       Spell out 'Less than 1 minute' or use '< 1 min' with a title attribute for full text. For new users with all-zero stats, consider hiding this section or showing a simplified onboarding message instead.
+     Source:    Don't Make Me Think (Krug) — Billboard Design 101: users scan, not read
+
+[06] MEDIUM  —  Sidebar navigation is overly complex for a community forum
+     Location:  Left sidebar — Topics, My Posts, Review, Admin, More, Categories, Tags, Messages sections
+     Problem:   The sidebar presents a long list of navigation options across multiple collapsible sections (primary nav, Categories, Tags, Messages). This high information density increases decision time and cognitive load, especially for new users who may not yet understand the forum's structure.
+     Fix:       Reduce visible sidebar items to the 4-5 most essential links. Move less-used sections like 'Tags' and 'Configure defaults' into a settings or advanced area. Use progressive disclosure to reveal secondary navigation on demand.
+     Source:    Psychology of Design — Hick's Law: too many choices slows decisions
+
+[07] MEDIUM  —  Email address exposed on profile without privacy control
+     Location:  User details — 'Email samlee.mobbin@gmail.com'
+     Problem:   The user's full email address is displayed openly on the profile page. There is no visible toggle or privacy control to hide it. This raises privacy concerns and may deter users from engaging if they feel their personal information is exposed.
+     Fix:       Hide the email by default or show it only to the profile owner and admins. Add a visible privacy toggle in the profile or preferences tab allowing users to control email visibility. Show a masked version (s***@gmail.com) if it must appear.
+     Source:    The Design of Everyday Things (Norman) — Affordance: element must communicate how it is used
+
+[08] MEDIUM  —  Heading hierarchy appears to skip levels
+     Location:  Main content — section headings STATS, TOP REPLIES, TOP TOPICS, etc.
+     Problem:   The section headings (STATS, TOP REPLIES, etc.) appear to be styled as uppercase small text, suggesting they may not use proper semantic heading tags or may skip heading levels (e.g., jumping from h1 to h3). This disrupts screen reader navigation which relies on a logical heading hierarchy.
+     Fix:       Ensure section headings use proper semantic HTML (h2 for major sections under the h1 username). Maintain a sequential heading hierarchy without skipping levels. The visual styling can remain uppercase and small while using correct heading semantics.
+     Source:    WCAG 2.2 — 1.3.1 Info and Relationships (A): structure and relationships must be programmatically determinable
+     WCAG:      1.3.1  Level A
+
+[09] LOW  —  Active tab indicator relies solely on subtle visual styling
+     Location:  Profile tabs — 'Summary' tab (currently selected)
+     Problem:   The currently selected 'Summary' tab appears to be differentiated from inactive tabs by a subtle underline or weight change. The distinction between active and inactive tab states may not be sufficiently clear, especially for users with low vision or color vision deficiencies.
+     Fix:       Strengthen the active tab indicator with a bold bottom border (3-4px), contrasting background color, or bolder font weight. Ensure the active state has at least 3:1 contrast against the inactive state per WCAG 1.4.11 non-text contrast.
+     Source:    Refactoring UI — Use color to support hierarchy, not communicate it alone
+
+[10] LOW  —  'Back to School' button purpose is ambiguous in context
+     Location:  Sidebar — 'Back to School' button with left arrow
+     Problem:   The 'Back to School' button at the top of the sidebar is ambiguous — it is unclear whether it navigates to a school-themed course area, returns to a previous page, or serves as a branding element. The left arrow suggests back navigation, but 'Back to School' reads as a thematic label.
+     Fix:       Rename the button to clearly indicate its destination, such as 'Back to Courses' or 'Return to [School Name]'. If it's a branding element, separate it visually from navigation controls to avoid confusion.
+     Source:    The Design of Everyday Things (Norman) — Signifier: visible cues must indicate where to act
+
+====================================================================
+SELF-CHECK — RUN THIS BEFORE OUTPUTTING THE HTML
+====================================================================
+
+For each item below, verify the SPECIFIC FIX is concretely implemented —
+not just acknowledged, not just styled differently. The fix must be visible.
+
+  [ ] [01] Icon-only search button lacks visible text label
+       Required fix: Add an aria-label='Search' to the button element. Consider adding a visible tooltip on hover/focus and increasing the touch target to at least 24×24 CSS pixels to also satisfy WCAG 2.5.8.
+       Location:     Header — magnifying glass search icon
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [02] Low contrast on secondary metadata text
+       Required fix: Increase the text color to at least #767676 (on white) or darker to meet the 4.5:1 ratio. Verify with a contrast checker tool. If the text is 18px+ bold or 24px+, a 3:1 ratio suffices, but this text appears to be small body size.
+       Location:     User details line — 'Joined 1 day', 'Seen 3 mins', 'Trust Level basic user', 'Email samlee.mobbin@gmail.com'
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [03] Excessive empty-state sections create noise and overwhelm
+       Required fix: Collapse or hide empty sections entirely for new users, or consolidate them into a single encouraging empty state with a CTA like 'Start your first topic to see your activity here.' Use progressive disclosure to show sections only when data exists.
+       Location:     Main content area — TOP REPLIES, TOP TOPICS, TOP LINKS, MOST REPLIED TO, MOST LIKED BY, MOST LIKED sections
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [04] No visible focus indicators detectable on interactive elements
+       Required fix: Ensure all interactive elements (links, buttons, tabs) display a clearly visible focus ring with at least 2px outline and sufficient contrast. Test by tabbing through the entire page with keyboard only. Use :focus-visible CSS to show focus for keyboard while hiding for mouse.
+       Location:     All interactive elements — tabs, sidebar links, header buttons
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [05] Stats section uses abbreviations without explanation
+       Required fix: Spell out 'Less than 1 minute' or use '< 1 min' with a title attribute for full text. For new users with all-zero stats, consider hiding this section or showing a simplified onboarding message instead.
+       Location:     STATS section — '<1m read time'
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [06] Sidebar navigation is overly complex for a community forum
+       Required fix: Reduce visible sidebar items to the 4-5 most essential links. Move less-used sections like 'Tags' and 'Configure defaults' into a settings or advanced area. Use progressive disclosure to reveal secondary navigation on demand.
+       Location:     Left sidebar — Topics, My Posts, Review, Admin, More, Categories, Tags, Messages sections
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [07] Email address exposed on profile without privacy control
+       Required fix: Hide the email by default or show it only to the profile owner and admins. Add a visible privacy toggle in the profile or preferences tab allowing users to control email visibility. Show a masked version (s***@gmail.com) if it must appear.
+       Location:     User details — 'Email samlee.mobbin@gmail.com'
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [08] Heading hierarchy appears to skip levels
+       Required fix: Ensure section headings use proper semantic HTML (h2 for major sections under the h1 username). Maintain a sequential heading hierarchy without skipping levels. The visual styling can remain uppercase and small while using correct heading semantics.
+       Location:     Main content — section headings STATS, TOP REPLIES, TOP TOPICS, etc.
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+If any checkbox above cannot be ticked YES, revise your HTML before outputting it.
+
+====================================================================
+OUTPUT REQUIREMENTS
+====================================================================
+
+- Output a single, complete, self-contained HTML file.
+- All CSS must be in a <style> block in the <head> — no external stylesheets.
+- No CDN links, no JavaScript frameworks, no external images.
+  Use inline SVG for icons. Use data URIs only if absolutely necessary.
+- Preserve all informational content (text, labels, data). Do not silently drop
+  information the user needs. However: if a fix requires relocating, collapsing,
+  or restructuring a UI element, you MUST do so — placing it in a better position
+  is not removing it. The audit fix always wins over original placement.
+- Do NOT add new features, sections, or content not present in the original.
+- JavaScript is allowed only for interactions clearly present in the original.
+  Keep it minimal and inline.
+- The file must open in a browser as a fully working static page.
+- Start your response with <!DOCTYPE html> and end the HTML with </html>.
+- Do NOT reference Mobbin or any third-party design gallery. Use Saasfactor if needed.

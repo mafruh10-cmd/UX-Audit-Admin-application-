@@ -1,0 +1,178 @@
+{
+  "product_name": "Discourse (Teachable Community)",
+  "screen_name": "User Profile Summary",
+  "overall_score": 5.4,
+  "score_label": "Fair",
+  "summary": "The profile summary page presents an overwhelming amount of empty-state sections that create unnecessary clutter and reduce signal-to-noise ratio. Accessibility concerns include potential contrast issues on secondary text, icon-only interactive elements lacking accessible labels, and questionable heading hierarchy. The overall information architecture could be significantly streamlined for a new user who has no activity data.",
+  "accessibility_score": 5.2,
+  "issues": [
+    {
+      "id": "01",
+      "title": "Icon-only search button lacks visible text label",
+      "severity": "High",
+      "location": "Header — magnifying glass search icon",
+      "problem": "The search function in the header is represented solely by a magnifying glass icon with no visible text label. If the underlying implementation lacks an accessible name (aria-label or sr-only text), screen reader users cannot identify its purpose. Even for sighted users, the small icon provides a limited click target.",
+      "critical_reason": "WCAG 1.1.1 requires all non-text content to have a text alternative that serves the equivalent purpose. Icon-only buttons frequently fail this criterion when alt text or aria-labels are missing.",
+      "recommendation": "Add an aria-label='Search' to the button element. Consider adding a visible tooltip on hover/focus and increasing the touch target to at least 24×24 CSS pixels to also satisfy WCAG 2.5.8.",
+      "reference": "WCAG 2.2 — 1.1.1 Non-text Content (A): all non-text content must have a text alternative",
+      "wcag_criterion": "1.1.1",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 89,
+        "y": 3,
+        "w": 4,
+        "h": 4
+      }
+    },
+    {
+      "id": "02",
+      "title": "Low contrast on secondary metadata text",
+      "severity": "High",
+      "location": "User details line — 'Joined 1 day', 'Seen 3 mins', 'Trust Level basic user', 'Email samlee.mobbin@gmail.com'",
+      "problem": "The secondary metadata text beneath the username appears in a light grey color on a white background. This likely falls below the 4.5:1 minimum contrast ratio required for normal-sized text, making it difficult to read for users with low vision or in bright lighting conditions.",
+      "critical_reason": "WCAG 1.4.3 mandates a minimum contrast ratio of 4.5:1 for normal text. Insufficient contrast directly impairs readability and disproportionately affects users with visual impairments.",
+      "recommendation": "Increase the text color to at least #767676 (on white) or darker to meet the 4.5:1 ratio. Verify with a contrast checker tool. If the text is 18px+ bold or 24px+, a 3:1 ratio suffices, but this text appears to be small body size.",
+      "reference": "WCAG 2.2 — 1.4.3 Contrast (Minimum) (AA): normal text requires 4.5:1 contrast ratio",
+      "wcag_criterion": "1.4.3",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 55,
+        "y": 18,
+        "w": 50,
+        "h": 3
+      }
+    },
+    {
+      "id": "03",
+      "title": "Excessive empty-state sections create noise and overwhelm",
+      "severity": "High",
+      "location": "Main content area — TOP REPLIES, TOP TOPICS, TOP LINKS, MOST REPLIED TO, MOST LIKED BY, MOST LIKED sections",
+      "problem": "Six consecutive sections all display empty-state messages ('No replies yet.', 'No topics yet.', etc.) for a brand new user. This creates a wall of redundant, unhelpful content that the user must scroll through, significantly reducing the signal-to-noise ratio and making the page feel barren and discouraging.",
+      "critical_reason": "Per the signal-to-noise ratio principle, every unnecessary element competes with relevant information and increases cognitive load. For new users, this creates a negative first impression and offers no actionable guidance (Psychology of Design — Cognitive Load).",
+      "recommendation": "Collapse or hide empty sections entirely for new users, or consolidate them into a single encouraging empty state with a CTA like 'Start your first topic to see your activity here.' Use progressive disclosure to show sections only when data exists.",
+      "reference": "Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter",
+      "annotation": {
+        "x": 60,
+        "y": 58,
+        "w": 55,
+        "h": 40
+      }
+    },
+    {
+      "id": "04",
+      "title": "No visible focus indicators detectable on interactive elements",
+      "severity": "High",
+      "location": "All interactive elements — tabs, sidebar links, header buttons",
+      "problem": "There is no indication of custom focus styling on the interactive elements visible in the screenshot. If the default browser focus outlines have been suppressed (a common pattern), keyboard users will be unable to determine which element is currently focused as they tab through the interface.",
+      "critical_reason": "WCAG 2.4.7 requires that any keyboard operable user interface has a mode of operation where the keyboard focus indicator is visible. Without it, keyboard-only users are effectively blind to their position on the page.",
+      "recommendation": "Ensure all interactive elements (links, buttons, tabs) display a clearly visible focus ring with at least 2px outline and sufficient contrast. Test by tabbing through the entire page with keyboard only. Use :focus-visible CSS to show focus for keyboard while hiding for mouse.",
+      "reference": "WCAG 2.2 — 2.4.7 Focus Visible (AA): keyboard focus indicator must be visible",
+      "wcag_criterion": "2.4.7",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 55,
+        "y": 24,
+        "w": 40,
+        "h": 4
+      }
+    },
+    {
+      "id": "05",
+      "title": "Stats section uses abbreviations without explanation",
+      "severity": "Medium",
+      "location": "STATS section — '<1m read time'",
+      "problem": "The abbreviation '<1m' for 'less than one minute' is not immediately clear to all users. Combined with the dense grid of all-zero statistics, the stats section provides little useful information and may confuse users unfamiliar with the notation.",
+      "critical_reason": "Don't Make Me Think (Krug) emphasizes that users scan rather than read. Ambiguous abbreviations force users to stop and interpret, adding unnecessary cognitive friction. This is especially problematic for non-native English speakers.",
+      "recommendation": "Spell out 'Less than 1 minute' or use '< 1 min' with a title attribute for full text. For new users with all-zero stats, consider hiding this section or showing a simplified onboarding message instead.",
+      "reference": "Don't Make Me Think (Krug) — Billboard Design 101: users scan, not read",
+      "annotation": {
+        "x": 50,
+        "y": 33,
+        "w": 12,
+        "h": 4
+      }
+    },
+    {
+      "id": "06",
+      "title": "Sidebar navigation is overly complex for a community forum",
+      "severity": "Medium",
+      "location": "Left sidebar — Topics, My Posts, Review, Admin, More, Categories, Tags, Messages sections",
+      "problem": "The sidebar presents a long list of navigation options across multiple collapsible sections (primary nav, Categories, Tags, Messages). This high information density increases decision time and cognitive load, especially for new users who may not yet understand the forum's structure.",
+      "critical_reason": "Hick's Law states that decision time increases logarithmically with the number of choices. The sidebar presents 12+ distinct navigation options simultaneously, slowing the user's ability to find what they need.",
+      "recommendation": "Reduce visible sidebar items to the 4-5 most essential links. Move less-used sections like 'Tags' and 'Configure defaults' into a settings or advanced area. Use progressive disclosure to reveal secondary navigation on demand.",
+      "reference": "Psychology of Design — Hick's Law: too many choices slows decisions",
+      "annotation": {
+        "x": 10,
+        "y": 50,
+        "w": 15,
+        "h": 60
+      }
+    },
+    {
+      "id": "07",
+      "title": "Email address exposed on profile without privacy control",
+      "severity": "Medium",
+      "location": "User details — 'Email samlee.mobbin@gmail.com'",
+      "problem": "The user's full email address is displayed openly on the profile page. There is no visible toggle or privacy control to hide it. This raises privacy concerns and may deter users from engaging if they feel their personal information is exposed.",
+      "critical_reason": "Users have a strong expectation of control over personal data display (The Design of Everyday Things — Affordance). Lack of visible privacy controls creates anxiety and erodes trust, violating the principle that users should feel in control of their experience.",
+      "recommendation": "Hide the email by default or show it only to the profile owner and admins. Add a visible privacy toggle in the profile or preferences tab allowing users to control email visibility. Show a masked version (s***@gmail.com) if it must appear.",
+      "reference": "The Design of Everyday Things (Norman) — Affordance: element must communicate how it is used",
+      "annotation": {
+        "x": 68,
+        "y": 18,
+        "w": 25,
+        "h": 3
+      }
+    },
+    {
+      "id": "08",
+      "title": "Heading hierarchy appears to skip levels",
+      "severity": "Medium",
+      "location": "Main content — section headings STATS, TOP REPLIES, TOP TOPICS, etc.",
+      "problem": "The section headings (STATS, TOP REPLIES, etc.) appear to be styled as uppercase small text, suggesting they may not use proper semantic heading tags or may skip heading levels (e.g., jumping from h1 to h3). This disrupts screen reader navigation which relies on a logical heading hierarchy.",
+      "critical_reason": "WCAG 1.3.1 requires that information and relationships conveyed through presentation are programmatically determinable. A broken heading hierarchy prevents assistive technology users from efficiently navigating and understanding page structure.",
+      "recommendation": "Ensure section headings use proper semantic HTML (h2 for major sections under the h1 username). Maintain a sequential heading hierarchy without skipping levels. The visual styling can remain uppercase and small while using correct heading semantics.",
+      "reference": "WCAG 2.2 — 1.3.1 Info and Relationships (A): structure and relationships must be programmatically determinable",
+      "wcag_criterion": "1.3.1",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 38,
+        "y": 30,
+        "w": 10,
+        "h": 3
+      }
+    },
+    {
+      "id": "09",
+      "title": "Active tab indicator relies solely on subtle visual styling",
+      "severity": "Low",
+      "location": "Profile tabs — 'Summary' tab (currently selected)",
+      "problem": "The currently selected 'Summary' tab appears to be differentiated from inactive tabs by a subtle underline or weight change. The distinction between active and inactive tab states may not be sufficiently clear, especially for users with low vision or color vision deficiencies.",
+      "critical_reason": "Refactoring UI emphasizes using multiple visual cues to support hierarchy — not relying on a single subtle indicator. A weak active state signal forces users to look more carefully, reducing scanning efficiency.",
+      "recommendation": "Strengthen the active tab indicator with a bold bottom border (3-4px), contrasting background color, or bolder font weight. Ensure the active state has at least 3:1 contrast against the inactive state per WCAG 1.4.11 non-text contrast.",
+      "reference": "Refactoring UI — Use color to support hierarchy, not communicate it alone",
+      "annotation": {
+        "x": 37,
+        "y": 24,
+        "w": 8,
+        "h": 3
+      }
+    },
+    {
+      "id": "10",
+      "title": "'Back to School' button purpose is ambiguous in context",
+      "severity": "Low",
+      "location": "Sidebar — 'Back to School' button with left arrow",
+      "problem": "The 'Back to School' button at the top of the sidebar is ambiguous — it is unclear whether it navigates to a school-themed course area, returns to a previous page, or serves as a branding element. The left arrow suggests back navigation, but 'Back to School' reads as a thematic label.",
+      "critical_reason": "The Design of Everyday Things emphasizes that signifiers must clearly indicate what action will occur. Ambiguous labels create a gulf of execution where users cannot confidently predict the outcome of clicking.",
+      "recommendation": "Rename the button to clearly indicate its destination, such as 'Back to Courses' or 'Return to [School Name]'. If it's a branding element, separate it visually from navigation controls to avoid confusion.",
+      "reference": "The Design of Everyday Things (Norman) — Signifier: visible cues must indicate where to act",
+      "annotation": {
+        "x": 10,
+        "y": 9,
+        "w": 14,
+        "h": 4
+      }
+    }
+  ]
+}

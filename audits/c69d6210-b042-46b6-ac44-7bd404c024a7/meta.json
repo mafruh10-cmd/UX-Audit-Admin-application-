@@ -1,0 +1,20 @@
+{
+  "sid": "c69d6210-b042-46b6-ac44-7bd404c024a7",
+  "date": "2026-03-31T13:31:19.170803Z",
+  "product_name": "Discourse (Teachable Community)",
+  "screen_name": "User Profile Summary",
+  "overall_score": 5.4,
+  "score_label": "Fair",
+  "accessibility_score": 5.2,
+  "filename": "Teachable Web 389.png",
+  "website_url": "https://www.teachable.com/",
+  "high": 4,
+  "medium": 4,
+  "low": 2,
+  "total_issues": 10,
+  "has_script": false,
+  "has_dribbble": false,
+  "has_redesign": false,
+  "status": "ready",
+  "model_label": "Gemini+Opus"
+}
