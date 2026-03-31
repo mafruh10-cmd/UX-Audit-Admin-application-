@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sprout Social — Listening: Espresso</title>
+<style>
+  /* ===== CSS VARIABLES — Brand Identity ===== */
+  :root {
+    --bg-sidebar:      #1e2530;
+    --bg-sidebar-sec:  #252d3a;
+    --bg-main:         #f4f5f7;
+    --bg-white:        #ffffff;
+    --brand-green:     #59cb74;
+    --brand-purple:    #7b5ea7;
+    --brand-blue:      #1d7dea;
+    --brand-pink:      #c0466b;
+    --accent-teal:     #4ecdc4;
+    --text-primary:    #1a1f2e;
+    --text-secondary:  #5a6478;
+    --text-sidebar:    #d0d8e8;   /* ≥4.5:1 on --bg-sidebar */
+    --text-sidebar-dim:#a0aec0;   /* ≥4.5:1 on --bg-sidebar */
+    --text-sidebar-act:#ffffff;
+    --border:          #e2e8f0;
+    --border-dark:     #2e3848;
+    --focus-ring:      #1d7dea;
+    --trial-banner:    #1a3a5c;
+    --trial-banner-txt:#e8f4ff;
+    --tooltip-bg:      #1a1f2e;
+    --tooltip-txt:     #ffffff;
+    --radius-sm:       4px;
+    --radius-md:       8px;
+    --radius-lg:       12px;
+    --shadow-sm:       0 1px 3px rgba(0,0,0,.08);
+    --shadow-md:       0 4px 12px rgba(0,0,0,.12);
+  }
+
+  /* ===== RESET ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg-main); color: var(--text-primary); font-size: 14px; line-height: 1.5; }
+
+  /* ===== GLOBAL FOCUS RING — Issue [03] ===== */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+  button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* ===== TOOLTIP — Issues [01][04][08][10] ===== */
+  .has-tooltip { position: relative; }
+  .has-tooltip .tooltip {
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--tooltip-bg);
+    color: var(--tooltip-txt);
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .15s ease;
+    z-index: 9999;
+    box-shadow: var(--shadow-md);
+  }
+  .has-tooltip .tooltip::before {
+    content: '';
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-right-color: var(--tooltip-bg);
+  }
+  .has-tooltip:hover .tooltip,
+  .has-tooltip:focus-within .tooltip { opacity: 1; }
+
+  /* Tooltip above (for right toolbar) */
+  .has-tooltip-above .tooltip {
+    left: 50%;
+    top: auto;
+    bottom: calc(100% + 8px);
+    transform: translateX(-50%);
+  }
+  .has-tooltip-above .tooltip::before {
+    right: auto;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    border-right-color: transparent;
+    border-top-color: var(--tooltip-bg);
+  }
+
+  /* ===== TRIAL BANNER — Issue [07] ===== */
+  .trial-banner {
+    background: var(--trial-banner);
+    color: var(--trial-banner-txt);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    flex-shrink: 0;
+  }
+  .trial-banner .trial-icon {
+    flex-shrink: 0;
+    width: 20px; height: 20px;
+    color: #60a5fa;
+  }
+  .trial-banner strong { font-weight: 600; color: #ffffff; }
+  .trial-banner .trial-cta {
+    margin-left: auto;
+    background: var(--brand-blue);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background .15s;
+    white-space: nowrap;
+  }
+  .trial-banner .trial-cta:hover { background: #1668c7; }
+  .trial-banner .trial-dismiss {
+    background: none; border: none; cursor: pointer;
+    color: var(--trial-banner-txt); opacity: .6;
+    padding: 4px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .trial-banner .trial-dismiss:hover { opacity: 1; }
+
+  /* ===== LAYOUT ===== */
+  .app-shell {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ===== UNIFIED SIDEBAR — Issue [05] collapse dual sidebar ===== */
+  .sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: var(--bg-sidebar);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border-dark);
+    transition: width .2s ease, min-width .2s ease;
+  }
+  .sidebar.collapsed { width: 64px; min-width: 64px; }
+
+  /* Brand header */
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    height: 56px;
+    border-bottom: 1px solid var(--border-dark);
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .sidebar-brand svg { flex-shrink: 0; }
+  .sidebar-brand-text {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar-brand-text .org { font-size: 11px; color: var(--text-sidebar-dim); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidebar-brand-text .product { font-size: 14px; font-weight: 700; color: var(--text-sidebar-act); white-space: nowrap; }
+  .sidebar.collapsed .sidebar-brand-text { display: none; }
+
+  /* Toggle button */
+  .sidebar-toggle {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-sidebar-dim);
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    margin-left: auto;
+    flex-shrink: 0;
+    transition: color .15s;
+  }
+  .sidebar-toggle:hover { color: var(--text-sidebar-act); }
+  .sidebar.collapsed .sidebar-toggle { margin-left: 0; }
+
+  /* Nav sections */
+  .sidebar-nav { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 8px 0; }
+  .sidebar-nav::-webkit-scrollbar { width: 4px; }
+  .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+  .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
+
+  /* Section label */
+  .nav-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-sidebar-dim);
+    padding: 12px 16px 4px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .sidebar.collapsed .nav-section-label { display: none; }
+
+  /* Nav item — Issue [01]: icon + text labels */
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px;
+    height: 40px;
+    color: var(--text-sidebar);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    margin: 1px 6px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    width: calc(100% - 12px);
+    text-align: left;
+    font-size: 13.5px;
+    font-weight: 500;
+    transition: background .12s, color .12s;
+    white-space: nowrap;
+    overflow: hidden;
+    position: relative;
+  }
+  .nav-item:hover { background: rgba(255,255,255,.07); color: var(--text-sidebar-act); }
+  .nav-item.active { background: rgba(255,255,255,.1); color: var(--text-sidebar-act); font-weight: 600; }
+  .nav-item .nav-icon { flex-shrink: 0; width: 18px; height: 18px; }
+  .nav-item .nav-label { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+  .sidebar.collapsed .nav-label,
+  .sidebar.collapsed .nav-badge-ai { display: none; }
+  .sidebar.collapsed .nav-item { padding: 0; justify-content: center; width: 52px; height: 44px; margin: 1px auto; }
+
+  /* AI badge — Issue [08] consistent meaning */
+  .nav-badge-ai {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 9px; font-weight: 700; letter-spacing: .04em;
+    background: rgba(123,94,167,.25); color: #c4a7f0;
+    border-radius: 3px; padding: 2px 5px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* Collapse arrow */
+  .nav-collapse-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-sidebar-dim); padding: 4px;
+    border-radius: var(--radius-sm); display: flex; align-items: center;
+    flex-shrink: 0; transition: transform .15s;
+  }
+  .nav-collapse-btn.open { transform: rotate(180deg); }
+  .sidebar.collapsed .nav-collapse-btn { display: none; }
+
+  /* Nested items */
+  .nav-sub { padding-left: 28px; }
+  .sidebar.collapsed .nav-sub { padding-left: 0; }
+  .nav-sub .nav-item { font-size: 13px; height: 36px; }
+  .nav-sub .nav-item.active {
+    border-left: 3px solid var(--brand-green);
+    padding-left: 13px;
+  }
+  .sidebar.collapsed .nav-sub .nav-item.active { border-left: none; padding-left: 0; }
+
+  /* New topic button */
+  .nav-new-topic {
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 16px; height: 36px; margin: 2px 6px;
+    background: none; border: 1px dashed rgba(255,255,255,.2);
+    border-radius: var(--radius-sm); cursor: pointer;
+    color: var(--text-sidebar-dim); font-size: 13px; font-weight: 500;
+    width: calc(100% - 12px); text-align: left;
+    transition: border-color .15s, color .15s, background .15s;
+  }
+  .nav-new-topic:hover { border-color: rgba(255,255,255,.4); color: var(--text-sidebar-act); background: rgba(255,255,255,.04); }
+  .sidebar.collapsed .nav-new-topic { width: 44px; height: 44px; padding: 0; justify-content: center; margin: 2px auto; }
+  .sidebar.collapsed .nav-new-topic span { display: none; }
+
+  /* ===== MAIN AREA ===== */
+  .main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  /* ===== TOP HEADER ===== */
+  .main-header {
+    background: var(--bg-white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .main-header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Preview badge — Issue [09] amber + tooltip */
+  .badge-preview {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #f59e0b;
+    padding: 2px 7px;
+    border-radius: 3px;
+    cursor: default;
+    position: relative;
+  }
+  .badge-preview .preview-tooltip {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 260px;
+    background: var(--tooltip-bg);
+    color: var(--tooltip-txt);
+    font-size: 12px;
+    font-weight: 400;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .15s;
+    z-index: 9999;
+    white-space: normal;
+    line-height: 1.5;
+    box-shadow: var(--shadow-md);
+  }
+  .badge-preview:hover .preview-tooltip { opacity: 1; }
+
+  .header-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Edit topic button — Issue [10] labeled, near title */
+  .btn-edit-topic {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: none; border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 6px 12px;
+    font-size: 12px; font-weight: 600; color: var(--text-secondary);
+    cursor: pointer; transition: border-color .15s, color .15s, background .15s;
+    white-space: nowrap;
+  }
+  .btn-edit-topic:hover { border-color: var(--brand-blue); color: var(--brand-blue); background: #eef4fd; }
+
+  /* Track CTA */
+  .btn-track {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--brand-purple); color: #fff;
+    border: none; border-radius: var(--radius-md);
+    padding: 8px 14px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background .15s;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .btn-track:hover { background: #6a4e92; }
+  .btn-track .ai-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 9px; font-weight: 700; letter-spacing: .04em;
+    background: rgba(255,255,255,.2); border-radius: 3px; padding: 1px 5px;
+  }
+
+  /* Filters btn */
+  .btn-filters {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--bg-white); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 8px 14px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: border-color .15s, background .15s;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .btn-filters:hover { border-color: var(--brand-blue); background: #f0f6ff; }
+
+  /* ===== FILTER BAR — Issue [06] ===== */
+  .filter-bar {
+    background: var(--bg-white);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .filter-bar label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-right: 4px;
+  }
+
+  /* Clearly styled dropdown button — Issue [06] */
+  .filter-dropdown {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-white);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 7px 12px;
+    min-height: 36px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+    white-space: nowrap;
+    position: relative;
+  }
+  .filter-dropdown:hover { border-color: var(--brand-blue); background: #f7faff; }
+  .filter-dropdown:focus-visible { box-shadow: 0 0 0 3px rgba(29,125,234,.2); }
+  .filter-dropdown .filter-label { color: var(--text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .filter-dropdown .filter-value { color: var(--text-primary); font-weight: 600; }
+  .filter-dropdown svg { color: var(--text-secondary); flex-shrink: 0; }
+
+  /* Active filter badge */
+  .filter-active-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--brand-blue); color: #fff;
+    font-size: 10px; font-weight: 700;
+    width: 18px; height: 18px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .filter-clear {
+    background: none; border: none; color: var(--brand-blue);
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    padding: 4px 6px; border-radius: var(--radius-sm);
+    margin-left: auto;
+    transition: background .12s;
+  }
+  .filter-clear:hover { background: #eef4fd; }
+
+  /* ===== CONTENT SCROLL ===== */
+  .content-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    gap: 20px;
+  }
+  .content-scroll::-webkit-scrollbar { width: 6px; }
+  .content-scroll::-webkit-scrollbar-track { background: transparent; }
+  .content-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 3px; }
+
+  /* ===== MAIN CONTENT ===== */
+  .content-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+
+  /* Card */
+  .card {
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .card-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 16px 20px 0;
+    gap: 12px;
+  }
+  .card-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+  .card-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .card-menu {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-secondary); padding: 4px 6px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center;
+    transition: background .12s;
+    flex-shrink: 0;
+  }
+  .card-menu:hover { background: var(--bg-main); color: var(--text-primary); }
+
+  /* Engagement chart controls */
+  .chart-controls {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 20px;
+    flex-wrap: wrap;
+  }
+  .chart-seg {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--bg-main); border: 1.5px solid var(--border);
+    border-radius: var(--radius-md); padding: 6px 12px;
+    font-size: 12px; font-weight: 600; color: var(--text-primary);
+    cursor: pointer; transition: border-color .15s, background .15s;
+    white-space: nowrap;
+  }
+  .chart-seg:hover { border-color: var(--brand-blue); background: #f0f6ff; }
+  .chart-seg svg { color: var(--text-secondary); }
+
+  .chart-sep { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+  .chart-by { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+
+  /* Chart area */
+  .chart-area { padding: 0 20px 8px; }
+
+  /* SVG chart */
+  .chart-svg { width: 100%; height: 260px; display: block; }
+
+  /* Legend */
+  .chart-legend {
+    display: flex; align-items: center; justify-content: center; gap: 20px;
+    padding: 8px 20px 16px; flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Data table */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th, .data-table td { padding: 10px 20px; text-align: left; }
+  .data-table thead { background: var(--bg-main); border-top: 1px solid var(--border); }
+  .data-table th { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-secondary); }
+  .data-table th:not(:first-child), .data-table td:not(:first-child) { text-align: right; }
+  .data-table tbody tr { border-top: 1px solid var(--border); }
+  .data-table tbody tr:hover { background: #f9fafb; }
+  .data-table .row-label { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+  .data-table .row-label.total { font-size: 14px; font-weight: 700; }
+  .data-table .row-label.avg { font-weight: 600; }
+  .data-table .row-num { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .data-table .row-num.total { font-size: 15px; font-weight: 700; }
+  .data-table .row-trend { font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .row-trend.up { color: #059669; }
+  .row-trend.neutral { color: var(--text-secondary); }
+
+  /* Bar cell */
+  .bar-cell { min-width: 140px; }
+  .bar-track { height: 8px; background: #edf2f7; border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width .3s; }
+
+  /* ===== RIGHT TOOLBAR — Issue [04] 44×44px targets + labels + tooltips ===== */
+  .right-toolbar {
+    width: 52px;
+    min-width: 52px;
+    background: var(--bg-white);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 0;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .rt-btn {
+    width: 44px;
+    height: 44px;
+    background: none;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: background .12s, color .12s;
+  }
+  .rt-btn:hover { background: var(--bg-main); color: var(--text-primary); }
+  .rt-btn.active { background: #eef4fd; color: var(--brand-blue); }
+  .rt-btn svg { width: 18px; height: 18px; }
+
+  /* Tooltip — left side for right toolbar */
+  .rt-btn .tooltip {
+    left: auto;
+    right: calc(100% + 10px);
+    transform: translateY(-50%);
+  }
+  .rt-btn .tooltip::before {
+    right: auto;
+    left: 100%;
+    border-right-color: transparent;
+    border-left-color: var(--tooltip-bg);
+  }
+
+  .rt-divider { width: 28px; height: 1px; background: var(--border); margin: 4px 0; }
+
+  /* AI indicator dot on sparkle icons — Issue [08] */
+  .ai-legend-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 12px 8px;
+    font-size: 11px; color: var(--text-sidebar-dim);
+  }
+  .sidebar.collapsed .ai-legend-row { display: none; }
+
+  /* Scrollable content area horizontal */
+  .content-scroll { flex: 1; overflow-y: auto; padding: 20px; }
+
+  /* Responsive min */
+  @media (max-width: 900px) {
+    .sidebar { width: 64px; min-width: 64px; }
+    .sidebar .nav-label, .sidebar .sidebar-brand-text,
+    .sidebar .nav-section-label, .sidebar .nav-badge-ai,
+    .sidebar .nav-new-topic span { display: none; }
+    .sidebar .nav-item { justify-content: center; padding: 0; width: 44px; height: 44px; margin: 1px auto; }
+    .sidebar .nav-new-topic { width: 44px; height: 44px; padding: 0; justify-content: center; margin: 2px auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== TRIAL BANNER — Issue [07] moved to top of page ===== -->
+<div class="trial-banner" role="banner" id="trial-banner">
+  <svg class="trial-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="10" cy="10" r="8"/>
+    <path d="M10 6v4l2.5 2.5"/>
+  </svg>
+  <span><strong>30 days remaining</strong> in your free trial of Sprout Social.</span>
+  <button class="trial-cta" aria-label="Start your Sprout Social subscription">Start my subscription</button>
+  <button class="trial-dismiss" aria-label="Dismiss trial banner" onclick="document.getElementById('trial-banner').remove()">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13"/></svg>
+  </button>
+</div>
+
+<div class="app-shell">
+
+  <!-- ===== UNIFIED SIDEBAR — Issue [05] single nav, Issue [01] all labeled ===== -->
+  <nav class="sidebar" id="sidebar" aria-label="Main navigation">
+
+    <!-- Brand -->
+    <div class="sidebar-brand">
+      <!-- Sprout Social green leaf logo (inline SVG) -->
+      <svg width="28" height="28" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+        <rect width="36" height="36" rx="8" fill="#59cb74"/>
+        <path d="M18 28c0 0-8-5.5-8-13a8 8 0 0116 0c0 7.5-8 13-8 13z" fill="white"/>
+        <circle cx="18" cy="15" r="3.5" fill="#59cb74"/>
+      </svg>
+      <div class="sidebar-brand-text">
+        <span class="org">JDMobbin</span>
+        <span class="product">Listening</span>
+      </div>
+      <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Collapse sidebar" aria-expanded="true" aria-controls="sidebar">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M10 3L5 8l5 5"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- AI badge legend — Issue [08] explain sparkle once -->
+    <div class="ai-legend-row" id="ai-legend">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="#c4a7f0" aria-hidden="true">
+        <path d="M8 1l1.5 4.5L14 7l-4.5 1.5L8 13l-1.5-4.5L2 7l4.5-1.5z"/>
+      </svg>
+      <span>= AI-powered feature</span>
+    </div>
+
+    <div class="sidebar-nav">
+
+      <!-- Global nav -->
+      <div class="nav-section-label">Listening</div>
+
+      <button class="nav-item active has-tooltip" aria-label="Listening Home" aria-current="page">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a7 7 0 0114 0"/><circle cx="10" cy="14" r="1.5"/><path d="M6 14a4 4 0 018 0"/></svg>
+        <span class="nav-label">Listening Home</span>
+        <span class="nav-badge-ai" aria-label="AI-powered feature">
+          <svg width="8" height="8" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1l1.5 4.5L14 7l-4.5 1.5L8 13l-1.5-4.5L2 7l4.5-1.5z"/></svg>
+          AI
+        </span>
+        <span class="tooltip" role="tooltip">Listening Home</span>
+      </button>
+
+      <!-- Active Topics section -->
+      <div class="nav-section-label">Active Topics</div>
+
+      <button class="nav-new-topic has-tooltip" aria-label="Create new topic (AI-powered)">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 1v12M1 7h12"/></svg>
+        <span>New Topic</span>
+        <span class="tooltip" role="tooltip">New Topic — AI-powered</span>
+      </button>
+
+      <div class="nav-sub">
+        <button class="nav-item active has-tooltip" aria-label="Espresso topic — AI-powered" aria-current="page">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 7v3l2 2"/></svg>
+          <span class="nav-label">Espresso</span>
+          <span class="nav-badge-ai" aria-label="AI-powered feature">
+            <svg width="8" height="8" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1l1.5 4.5L14 7l-4.5 1.5L8 13l-1.5-4.5L2 7l4.5-1.5z"/></svg>
+            AI
+          </span>
+          <span class="tooltip" role="tooltip">Espresso — AI-powered topic</span>
+        </button>
+      </div>
+
+      <!-- Twitter Search -->
+      <div class="nav-section-label">Twitter Search</div>
+
+      <button class="nav-item has-tooltip" aria-label="Twitter Search">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="6"/><path d="M15 15l3 3"/></svg>
+        <span class="nav-label">Twitter Search</span>
+        <span class="tooltip" role="tooltip">Twitter Search</span>
+      </button>
+
+      <!-- Global tools -->
+      <div class="nav-section-label">Tools</div>
+
+      <button class="nav-item has-tooltip" aria-label="Feeds">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><rect x="11" y="11" width="6" height="6" rx="1"/></svg>
+        <span class="nav-label">Feeds</span>
+        <span class="tooltip" role="tooltip">Feeds</span>
+      </button>
+
+      <button class="nav-item has-tooltip" aria-label="Publishing">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3L9.5 10.5M17 3H12M17 3V8"/><path d="M9 5H5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-4"/></svg>
+        <span class="nav-label">Publishing</span>
+        <span class="tooltip" role="tooltip">Publishing</span>
+      </button>
+
+      <button class="nav-item has-tooltip" aria-label="Analytics">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15l4-6 4 3 4-8"/></svg>
+        <span class="nav-label">Analytics</span>
+        <span class="tooltip" role="tooltip">Analytics</span>
+      </button>
+
+      <button class="nav-item has-tooltip" aria-label="Reports">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M7 7h6M7 10h6M7 13h4"/></svg>
+        <span class="nav-label">Reports</span>
+        <span class="tooltip" role="tooltip">Reports</span>
+      </button>
+
+      <button class="nav-item has-tooltip" aria-label="Engage">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 8H3a1 1 0 00-1 1v5a1 1 0 001 1h10l4 2V9a1 1 0 00-1-1z"/></svg>
+        <span class="nav-label">Engage</span>
+        <span class="tooltip" role="tooltip">Engage</span>
+      </button>
+
+      <button class="nav-item has-tooltip" aria-label="Tasks">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 10l3 3 7-7"/><rect x="3" y="3" width="14" height="14" rx="2"/></svg>
+        <span class="nav-label">Tasks</span>
+        <span class="tooltip" role="tooltip">Tasks</span>
+      </button>
+
+      <button class="nav-item has-tooltip" aria-label="Settings">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="2.5"/><path d="M10 3v1.5M10 15.5V17M3 10h1.5M15.5 10H17M4.9 4.9l1.06 1.06M14.04 14.04l1.06 1.06M4.9 15.1l1.06-1.06M14.04 5.96l1.06-1.06"/></svg>
+        <span class="nav-label">Settings</span>
+        <span class="tooltip" role="tooltip">Settings</span>
+      </button>
+
+    </div><!-- /sidebar-nav -->
+
+  </nav><!-- /sidebar -->
+
+  <!-- ===== MAIN AREA ===== -->
+  <div class="main-area">
+
+    <!-- Header -->
+    <header class="main-header" role="banner">
+      <h1>
+        Espresso
+        <!-- Preview badge with tooltip — Issue [09] -->
+        <span class="badge-preview" tabindex="0" aria-describedby="preview-desc">
+          Preview
+          <span class="preview-tooltip" id="preview-desc" role="tooltip">
+            This is sample data — showing any conversation about 'Espresso' for an imagined coffee company. Create your own topic to see real results.
+          </span>
+        </span>
+      </h1>
+      <!-- Edit Topic button near title — Issue [10] -->
+      <button class="btn-edit-topic" aria-label="Edit Espresso topic settings">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z"/></svg>
+        Edit Topic
+      </button>
+      <span class="header-desc" aria-label="Topic description">A sample topic reporting on any conversation related to 'Espresso' for an imagined coffee company.</span>
+
+      <!-- Track CTA — Issue [08] sparkle = AI, labeled -->
+      <button class="btn-track" aria-label="Track your own Topics — AI-powered feature">
+        <span class="ai-chip" aria-label="AI-powered">
+          <svg width="9" height="9" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1l1.5 4.5L14 7l-4.5 1.5L8 13l-1.5-4.5L2 7l4.5-1.5z"/></svg>
+          AI
+        </span>
+        Track your own Topics
+      </button>
+      <button class="btn-filters" aria-label="Open all filters panel">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 4h12M5 8h6M8 12h0"/></svg>
+        Filters
+      </button>
+    </header>
+
+    <!-- Filter bar — Issue [06] clearly styled dropdowns -->
+    <div class="filter-bar" role="search" aria-label="Filter results">
+      <span class="sr-only" id="filter-label">Filter by:</span>
+
+      <button class="filter-dropdown" aria-haspopup="listbox" aria-label="Sources filter — currently Viewing All Sources" aria-expanded="false">
+        <span class="filter-label">Sources</span>
+        <span class="filter-value">Viewing All Sources</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 4l4 4 4-4"/></svg>
+      </button>
+
+      <button class="filter-dropdown" aria-haspopup="listbox" aria-label="Keyword Filters — 0 applied" aria-expanded="false">
+        <span class="filter-label">Keyword Filters</span>
+        <span class="filter-value">0 Applied</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 4l4 4 4-4"/></svg>
+      </button>
+
+      <button class="filter-dropdown" aria-haspopup="listbox" aria-label="Sentiment filter — currently Viewing all" aria-expanded="false">
+        <span class="filter-label">Sentiment</span>
+        <span class="filter-value">Viewing all</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 4l4 4 4-4"/></svg>
+      </button>
+
+      <button class="filter-dropdown" aria-haspopup="listbox" aria-label="More Filters" aria-expanded="false">
+        <span class="filter-label">More Filters</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 4l4 4 4-4"/></svg>
+      </button>
+
+      <button class="filter-clear" aria-label="Clear all active filters">Clear All</button>
+    </div>
+
+    <!-- Content + Right toolbar wrapper -->
+    <div style="flex:1;display:flex;overflow:hidden;min-height:0;">
+
+      <!-- Scrollable content -->
+      <div class="content-scroll" tabindex="0" role="main">
+        <div class="content-main">
+
+          <!-- Engagements card -->
+          <div class="card" role="region" aria-label="Engagements chart">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Engagements</div>
+                <div class="card-desc">Understand how this Topic resonates with its audience based on how users interact with its content.</div>
+              </div>
+              <button class="card-menu" aria-label="More options for Engagements chart">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="3" r="1.2"/><circle cx="8" cy="8" r="1.2"/><circle cx="8" cy="13" r="1.2"/></svg>
+              </button>
+            </div>
+
+            <!-- Chart controls -->
+            <div class="chart-controls" role="group" aria-label="Chart view options">
+              <button class="chart-seg" aria-label="Metric: Engagements" aria-pressed="true">
+                Engagements
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 4l4 4 4-4"/></svg>
+              </button>
+              <div class="chart-sep" aria-hidden="true"></div>
+              <button class="chart-seg" aria-label="Group by: Engagement Type" aria-pressed="true">
+                by Engagement Type
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 4l4 4 4-4"/></svg>
+              </button>
+              <div class="chart-sep" aria-hidden="true"></div>
+              <span class="chart-by">by Day</span>
+            </div>
+
+            <!-- Chart SVG -->
+            <div class="chart-area" aria-label="Line chart showing engagements from August 18 to 24, with a peak on August 23 at approximately 100K" role="img">
+              <svg class="chart-svg" viewBox="0 0 760 240" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="grad-likes" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#c0466b" stop-opacity=".7"/>
+                    <stop offset="100%" stop-color="#c0466b" stop-opacity=".05"/>
+                  </linearGradient>
+                  <linearGradient id="grad-shares" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#7b5ea7" stop-opacity=".8"/>
+                    <stop offset="100%" stop-color="#7b5ea7" stop-opacity=".05"/>
+                  </linearGradient>
+                  <linearGradient id="grad-comments" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#4ecdc4" stop-opacity=".8"/>
+                    <stop offset="100%" stop-color="#4ecdc4" stop-opacity=".05"/>
+                  </linearGradient>
+                </defs>
+                <!-- Y-axis labels -->
+                <text x="0" y="14" font-size="11" fill="#8898aa">100K</text>
+                <text x="0" y="62" font-size="11" fill="#8898aa">80K</text>
+                <text x="0" y="110" font-size="11" fill="#8898aa">60K</text>
+                <text x="0" y="158" font-size="11" fill="#8898aa">40K</text>
+                <text x="0" y="206" font-size="11" fill="#8898aa">20K</text>
+                <text x="10" y="232" font-size="11" fill="#8898aa">0</text>
+                <!-- Grid lines -->
+                <line x1="42" y1="10" x2="760" y2="10" stroke="#e2e8f0" stroke-width="1"/>
+                <line x1="42" y1="58" x2="760" y2="58" stroke="#e2e8f0" stroke-width="1"/>
+                <line x1="42" y1="106" x2="760" y2="106" stroke="#e2e8f0" stroke-width="1"/>
+                <line x1="42" y1="154" x2="760" y2="154" stroke="#e2e8f0" stroke-width="1"/>
+                <line x1="42" y1="202" x2="760" y2="202" stroke="#e2e8f0" stroke-width="1"/>
+                <line x1="42" y1="228" x2="760" y2="228" stroke="#e2e8f0" stroke-width="1.5"/>
+                <!-- X-axis labels -->
+                <text x="68" y="243" font-size="11" fill="#8898aa" text-anchor="middle">18</text>
+                <text x="170" y="243" font-size="11" fill="#8898aa" text-anchor="middle">19</text>
+                <text x="272" y="243" font-size="11" fill="#8898aa" text-anchor="middle">20</text>
+                <text x="374" y="243" font-size="11" fill="#8898aa" text-anchor="middle">21</text>
+                <text x="476" y="243" font-size="11" fill="#8898aa" text-anchor="middle">22</text>
+                <text x="578" y="243" font-size="11" fill="#8898aa" text-anchor="middle">23</text>
+                <text x="680" y="243" font-size="11" fill="#8898aa" text-anchor="middle">24</text>
+                <text x="54" y="255" font-size="10" fill="#8898aa" text-anchor="middle">AUG</text>
+                <!-- Likes area (pink, largest) -->
+                <path d="M68 226 L170 224 L272 222 L374 220 L476 140 L578 12 L680 60 L760 80 L760 228 L68 228 Z" fill="url(#grad-likes)" stroke="#c0466b" stroke-width="1.5" fill-opacity="0.6"/>
+                <!-- Shares area (purple, medium) -->
+                <path d="M68 226 L170 225 L272 225 L374 224 L476 220 L578 200 L680 210 L760 218 L760 228 L68 228 Z" fill="url(#grad-shares)" stroke="#7b5ea7" stroke-width="1.5" fill-opacity="0.7"/>
+                <!-- Comments area (teal, smallest) -->
+                <path d="M68 227 L170 227 L272 227 L374 227 L476 226 L578 224 L680 225 L760 226 L760 228 L68 228 Z" fill="url(#grad-comments)" stroke="#4ecdc4" stroke-width="1.5" fill-opacity="0.8"/>
+              </svg>
+            </div>
+
+            <!-- Legend -->
+            <div class="chart-legend" role="list" aria-label="Chart legend">
+              <div class="legend-item" role="listitem"><div class="legend-dot" style="background:#4ecdc4" aria-hidden="true"></div> Comments</div>
+              <div class="legend-item" role="listitem"><div class="legend-dot" style="background:#7b5ea7" aria-hidden="true"></div> Shares</div>
+              <div class="legend-item" role="listitem"><div class="legend-dot" style="background:#c0466b" aria-hidden="true"></div> Likes</div>
+              <div class="legend-item" role="listitem"><div class="legend-dot" style="background:#f6c90e" aria-hidden="true"></div> Dislikes</div>
+            </div>
+
+            <!-- Data table -->
+            <table class="data-table" aria-label="Total engagement by type">
+              <thead>
+                <tr>
+                  <th scope="col" id="col-type">Total Engagement, by Engagement Type</th>
+                  <th scope="col" id="col-totals">Totals</th>
+                  <th scope="col" id="col-trend">Trend</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="row-label total" headers="col-type">Total Engagements</td>
+                  <td class="row-num total" headers="col-totals">94,372</td>
+                  <td class="row-trend up" headers="col-trend" aria-label="Trend: up 1,627%">↗ 1,627%</td>
+                </tr>
+                <tr>
+                  <td headers="col-type">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <span class="row-label">Comments</span>
+                    </div>
+                    <div class="bar-cell" style="margin-top:4px;">
+                      <div class="bar-track"><div class="bar-fill" style="width:1.5%;background:#4ecdc4;"></div></div>
+                    </div>
+                  </td>
+                  <td class="row-num" headers="col-totals">1,406</td>
+                  <td class="row-trend up" headers="col-trend" aria-label="Trend: up 295%">↗ 295%</td>
+                </tr>
+                <tr>
+                  <td headers="col-type">
+                    <div><span class="row-label">Shares</span></div>
+                    <div class="bar-cell" style="margin-top:4px;">
+                      <div class="bar-track"><div class="bar-fill" style="width:6%;background:#7b5ea7;"></div></div>
+                    </div>
+                  </td>
+                  <td class="row-num" headers="col-totals">5,387</td>
+                  <td class="row-trend up" headers="col-trend" aria-label="Trend: up 6,092%">↗ 6,092%</td>
+                </tr>
+                <tr>
+                  <td headers="col-type">
+                    <div><span class="row-label">Likes</span></div>
+                    <div class="bar-cell" style="margin-top:4px;">
+                      <div class="bar-track"><div class="bar-fill" style="width:93%;background:#c0466b;"></div></div>
+                    </div>
+                  </td>
+                  <td class="row-num" headers="col-totals">87,579</td>
+                  <td class="row-trend up" headers="col-trend" aria-label="Trend: up 1,644%">↗ 1,644%</td>
+                </tr>
+                <tr>
+                  <td headers="col-type">
+                    <div><span class="row-label">Dislikes</span></div>
+                    <div class="bar-cell" style="margin-top:4px;">
+                      <div class="bar-track"><div class="bar-fill" style="width:0%;background:#f6c90e;"></div></div>
+                    </div>
+                  </td>
+                  <td class="row-num" headers="col-totals">0</td>
+                  <td class="row-trend neutral" headers="col-trend" aria-label="Trend: no change, 0%">→ 0%</td>
+                </tr>
+                <tr>
+                  <td class="row-label avg" headers="col-type">Avg. Engagements Per Day</td>
+                  <td class="row-num" headers="col-totals">13,481.7</td>
+                  <td class="row-trend up" headers="col-trend" aria-label="Trend: up 1,627%">↗ 1,627%</td>
+                </tr>
+              </tbody>
+            </table>
+
+          </div><!-- /card -->
+
+        </div><!-- /content-main -->
+      </div><!-- /content-scroll -->
+
+      <!-- ===== RIGHT TOOLBAR — Issue [04] 44×44px, aria-labels, tooltips ===== -->
+      <aside class="right-toolbar" aria-label="View tools">
+
+        <button class="rt-btn has-tooltip" aria-label="Notifications">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2a6 6 0 016 6c0 3.5 1 5 1 5H3s1-1.5 1-5a6 6 0 016-6z"/><path d="M10 18a2 2 0 002-2H8a2 2 0 002 2z"/></svg>
+          <span class="tooltip" role="tooltip">Notifications</span>
+        </button>
+
+        <button class="rt-btn has-tooltip" aria-label="Messages">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 8H3a1 1 0 00-1 1v5a1 1 0 001 1h10l4 2V9a1 1 0 00-1-1z"/></svg>
+          <span class="tooltip" role="tooltip">Messages</span>
+        </button>
+
+        <div class="rt-divider" aria-hidden="true"></div>
+
+        <button class="rt-btn has-tooltip active" aria-label="Listening (current section)" aria-current="true">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a7 7 0 0114 0"/><circle cx="10" cy="14" r="1.5"/><path d="M6 14a4 4 0 018 0"/></svg>
+          <span class="tooltip" role="tooltip">Listening</span>
+        </button>
+
+        <button class="rt-btn has-tooltip" aria-label="Copy link">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 12a4 4 0 006 0l2-2a4 4 0 00-5.66-5.66l-1 1"/><path d="M12 8a4 4 0 00-6 0L4 10a4 4 0 005.66 5.66l1-1"/></svg>
+          <span class="tooltip" role="tooltip">Copy link</span>
+        </button>
+
+        <button class="rt-btn has-tooltip" aria-label="Add to dashboard">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4v12M4 10h12"/></svg>
+          <span class="tooltip" role="tooltip">Add to dashboard</span>
+        </button>
+
+        <button class="rt-btn has-tooltip" aria-label="Team members">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="7" r="3"/><circle cx="14" cy="7" r="2.5"/><path d="M2 17a6 6 0 0112 0"/><path d="M14 9a4 4 0 014 4"/></svg>
+          <span class="tooltip" role="tooltip">Team members</span>
+        </button>
+
+        <div class="rt-divider" aria-hidden="true"></div>
+
+        <button class="rt-btn has-tooltip" aria-label="Search">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="6"/><path d="M15 15l3 3"/></svg>
+          <span class="tooltip" role="tooltip">Search</span>
+        </button>
+
+        <button class="rt-btn has-tooltip" aria-label="Keyboard shortcuts">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="16" height="10" rx="2"/><path d="M5 9h1M9 9h2M14 9h1M7 13h6"/></svg>
+          <span class="tooltip" role="tooltip">Keyboard shortcuts</span>
+        </button>
+
+        <button class="rt-btn has-tooltip" aria-label="Help and support">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M8 8a2 2 0 114 0c0 1.5-2 2-2 3"/><circle cx="10" cy="15" r=".7" fill="currentColor" stroke="none"/></svg>
+          <span class="tooltip" role="tooltip">Help & Support</span>
+        </button>
+
+      </aside><!-- /right-toolbar -->
+
+    </div><!-- /row wrapper -->
+
+  </div><!-- /main-area -->
+</div><!-- /app-shell -->
+
+<!-- Screen-reader only utility class -->
+<style>
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+</style>
+
+<script>
+// Sidebar collapse toggle — Issue [05]
+const sidebar = document.getElementById('sidebar');
+const toggle  = document.getElementById('sidebar-toggle');
+toggle.addEventListener('click', () => {
+  const collapsed = sidebar.classList.toggle('collapsed');
+  toggle.setAttribute('aria-expanded', String(!collapsed));
+  toggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+  // Flip chevron
+  toggle.querySelector('path').setAttribute('d', collapsed ? 'M6 3l5 5-5 5' : 'M10 3L5 8l5 5');
+});
+
+// Filter dropdowns — basic toggle aria-expanded
+document.querySelectorAll('.filter-dropdown').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const expanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!expanded));
+  });
+});
+</script>
+
+</body>
+</html>
