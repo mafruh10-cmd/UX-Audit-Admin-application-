@@ -678,6 +678,10 @@ def audit_stream(sid):
                     _api_kwargs["extra_body"] = {
                         "thinking": {"type": "enabled", "budget_tokens": 5000}
                     }
+                elif AUDIT_MODEL.startswith("google/"):
+                    _api_kwargs["extra_body"] = {
+                        "reasoning": {"effort": "high"}
+                    }
                 for attempt in range(2):
                     try:
                         msg = client.chat.completions.create(**_api_kwargs)
