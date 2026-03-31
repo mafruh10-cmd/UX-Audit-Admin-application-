@@ -46,6 +46,17 @@ CORS(app)
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
+# ─── Model registry ───────────────────────────────────────────────────────────
+MODELS = {
+    "gemini": ("google/gemini-2.5-pro",      "Gemini"),
+    "opus":   ("anthropic/claude-opus-4-6",  "Opus"),
+    "sonnet": ("anthropic/claude-sonnet-4-6","Sonnet"),
+}
+_AUDIT_MODEL_KEY  = "gemini"          # ← change this to switch audit model
+AUDIT_MODEL       = MODELS[_AUDIT_MODEL_KEY][0]
+AUDIT_MODEL_LABEL = MODELS[_AUDIT_MODEL_KEY][1]
+CONTENT_GEN_MODEL = "anthropic/claude-sonnet-4-6"  # YouTube script + Dribbble
+
 def _load_b64(path):
     if os.path.exists(path):
         with open(path, "rb") as f:
@@ -112,7 +123,7 @@ def _save_audit_meta(sid):
     os.makedirs(d, exist_ok=True)
     meta = {
         "sid": sid,
-        "date": s.get("date", datetime.utcnow().isoformat()),
+        "date": s.get("date", datetime.utcnow().isoformat() + "Z"),
         "product_name": analysis.get("product_name", ""),
         "screen_name": analysis.get("screen_name", s.get("filename", "Unknown")),
         "overall_score": analysis.get("overall_score", 0),
@@ -127,7 +138,8 @@ def _save_audit_meta(sid):
         "has_script":    os.path.exists(os.path.join(d, "youtube_script.txt")),
         "has_dribbble":  os.path.exists(os.path.join(d, "dribbble.json")),
         "has_redesign":  os.path.exists(os.path.join(d, "redesign.html")),
-        "status": s.get("status", "uploaded"),
+        "status":        s.get("status", "uploaded"),
+        "model_label":   s.get("model_label", AUDIT_MODEL_LABEL),
     }
     with open(os.path.join(d, "meta.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, indent=2)
@@ -173,6 +185,26 @@ def _persist_audit(sid):
             print(f"[persist] prompt error: {exc}")
 
     _save_audit_meta(sid)
+    _push_audit_to_github(sid)
+
+def _push_audit_to_github(sid):
+    """Commit and push audit artefacts to GitHub in a background thread."""
+    def _run():
+        try:
+            rel_dir = os.path.join("audits", sid)
+            subprocess.run(["git", "add", rel_dir], cwd=BASE_DIR, check=True, capture_output=True)
+            result = subprocess.run(
+                ["git", "commit", "-m", f"Add audit {sid[:8]}"],
+                cwd=BASE_DIR, capture_output=True, text=True
+            )
+            if result.returncode == 0:
+                subprocess.run(["git", "push", "origin", GITHUB_BRANCH], cwd=BASE_DIR, capture_output=True)
+                print(f"[github] Pushed audit {sid[:8]}")
+            else:
+                print(f"[github] Nothing to commit for {sid[:8]}")
+        except Exception as exc:
+            print(f"[github] Push failed for {sid[:8]}: {exc}")
+    threading.Thread(target=_run, daemon=True).start()
 
 def _load_sessions_from_disk():
     """Populate `sessions` dict from existing audit folders on startup."""
@@ -212,6 +244,7 @@ def _load_sessions_from_disk():
                 "date":         meta.get("date", ""),
                 "website_url":  meta.get("website_url", ""),
                 "website_context": "",
+                "model_label":  meta.get("model_label", ""),
             }
             count += 1
         except Exception as exc:
@@ -448,7 +481,7 @@ def _build_youtube_script(analysis):
 
     client = _OpenAI(api_key=ANTHROPIC_API_KEY, base_url="https://openrouter.ai/api/v1")
     msg = client.chat.completions.create(
-        model="anthropic/claude-sonnet-4.5",
+        model=CONTENT_GEN_MODEL,
         max_tokens=2000,
         messages=[{"role": "user", "content": user_prompt}],
         timeout=60,
@@ -500,7 +533,7 @@ Generate three assets. Return ONLY a valid JSON object, no markdown, no explanat
 
     client = _OpenAI(api_key=ANTHROPIC_API_KEY, base_url="https://openrouter.ai/api/v1")
     msg = client.chat.completions.create(
-        model="anthropic/claude-sonnet-4.5",
+        model=CONTENT_GEN_MODEL,
         max_tokens=1500,
         messages=[{"role": "user", "content": prompt}],
         timeout=60,
@@ -568,6 +601,7 @@ def upload():
                 "analysis":        None,
                 "website_url":     website_url,
                 "website_context": website_context,
+                "model_label":     AUDIT_MODEL_LABEL,
             }
 
         # Save screenshot to disk immediately
@@ -578,7 +612,7 @@ def upload():
             with open(os.path.join(d, f"screenshot.{ext}"), "wb") as fout:
                 fout.write(data)
             with _lock:
-                sessions[sid]["date"] = datetime.utcnow().isoformat()
+                sessions[sid]["date"] = datetime.utcnow().isoformat() + "Z"
             _save_audit_meta(sid)
         except Exception as exc:
             print(f"[upload] disk save error: {exc}")
@@ -634,20 +668,19 @@ def audit_stream(sid):
                 messages = [{"role": "user", "content": user_content}]
 
                 last_exc = None
+                _api_kwargs = dict(
+                    model=AUDIT_MODEL,
+                    max_tokens=6000,
+                    messages=messages,
+                    timeout=150,
+                )
+                if AUDIT_MODEL.startswith("anthropic/"):
+                    _api_kwargs["extra_body"] = {
+                        "thinking": {"type": "enabled", "budget_tokens": 5000}
+                    }
                 for attempt in range(2):
                     try:
-                        msg = client.chat.completions.create(
-                            model="anthropic/claude-sonnet-4.5",
-                            max_tokens=12000,
-                            messages=messages,
-                            timeout=150,
-                            extra_body={
-                                "thinking": {
-                                    "type": "enabled",
-                                    "budget_tokens": 8000,
-                                }
-                            },
-                        )
+                        msg = client.chat.completions.create(**_api_kwargs)
                         result_box[0] = msg.choices[0].message.content
                         return
                     except Exception as exc:
@@ -1037,6 +1070,48 @@ def upload_redesign(sid):
     return jsonify({"ok": True, "redesign_url": redesign_url})
 
 
+@app.route("/api/audits/<sid>/redesign", methods=["DELETE"])
+def delete_redesign(sid):
+    """Delete the redesign HTML file for an audit."""
+    d = _audit_dir(sid)
+    p = os.path.join(d, "redesign.html")
+    if not os.path.exists(p):
+        return jsonify({"error": "No redesign file found"}), 404
+    try:
+        os.remove(p)
+        with _lock:
+            if sid in sessions:
+                sessions[sid].pop("redesign_url", None)
+        _save_audit_meta(sid)
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/audits/<sid>/url", methods=["DELETE"])
+def delete_url(sid):
+    """Remove the website URL from an audit."""
+    d = _audit_dir(sid)
+    if not os.path.exists(d):
+        return jsonify({"error": "Audit not found"}), 404
+    try:
+        with _lock:
+            if sid in sessions:
+                sessions[sid]["website_url"] = ""
+                sessions[sid]["website_context"] = ""
+        # Update meta.json
+        meta_path = os.path.join(d, "meta.json")
+        if os.path.exists(meta_path):
+            with open(meta_path, encoding="utf-8") as f:
+                meta = json.load(f)
+            meta["website_url"] = ""
+            with open(meta_path, "w", encoding="utf-8") as f:
+                json.dump(meta, f, indent=2)
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
 @app.route("/api/audits/<sid>/report")
 def serve_report(sid):
     """Serve the HTML report file directly."""
@@ -1277,6 +1352,13 @@ def _build_redesign_prompt(analysis):
         "without an explicit audit finding — correct it. Do not replicate bad composition",
         "because it existed in the screenshot. A version 2 must be compositionally sound.",
         "",
+        "APPLY THESE COMPOSITION DECISIONS TO RESOLVE THE FOLLOWING AUDIT ISSUES:",
+        "Every High and Medium issue in the MANDATORY FIX CHECKLIST above must map to a",
+        "specific, visible structural decision in your layout. Before moving to Step 2,",
+        "trace each issue to a layout zone, spacing decision, or hierarchy change.",
+        "If the fix requires restructuring — restructure. If it requires removing an element",
+        "from the primary viewport — remove it. Composition fixes are not optional.",
+        "",
         "=" * 68,
         "STEP 2 — VISUAL IDENTITY  (preserve brand, not broken placement)",
         "=" * 68,
@@ -1324,12 +1406,18 @@ def _build_redesign_prompt(analysis):
         "SELF-CHECK — RUN THIS BEFORE OUTPUTTING THE HTML",
         "=" * 68,
         "",
+        "For each item below, verify the SPECIFIC FIX is concretely implemented —",
+        "not just acknowledged, not just styled differently. The fix must be visible.",
+        "",
     ]
     for iss in high_issues + medium_issues:
-        lines.append(f"  [ ] [{iss.get('id','?')}] {iss.get('title','')} — is the fix visible and functional in the HTML?")
+        lines.append(f"  [ ] [{iss.get('id','?')}] {iss.get('title','')}")
+        lines.append(f"       Required fix: {iss.get('recommendation','')}")
+        lines.append(f"       Location:     {iss.get('location','')}")
+        lines.append(f"       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)")
+        lines.append("")
     lines += [
-        "",
-        "If any checkbox above cannot be ticked, revise your HTML before outputting it.",
+        "If any checkbox above cannot be ticked YES, revise your HTML before outputting it.",
         "",
         "=" * 68,
         "OUTPUT REQUIREMENTS",
