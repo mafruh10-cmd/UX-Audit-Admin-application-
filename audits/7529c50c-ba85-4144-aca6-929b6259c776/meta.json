@@ -1,0 +1,20 @@
+{
+  "sid": "7529c50c-ba85-4144-aca6-929b6259c776",
+  "date": "2026-03-31T11:50:35.939848Z",
+  "product_name": "Sprout Social",
+  "screen_name": "Dashboard",
+  "overall_score": 7.2,
+  "score_label": "Good",
+  "accessibility_score": 6.0,
+  "filename": "Sprout Social Web 35.png",
+  "website_url": "https://sproutsocial.com/",
+  "high": 3,
+  "medium": 3,
+  "low": 1,
+  "total_issues": 7,
+  "has_script": false,
+  "has_dribbble": false,
+  "has_redesign": false,
+  "status": "ready",
+  "model_label": "Gemini"
+}
