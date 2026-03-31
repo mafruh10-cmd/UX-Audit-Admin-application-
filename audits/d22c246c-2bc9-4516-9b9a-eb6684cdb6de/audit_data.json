@@ -1,0 +1,178 @@
+{
+  "product_name": "Sprout Social",
+  "screen_name": "Listening - Espresso Topic Dashboard",
+  "overall_score": 6.8,
+  "score_label": "Good",
+  "summary": "The Listening dashboard provides a reasonable data visualization layout with clear topic context, but suffers from significant accessibility concerns including icon-only navigation without labels, low contrast text in the sidebar, and reliance on color alone to convey information. The dual-sidebar navigation adds cognitive overhead and the trial CTA competes for attention in a secondary location.",
+  "accessibility_score": 4.8,
+  "issues": [
+    {
+      "id": "01",
+      "title": "Primary sidebar uses icon-only buttons without accessible labels",
+      "severity": "High",
+      "location": "Primary navigation sidebar (far left vertical bar)",
+      "problem": "The far-left sidebar contains approximately 12 icon-only buttons with no visible text labels or tooltips. Users must guess the function of each icon, and screen reader users may encounter unlabeled controls. This creates a significant barrier for both discoverability and assistive technology users.",
+      "critical_reason": "Icon-only controls without accessible names violate WCAG 1.1.1 because non-text content lacks text alternatives. Per Norman's signifier principle, visible cues must indicate where and how to act — abstract icons alone fail this requirement.",
+      "recommendation": "Add aria-label or aria-labelledby attributes to every icon button with a descriptive name (e.g., 'Listening', 'Reports'). Implement tooltips on hover/focus to aid sighted users. Consider an expandable sidebar with text labels for first-time users.",
+      "reference": "WCAG 2.2 — 1.1.1 Non-text Content (A): all non-text content must have a text alternative",
+      "wcag_criterion": "1.1.1",
+      "wcag_level": "A",
+      "annotation": {
+        "x": 2,
+        "y": 50,
+        "w": 4,
+        "h": 80
+      }
+    },
+    {
+      "id": "02",
+      "title": "Low contrast text in secondary sidebar navigation",
+      "severity": "High",
+      "location": "Secondary sidebar — navigation labels like 'Listening Home', 'Twitter Search', and trial text",
+      "problem": "Light gray text on the dark gray sidebar background appears to have insufficient contrast, particularly for items like 'Listening Home', 'Twitter Search', and the trial information copy. This makes reading difficult for users with low vision or in bright ambient lighting conditions.",
+      "critical_reason": "WCAG 1.4.3 requires a minimum 4.5:1 contrast ratio for normal-sized text. The light gray (#A0A0A0 approximate) on dark gray (#323232) likely falls below the required threshold, creating a perceivability barrier.",
+      "recommendation": "Increase text color brightness to at least #C0C0C0 or higher to meet the 4.5:1 minimum ratio against the dark background. Use a contrast checker tool to verify every text/background combination in the sidebar. Active/selected items should have even stronger contrast.",
+      "reference": "WCAG 2.2 — 1.4.3 Contrast (Minimum) (AA): text must have at least 4.5:1 contrast ratio against background",
+      "wcag_criterion": "1.4.3",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 12,
+        "y": 40,
+        "w": 12,
+        "h": 50
+      }
+    },
+    {
+      "id": "03",
+      "title": "No visible focus indicators for interactive elements",
+      "severity": "High",
+      "location": "All interactive elements across sidebar icons, filter dropdowns, and buttons",
+      "problem": "There are no visible keyboard focus indicators on any of the interactive elements shown. Keyboard-only users cannot determine which element is currently focused, making the interface essentially unusable without a mouse.",
+      "critical_reason": "WCAG 2.4.7 requires that any keyboard-operable interface has a visible focus indicator. Without it, keyboard and switch-access users are completely disoriented, violating a fundamental navigation requirement.",
+      "recommendation": "Implement a visible focus ring (e.g., 2px solid blue outline with 2px offset) on all focusable elements. Ensure the focus indicator has at least a 3:1 contrast ratio against adjacent colors per WCAG 2.4.11. Test the full interface with keyboard-only navigation.",
+      "reference": "WCAG 2.2 — 2.4.7 Focus Visible (AA): keyboard focus indicator must be visible",
+      "wcag_criterion": "2.4.7",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 50,
+        "y": 50,
+        "w": 100,
+        "h": 100
+      }
+    },
+    {
+      "id": "04",
+      "title": "Right-side vertical icon toolbar lacks labels and has small touch targets",
+      "severity": "High",
+      "location": "Vertical icon toolbar on the far right edge of the screen",
+      "problem": "The right-edge toolbar contains a series of small icon-only buttons with no text labels, tooltips, or accessible names. The icons appear to be below the 24×24 CSS pixel minimum target size, making them difficult to activate for users with motor impairments.",
+      "critical_reason": "WCAG 2.5.8 (Target Size Minimum) requires at least 24×24 CSS pixels for interactive targets. Combined with missing text alternatives (1.1.1), these controls are both inaccessible and undiscoverable, violating Fitts' Law — small distant targets are slow and error-prone to click.",
+      "recommendation": "Increase button touch targets to at least 44×44px (preferred) or 24×24px minimum with adequate spacing. Add aria-labels and visible tooltips on hover/focus. Consider grouping these tools into a labeled panel or popover to reduce visual clutter.",
+      "reference": "WCAG 2.2 — 2.5.8 Target Size (Minimum) (AA): interactive targets must be at least 24x24 CSS pixels",
+      "wcag_criterion": "2.5.8",
+      "wcag_level": "AA",
+      "annotation": {
+        "x": 98,
+        "y": 50,
+        "w": 3,
+        "h": 60
+      }
+    },
+    {
+      "id": "05",
+      "title": "Dual sidebar creates excessive cognitive load and navigation confusion",
+      "severity": "Medium",
+      "location": "Primary (icon) sidebar + Secondary (text) sidebar combined",
+      "problem": "Two distinct sidebars stacked horizontally create navigational ambiguity. Users must understand that one is global navigation and the other is contextual, but the visual hierarchy between them is weak. This dual-panel pattern consumes significant horizontal space and increases the learning curve.",
+      "critical_reason": "Hick's Law states that decision time increases with the number of choices. Two sidebars with different interaction paradigms (icons vs. text) double the navigational surface area users must parse, increasing cognitive load unnecessarily.",
+      "recommendation": "Consider collapsing the primary sidebar into the secondary one, using a unified navigation with icon+text labels. Alternatively, make the primary sidebar auto-collapse when a section is selected, freeing horizontal space for content. Provide clear visual differentiation between global and contextual navigation.",
+      "reference": "Psychology of Design — Hick's Law: too many choices slows decisions",
+      "annotation": {
+        "x": 8,
+        "y": 50,
+        "w": 16,
+        "h": 100
+      }
+    },
+    {
+      "id": "06",
+      "title": "Filter dropdowns lack clear affordance and state indication",
+      "severity": "Medium",
+      "location": "Filter bar — Sources, Keyword Filters, Sentiment, More Filters dropdowns",
+      "problem": "The filter controls appear as simple text labels with small down-arrows rather than clearly styled dropdown buttons. The current filter state ('Viewing All Sources', '0 Applied') is in a secondary visual weight, making it easy to miss whether filters are active. Users may not realize they can interact with these elements.",
+      "critical_reason": "Norman's affordance principle requires that controls visually communicate how they are used. Low-contrast, text-like dropdowns fail to signal interactivity, creating a gulf of execution where users cannot figure out available filtering actions.",
+      "recommendation": "Style filter controls as clearly bordered dropdown buttons with a distinct interactive appearance (e.g., visible borders, hover states). When filters are active, use a badge or color highlight to indicate applied filters. Increase the click target area for each filter control.",
+      "reference": "The Design of Everyday Things (Norman) — Affordance: element must communicate how it is used",
+      "annotation": {
+        "x": 55,
+        "y": 33,
+        "w": 50,
+        "h": 5
+      }
+    },
+    {
+      "id": "07",
+      "title": "Trial subscription CTA buried in low-visibility sidebar location",
+      "severity": "Medium",
+      "location": "Secondary sidebar — 'Start my subscription' button near bottom",
+      "problem": "The trial information and subscription CTA are placed at the bottom of the secondary sidebar, an area of low visual priority. The '30 days remaining' message and blue 'Start my subscription' button compete poorly against the main content area for attention, potentially causing users to miss important account status information.",
+      "critical_reason": "Per the serial position effect, items at the end of a list receive less attention than those at the beginning. Burying a time-sensitive business action (trial conversion) in a low-attention zone reduces conversion rates and violates the visibility principle — critical status should be prominent.",
+      "recommendation": "Move trial status to a top-of-page banner or a persistent notification bar within the main content area. Use progressive urgency cues (color changes) as the trial period decreases. Consider a modal or in-content prompt at key engagement moments rather than a static sidebar element.",
+      "reference": "Universal Principles of Design — Visibility: system status and available actions must be visible",
+      "annotation": {
+        "x": 12,
+        "y": 88,
+        "w": 12,
+        "h": 12
+      }
+    },
+    {
+      "id": "08",
+      "title": "Purple sparkle icons used decoratively without clear meaning",
+      "severity": "Medium",
+      "location": "Multiple locations — next to 'Listening Home', 'New Topic', 'Espresso', and 'Track your own Topics' button",
+      "problem": "Purple sparkle icons appear next to multiple navigation items and buttons with no explanation of their meaning. Users cannot determine whether they indicate AI-powered features, new features, premium features, or something else. The inconsistent context of their placement increases confusion.",
+      "critical_reason": "Krug's principle that users scan rather than read means decorative elements without clear signification add noise. The signal-to-noise ratio decreases when ambiguous icons are scattered throughout the interface, forcing users to guess their meaning.",
+      "recommendation": "Add a tooltip or label explaining what the sparkle icon means (e.g., 'AI-powered' or 'New feature'). Use the icon consistently for one purpose only. On first encounter, consider an onboarding callout that explains the icon's significance.",
+      "reference": "Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter",
+      "annotation": {
+        "x": 20,
+        "y": 30,
+        "w": 8,
+        "h": 4
+      }
+    },
+    {
+      "id": "09",
+      "title": "'Preview' badge lacks context and actionability",
+      "severity": "Low",
+      "location": "Main content header — 'Preview' badge next to 'Espresso' heading",
+      "problem": "A small 'Preview' badge appears next to the topic title with no explanation of what 'Preview' means in this context — whether it indicates sample data, a limited feature, or a draft state. Users cannot determine the implications or how to move beyond the preview state.",
+      "critical_reason": "Norman's gulf of evaluation states that users must be able to understand system status from visible feedback. An unexplained badge creates ambiguity about data reliability and feature completeness, potentially undermining trust in the displayed analytics.",
+      "recommendation": "Add a tooltip or inline help text explaining the preview state (e.g., 'This is sample data. Create your own topic to see real results.'). Include a clear CTA to transition from preview to active state. Use a distinct color like amber to differentiate preview from production data.",
+      "reference": "The Design of Everyday Things (Norman) — Gulf of Evaluation: user cannot tell if their action worked",
+      "annotation": {
+        "x": 42,
+        "y": 24,
+        "w": 6,
+        "h": 3
+      }
+    },
+    {
+      "id": "10",
+      "title": "Edit button (blue circle with pencil icon) lacks label and clear purpose",
+      "severity": "Low",
+      "location": "Top right of main content area — blue circular button with pencil/edit icon",
+      "problem": "A floating blue circle with a white pencil icon appears at the top right with no label or context. It is unclear what this button edits — the topic configuration, the dashboard layout, or something else. Its isolated position away from related content weakens the association.",
+      "critical_reason": "Per Gestalt's Law of Proximity, elements placed far from their related content are perceived as unrelated. An unlabeled floating action button with ambiguous scope creates hesitation and potential errors if users activate it without understanding its effect.",
+      "recommendation": "Add an aria-label ('Edit topic settings') and a visible tooltip. Position the button closer to the content it modifies (e.g., next to the topic title). Consider replacing with a text+icon button like 'Edit Topic' for better discoverability.",
+      "reference": "Psych 101 (Kleinman) — Gestalt: Law of Proximity",
+      "annotation": {
+        "x": 96,
+        "y": 8,
+        "w": 4,
+        "h": 4
+      }
+    }
+  ]
+}
