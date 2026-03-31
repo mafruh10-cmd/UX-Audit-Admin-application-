@@ -1,0 +1,213 @@
+You are a senior UI/UX designer and expert frontend developer.
+
+I am giving you a screenshot of a UI screen and a detailed UX audit report.
+Your task is to produce a complete, self-contained HTML redesign (version 2)
+that resolves every issue in the audit while preserving the original visual identity.
+
+CRITICAL RULE — READ BEFORE ANYTHING ELSE:
+Fixing an issue takes absolute priority over preserving layout or placement.
+If a fix requires moving an element, restructuring a section, hiding a component,
+or changing how content is presented — DO IT. The audit findings are non-negotiable.
+Preservation means keeping the brand identity (colors, typography, component style).
+It does NOT mean keeping broken elements in the same broken position.
+
+====================================================================
+MANDATORY FIX CHECKLIST  —  VERIFY EACH BEFORE WRITING A SINGLE LINE OF HTML
+====================================================================
+
+Before you write the HTML, mentally confirm that your design addresses EVERY item
+in this list. If your HTML does not contain a concrete, visible solution for a
+High or Medium issue, your response is incomplete — revise it until it does.
+Some fixes require structural changes (relocating, collapsing, or restructuring
+UI elements). Make those structural changes — do not style over them.
+
+HIGH PRIORITY  (must be resolved — zero exceptions):
+  NOTE: 'fixing' means the issue is GONE from the redesign — not styled differently.
+  If the fix says to move, collapse, or restructure something, do exactly that.
+
+  [01] Ambiguous Icon-Only Buttons in Utility Navigation
+       Problem:          The vertical navigation bar on the right uses icons without text labels. Icons such as the plus symbol, link symbol, or group of people are not universally understood, forcing users into a trial-and-error process to discover their function.
+       What to implement: Add a tooltip that appears on hover and focus for each icon, clearly stating its function (e.g., "Compose Post", "Notifications"). Ensure these tooltips are fully accessible to screen reader and keyboard-only users.
+       Affects:          Right vertical navigation bar
+
+  [02] Low Contrast for Engagement Metrics
+       Problem:          The grey text for the engagement counts ('7' and '5') has insufficient contrast against the white card background. This makes the numbers, a key performance metric, difficult to read for users, especially those with moderate visual impairments.
+       What to implement: Change the color of the engagement count text to a darker shade of grey or black (e.g., #595959 or darker) to ensure it meets the minimum WCAG AA contrast ratio of 4.5:1 against the background.
+       Affects:          Engagement counts under each recent post
+       WCAG:             1.4.3 Level AA
+
+MEDIUM PRIORITY  (must be resolved — no exceptions):
+  NOTE: Same rule — fix means the issue does not exist in the output HTML.
+
+  [03] Ambiguous and Low-Contrast Placeholder Element
+       Problem:          A grey box containing a faint letter 'A' appears in the recent posts. Its purpose is completely unclear, and the letter itself has extremely low contrast against its grey background, making it unreadable and failing accessibility standards.
+       What to implement: Replace this ambiguous element with a meaningful icon that includes a descriptive tooltip, or remove it if it provides no value. Any text or graphical object used must have a contrast ratio of at least 4.5:1 for text or 3:1 for graphics.
+       Affects:          Grey box with the letter 'A' in recent posts
+       WCAG:             1.4.3 Level AA
+
+  [04] Inconsistent Styling for Interactive Elements
+       Problem:          Clickable elements have inconsistent visual treatments. For example, "Start my subscription" is a solid button, "Post Performance Report" is an outline button, "Open Tasks" is a text link, and "You have new messages!" is a button styled as a status banner.
+       What to implement: Establish and consistently apply a clear visual hierarchy for interactive elements. Use solid buttons for primary actions, outlined or secondary-color buttons for secondary actions, and a consistent link style for navigation.
+       Affects:          Various buttons and links across the dashboard
+
+====================================================================
+STEP 1 — LAYOUT & COMPOSITION  (reason through this BEFORE anything else)
+====================================================================
+
+Layout and content distribution are non-negotiable design decisions.
+Do not assume the original layout is correct — reason from first principles.
+Ask yourself: does each element sit in the right zone for its purpose?
+If not, move it. The composition must serve the user's primary goal.
+
+1. VISUAL HIERARCHY
+   The most important action or information must be visually dominant.
+   Use size, weight, contrast, and position to establish a clear reading order.
+   Secondary content must be visually subordinate — smaller, lighter, lower.
+   (Malewicz — Designing User Interfaces: contrast creates hierarchy)
+   (Refactoring UI: use size and weight to communicate importance, not just color)
+
+2. F-PATTERN & READING FLOW
+   Users scan left-to-right, top-to-bottom in an F-shape on content-heavy screens.
+   Place primary actions and key labels at the start of scan lines.
+   Never interrupt the scan path with secondary, promotional, or personalisation content.
+   (Nielsen Norman Group — F-Pattern reading behavior)
+
+3. PROXIMITY & GROUPING (Gestalt)
+   Related elements must be spatially close. Unrelated elements need clear separation.
+   If two elements answer different user questions, they belong in different zones.
+   Never mix contextual content with navigational content in the same region.
+   (Psych 101 — Gestalt: Law of Proximity, Law of Similarity)
+
+4. CONTENT PRIORITISATION
+   Identify the user's single primary goal on this screen.
+   Every element that does not serve that goal directly must be secondary in
+   visual weight and position. Upsell, personalisation, and promotional content
+   must never compete with or interrupt the primary task flow.
+   (Don't Make Me Think — Krug: do not make users think about what to do next)
+   (Psychology of Design — Hick's Law: fewer competing choices = faster decisions)
+
+5. SPATIAL ZONES
+   Divide the screen into logical zones: navigation, primary content, secondary
+   context, actions. Each zone has exactly one job.
+   If an element is in the wrong zone, move it to the correct zone or defer it
+   to a modal or drawer. The layout must match the user's mental model of the task.
+   (Universal Principles of Design — Progressive Disclosure)
+
+6. SIGNAL-TO-NOISE
+   Every element must earn its place. If an element does not directly help the
+   user complete their current task, reduce its visual weight or remove it from
+   the primary viewport. Clutter is a UX failure, not a neutral default.
+   (Universal Principles of Design — Signal-to-Noise Ratio)
+
+COMPOSITION RULE: If the original layout violates these principles — with or
+without an explicit audit finding — correct it. Do not replicate bad composition
+because it existed in the screenshot. A version 2 must be compositionally sound.
+
+APPLY THESE COMPOSITION DECISIONS TO RESOLVE THE FOLLOWING AUDIT ISSUES:
+Every High and Medium issue in the MANDATORY FIX CHECKLIST above must map to a
+specific, visible structural decision in your layout. Before moving to Step 2,
+trace each issue to a layout zone, spacing decision, or hierarchy change.
+If the fix requires restructuring — restructure. If it requires removing an element
+from the primary viewport — remove it. Composition fixes are not optional.
+
+====================================================================
+STEP 2 — VISUAL IDENTITY  (preserve brand, not broken placement)
+====================================================================
+
+Once composition is decided, preserve these brand elements exactly:
+  - Colors: every background, text, brand, accent, and surface hex value
+  - Typography: font families, sizes, weights, line-heights, letter-spacing
+  - Spacing scale: the relative rhythm of padding/margin (not the positions)
+  - Shapes: border-radius, border styles, shadows, elevation
+  - Icons: style, weight, and size (placement may change if composition requires)
+  - Components: card designs, button styles, badge styles, input styles
+
+NOTE: Layout and element positioning are governed by Step 1, not this list.
+Preserving the brand does NOT mean preserving where broken things sit.
+The output must feel like a version 2 — same brand, better UX.
+
+====================================================================
+FULL AUDIT REPORT  —  Dashboard
+====================================================================
+Overall Score:        7.2/10  —  Good
+Accessibility Score:  6.0/10  (WCAG 2.2 AA)
+Issues Found:         4  (2 High · 2 Medium · 0 Low)
+
+EXECUTIVE SUMMARY
+The Sprout Social dashboard presents a dense but functional overview of user activity. While the layout is generally clear, significant usability and accessibility issues detract from the experience, including ambiguous icon-only navigation, inconsistent interactive element styling, and several instances of low-contrast text that fail WCAG 2.2 standards, hindering data comprehension.
+
+ALL ISSUES  (full detail for reference):
+
+[01] HIGH  —  Ambiguous Icon-Only Buttons in Utility Navigation
+     Location:  Right vertical navigation bar
+     Problem:   The vertical navigation bar on the right uses icons without text labels. Icons such as the plus symbol, link symbol, or group of people are not universally understood, forcing users into a trial-and-error process to discover their function.
+     Fix:       Add a tooltip that appears on hover and focus for each icon, clearly stating its function (e.g., "Compose Post", "Notifications"). Ensure these tooltips are fully accessible to screen reader and keyboard-only users.
+     Source:    The Design of Everyday Things (Norman) — Signifier: visible cues must indicate where to act
+
+[02] HIGH  —  Low Contrast for Engagement Metrics
+     Location:  Engagement counts under each recent post
+     Problem:   The grey text for the engagement counts ('7' and '5') has insufficient contrast against the white card background. This makes the numbers, a key performance metric, difficult to read for users, especially those with moderate visual impairments.
+     Fix:       Change the color of the engagement count text to a darker shade of grey or black (e.g., #595959 or darker) to ensure it meets the minimum WCAG AA contrast ratio of 4.5:1 against the background.
+     Source:    WCAG 2.2 — 1.4.3 Contrast Minimum (AA): normal text requires 4.5:1 contrast ratio
+     WCAG:      1.4.3  Level AA
+
+[03] MEDIUM  —  Ambiguous and Low-Contrast Placeholder Element
+     Location:  Grey box with the letter 'A' in recent posts
+     Problem:   A grey box containing a faint letter 'A' appears in the recent posts. Its purpose is completely unclear, and the letter itself has extremely low contrast against its grey background, making it unreadable and failing accessibility standards.
+     Fix:       Replace this ambiguous element with a meaningful icon that includes a descriptive tooltip, or remove it if it provides no value. Any text or graphical object used must have a contrast ratio of at least 4.5:1 for text or 3:1 for graphics.
+     Source:    WCAG 2.2 — 1.4.3 Contrast Minimum (AA)
+     WCAG:      1.4.3  Level AA
+
+[04] MEDIUM  —  Inconsistent Styling for Interactive Elements
+     Location:  Various buttons and links across the dashboard
+     Problem:   Clickable elements have inconsistent visual treatments. For example, "Start my subscription" is a solid button, "Post Performance Report" is an outline button, "Open Tasks" is a text link, and "You have new messages!" is a button styled as a status banner.
+     Fix:       Establish and consistently apply a clear visual hierarchy for interactive elements. Use solid buttons for primary actions, outlined or secondary-color buttons for secondary actions, and a consistent link style for navigation.
+     Source:    The Design of Everyday Things (Norman) — Affordance: element must communicate how it is used
+
+====================================================================
+SELF-CHECK — RUN THIS BEFORE OUTPUTTING THE HTML
+====================================================================
+
+For each item below, verify the SPECIFIC FIX is concretely implemented —
+not just acknowledged, not just styled differently. The fix must be visible.
+
+  [ ] [01] Ambiguous Icon-Only Buttons in Utility Navigation
+       Required fix: Add a tooltip that appears on hover and focus for each icon, clearly stating its function (e.g., "Compose Post", "Notifications"). Ensure these tooltips are fully accessible to screen reader and keyboard-only users.
+       Location:     Right vertical navigation bar
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [02] Low Contrast for Engagement Metrics
+       Required fix: Change the color of the engagement count text to a darker shade of grey or black (e.g., #595959 or darker) to ensure it meets the minimum WCAG AA contrast ratio of 4.5:1 against the background.
+       Location:     Engagement counts under each recent post
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [03] Ambiguous and Low-Contrast Placeholder Element
+       Required fix: Replace this ambiguous element with a meaningful icon that includes a descriptive tooltip, or remove it if it provides no value. Any text or graphical object used must have a contrast ratio of at least 4.5:1 for text or 3:1 for graphics.
+       Location:     Grey box with the letter 'A' in recent posts
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+  [ ] [04] Inconsistent Styling for Interactive Elements
+       Required fix: Establish and consistently apply a clear visual hierarchy for interactive elements. Use solid buttons for primary actions, outlined or secondary-color buttons for secondary actions, and a consistent link style for navigation.
+       Location:     Various buttons and links across the dashboard
+       Is this fix structurally present and visible in the HTML? (yes/no — if no, revise)
+
+If any checkbox above cannot be ticked YES, revise your HTML before outputting it.
+
+====================================================================
+OUTPUT REQUIREMENTS
+====================================================================
+
+- Output a single, complete, self-contained HTML file.
+- All CSS must be in a <style> block in the <head> — no external stylesheets.
+- No CDN links, no JavaScript frameworks, no external images.
+  Use inline SVG for icons. Use data URIs only if absolutely necessary.
+- Preserve all informational content (text, labels, data). Do not silently drop
+  information the user needs. However: if a fix requires relocating, collapsing,
+  or restructuring a UI element, you MUST do so — placing it in a better position
+  is not removing it. The audit fix always wins over original placement.
+- Do NOT add new features, sections, or content not present in the original.
+- JavaScript is allowed only for interactions clearly present in the original.
+  Keep it minimal and inline.
+- The file must open in a browser as a fully working static page.
+- Start your response with <!DOCTYPE html> and end the HTML with </html>.
+- Do NOT reference Mobbin or any third-party design gallery. Use Saasfactor if needed.
