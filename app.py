@@ -47,15 +47,35 @@ CORS(app)
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 # ─── Model registry ───────────────────────────────────────────────────────────
-MODELS = {
-    "gemini": ("google/gemini-2.5-pro",      "Gemini"),
-    "opus":   ("anthropic/claude-opus-4-6",  "Opus"),
-    "sonnet": ("anthropic/claude-sonnet-4-6","Sonnet"),
-}
-_AUDIT_MODEL_KEY  = "gemini"          # ← change this to switch audit model
-AUDIT_MODEL       = MODELS[_AUDIT_MODEL_KEY][0]
-AUDIT_MODEL_LABEL = MODELS[_AUDIT_MODEL_KEY][1]
-CONTENT_GEN_MODEL = "anthropic/claude-sonnet-4-6"  # YouTube script + Dribbble
+# Pipeline mode: Gemini reads the screenshot → Opus reasons about findings
+USE_SPLIT_PIPELINE = True
+VISION_MODEL       = "google/gemini-2.5-pro"       # sees the image
+REASONING_MODEL    = "anthropic/claude-opus-4-6"   # reasons with thinking
+AUDIT_MODEL_LABEL  = "Gemini+Opus"
+
+# Single-model fallback (used when USE_SPLIT_PIPELINE = False)
+AUDIT_MODEL        = "anthropic/claude-opus-4-6"
+CONTENT_GEN_MODEL  = "anthropic/claude-sonnet-4-6" # YouTube script + Dribbble
+
+VISION_PROMPT = """You are a precise visual analyst examining a UI screenshot.
+
+Provide an exhaustive inventory of EVERY visible element. Miss nothing.
+
+Cover ALL of the following:
+- Overall layout: header, sidebar, navigation, main content areas, footer, modals
+- Every text element verbatim: headings, body copy, labels, placeholder text, button text, error messages, tooltips, badges
+- Every interactive element: buttons (exact labels), input fields, dropdowns, checkboxes, toggles, radio buttons, sliders, links
+- Navigation: all menu items, breadcrumbs, tabs, pagination — in exact order
+- Icons: their position, what they visually represent, whether they have visible text labels
+- Images and illustrations: position and what they depict
+- Typography: relative sizes (large/medium/small), weights (bold/regular/light), colors
+- Colors: backgrounds, text, borders, accents — note any contrast issues
+- Spacing: which elements appear cramped or misaligned, which have generous whitespace
+- Visual hierarchy: what draws the eye first, second, third
+- Visible accessibility issues: icon-only buttons with no label, low-contrast text, form fields with placeholder-only labels, missing error states
+- Any component states visible: loading spinners, empty states, disabled elements, selected states
+
+Be exhaustive. Report only what you see — do not audit or judge yet."""
 
 def _load_b64(path):
     if os.path.exists(path):
@@ -645,43 +665,101 @@ def audit_stream(sid):
                     raise ValueError("ANTHROPIC_API_KEY is not set")
                 client = _OpenAI(api_key=ANTHROPIC_API_KEY, base_url="https://openrouter.ai/api/v1")
 
-                user_content = []
-                if session.get("website_context"):
-                    user_content.append({
+                if USE_SPLIT_PIPELINE:
+                    # ── Step 1: Gemini reads the screenshot ───────────────────
+                    vision_content = []
+                    if session.get("website_context"):
+                        vision_content.append({
+                            "type": "text",
+                            "text": (
+                                "=== PRODUCT WEBSITE CONTEXT ===\n"
+                                f"Website URL: {session.get('website_url', '')}\n"
+                                + session["website_context"] + "\n\n"
+                            ),
+                        })
+                    vision_content.append({
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{session['media_type']};base64,{session['image_b64']}"},
+                    })
+                    vision_content.append({"type": "text", "text": VISION_PROMPT})
+
+                    vision_msg = client.chat.completions.create(
+                        model=VISION_MODEL,
+                        max_tokens=3000,
+                        messages=[{"role": "user", "content": vision_content}],
+                        timeout=60,
+                    )
+                    visual_description = vision_msg.choices[0].message.content
+                    print(f"[pipeline] Vision description: {len(visual_description)} chars")
+
+                    # ── Step 2: Opus reasons about the findings ────────────────
+                    reasoning_content = []
+                    if session.get("website_context"):
+                        reasoning_content.append({
+                            "type": "text",
+                            "text": (
+                                "=== PRODUCT WEBSITE CONTEXT ===\n"
+                                f"Website URL: {session.get('website_url', '')}\n"
+                                "The following text was extracted from the product's website. "
+                                "Use it to understand what the product is, who it serves, and "
+                                "tailor every finding to their specific context.\n\n"
+                                + session["website_context"] + "\n\n"
+                            ),
+                        })
+                    reasoning_content.append({
                         "type": "text",
                         "text": (
-                            "=== PRODUCT WEBSITE CONTEXT ===\n"
-                            f"Website URL: {session.get('website_url', '')}\n"
-                            "The following text was extracted from the product's website. "
-                            "Use it to understand what the product is, who it serves, and "
-                            "tailor every finding to their specific context.\n\n"
-                            + session["website_context"] + "\n\n"
+                            "=== VISUAL DESCRIPTION OF UI SCREEN ===\n"
+                            "(The following exhaustive description was produced by a dedicated "
+                            "vision model that analyzed the screenshot. Use it as your ground truth "
+                            "for what is visible — do not ask for the image.)\n\n"
+                            + visual_description + "\n\n"
                         ),
                     })
-                user_content.append({"type": "text", "text": "=== UI SCREENSHOT TO AUDIT ==="})
-                user_content.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:{session['media_type']};base64,{session['image_b64']}"},
-                })
-                user_content.append({"type": "text", "text": AUDIT_PROMPT})
+                    reasoning_content.append({"type": "text", "text": AUDIT_PROMPT})
 
-                messages = [{"role": "user", "content": user_content}]
+                    messages = [{"role": "user", "content": reasoning_content}]
+                    _api_kwargs = dict(
+                        model=REASONING_MODEL,
+                        max_tokens=6000,
+                        messages=messages,
+                        timeout=150,
+                        extra_body={"thinking": {"type": "enabled", "budget_tokens": 5000}},
+                    )
+                else:
+                    # ── Single-model path (fallback) ───────────────────────────
+                    user_content = []
+                    if session.get("website_context"):
+                        user_content.append({
+                            "type": "text",
+                            "text": (
+                                "=== PRODUCT WEBSITE CONTEXT ===\n"
+                                f"Website URL: {session.get('website_url', '')}\n"
+                                "The following text was extracted from the product's website. "
+                                "Use it to understand what the product is, who it serves, and "
+                                "tailor every finding to their specific context.\n\n"
+                                + session["website_context"] + "\n\n"
+                            ),
+                        })
+                    user_content.append({"type": "text", "text": "=== UI SCREENSHOT TO AUDIT ==="})
+                    user_content.append({
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{session['media_type']};base64,{session['image_b64']}"},
+                    })
+                    user_content.append({"type": "text", "text": AUDIT_PROMPT})
+                    messages = [{"role": "user", "content": user_content}]
+                    _api_kwargs = dict(
+                        model=AUDIT_MODEL,
+                        max_tokens=6000,
+                        messages=messages,
+                        timeout=150,
+                    )
+                    if AUDIT_MODEL.startswith("anthropic/"):
+                        _api_kwargs["extra_body"] = {
+                            "thinking": {"type": "enabled", "budget_tokens": 5000}
+                        }
 
                 last_exc = None
-                _api_kwargs = dict(
-                    model=AUDIT_MODEL,
-                    max_tokens=6000,
-                    messages=messages,
-                    timeout=150,
-                )
-                if AUDIT_MODEL.startswith("anthropic/"):
-                    _api_kwargs["extra_body"] = {
-                        "thinking": {"type": "enabled", "budget_tokens": 5000}
-                    }
-                elif AUDIT_MODEL.startswith("google/"):
-                    _api_kwargs["extra_body"] = {
-                        "reasoning": {"effort": "high"}
-                    }
                 for attempt in range(2):
                     try:
                         msg = client.chat.completions.create(**_api_kwargs)
