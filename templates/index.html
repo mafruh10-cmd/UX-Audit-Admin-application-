@@ -1415,20 +1415,45 @@ function _removeSkeletonCard(qid) {
 }
 
 async function _replaceSkeletonWithCard(qid, sid) {
-  try {
-    const res    = await fetch('/api/audits');
-    const audits = await res.json();
-    const audit  = audits.find(a => a.sid === sid);
-    const skel   = document.querySelector(`.queue-card[data-qid="${qid}"]`);
-    if (audit && skel) {
-      const div = document.createElement('div');
-      div.innerHTML = buildAuditCard(audit);
-      skel.replaceWith(div.firstElementChild);
-    } else {
-      _removeSkeletonCard(qid);
-    }
-  } catch (_) { _removeSkeletonCard(qid); }
+  // Retry up to 5 times — disk write may not be instant
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      const res   = await fetch(`/api/audits/${sid}`);
+      if (!res.ok) { await _sleep(800); continue; }
+      const audit = await res.json();
+      if (!audit || audit.error) { await _sleep(800); continue; }
+      const skel  = document.querySelector(`.queue-card[data-qid="${qid}"]`);
+      if (skel) {
+        const meta = {
+          sid,
+          screen_name:       audit.screen_name || audit.filename || 'Untitled',
+          overall_score:     audit.overall_score || 0,
+          score_label:       audit.score_label || '',
+          date:              audit.date || new Date().toISOString(),
+          website_url:       audit.website_url || '',
+          filename:          audit.filename || '',
+          high:              audit.high || 0,
+          medium:            audit.medium || 0,
+          low:               audit.low || 0,
+          has_script:        !!audit.youtube_script,
+          has_dribbble:      !!audit.dribbble,
+          has_redesign:      !!audit.redesign_url,
+          status:            'ready',
+          model_label:       audit.model_label || '',
+          thumb_url:         `/api/audits/${sid}/thumb`,
+        };
+        const div = document.createElement('div');
+        div.innerHTML = buildAuditCard(meta);
+        skel.replaceWith(div.firstElementChild);
+      }
+      return;
+    } catch (_) { await _sleep(800); }
+  }
+  // All attempts failed — remove skeleton rather than leave it stuck
+  _removeSkeletonCard(qid);
 }
+
+function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function _updateSkeletonCard(item) {
   const card = document.querySelector(`.queue-card[data-qid="${item.qid}"]`);
