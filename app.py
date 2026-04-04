@@ -1077,10 +1077,8 @@ def get_audit_detail(sid):
     if thumb_url:
         result["thumb_url"] = thumb_url
 
-    # Shareable long-lived signed URLs
-    report_url = _supabase_report_url(sid, "report.html")
-    if report_url:
-        result["report_url"] = report_url
+    # Proxy view URLs (render in browser, no auth required)
+    result["report_url"] = f"/audits/{sid}/report-view"
     if result.get("has_redesign"):
         result["redesign_url"] = f"/audits/{sid}/redesign-view"
 
@@ -1211,6 +1209,15 @@ def view_redesign(sid):
     data = _storage_download(sid, "redesign.html")
     if not data:
         return "Redesign not found", 404
+    return Response(data, mimetype="text/html", headers={"Content-Disposition": "inline"})
+
+
+@app.route("/audits/<sid>/report-view")
+def view_report(sid):
+    """Proxy report.html from Supabase Storage so it renders in the browser (not downloads)."""
+    data = _storage_download(sid, "report.html")
+    if not data:
+        return "Report not found", 404
     return Response(data, mimetype="text/html", headers={"Content-Disposition": "inline"})
 
 
