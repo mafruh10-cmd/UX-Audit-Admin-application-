@@ -1082,9 +1082,7 @@ def get_audit_detail(sid):
     if report_url:
         result["report_url"] = report_url
     if result.get("has_redesign"):
-        redesign_url = _supabase_report_url(sid, "redesign.html")
-        if redesign_url:
-            result["redesign_url"] = redesign_url
+        result["redesign_url"] = f"/audits/{sid}/redesign-view"
 
     return jsonify(result)
 
@@ -1189,8 +1187,7 @@ def upload_redesign(sid):
         if sid in sessions:
             sessions[sid]["has_redesign"] = True
     _save_audit_meta(sid)
-    redesign_url = _supabase_report_url(sid, "redesign.html")
-    return jsonify({"ok": True, "redesign_url": redesign_url})
+    return jsonify({"ok": True, "redesign_url": f"/audits/{sid}/redesign-view"})
 
 
 @app.route("/api/audits/<sid>/redesign", methods=["DELETE"])
@@ -1206,6 +1203,15 @@ def delete_redesign(sid):
         return jsonify({"ok": True})
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/audits/<sid>/redesign-view")
+def view_redesign(sid):
+    """Proxy redesign.html from Supabase Storage so it renders in the browser (not downloads)."""
+    data = _storage_download(sid, "redesign.html")
+    if not data:
+        return "Redesign not found", 404
+    return Response(data, mimetype="text/html", headers={"Content-Disposition": "inline"})
 
 
 @app.route("/api/audits/<sid>/url", methods=["DELETE"])

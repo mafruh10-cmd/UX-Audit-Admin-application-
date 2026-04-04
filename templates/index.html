@@ -896,6 +896,7 @@ body{
             <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--label);margin-bottom:6px;">Shareable Redesign Link</div>
             <div style="display:flex;align-items:center;gap:8px;">
               <input id="redesignShareUrl" type="url" style="flex:1;font-size:12px;color:var(--cyan);font-family:monospace;background:transparent;border:none;outline:none;min-width:0;" spellcheck="false"/>
+              <button class="btn btn-ghost btn-sm" onclick="window.open(document.getElementById('redesignShareUrl').value,'_blank')">Open</button>
               <button class="btn btn-ghost btn-sm" onclick="copyShareLink('redesign')" id="copyRedesignLinkBtn">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 Copy Link
@@ -1813,6 +1814,8 @@ function populateDetailModal(d) {
   const thumbEl = document.getElementById('detailThumb');
   if (d.thumb_b64) {
     thumbEl.innerHTML = `<img src="data:${d.thumb_type || 'image/jpeg'};base64,${d.thumb_b64}" alt="Screenshot"/>`;
+  } else if (d.thumb_url) {
+    thumbEl.innerHTML = `<img src="${escHtml(d.thumb_url)}" alt="Screenshot" style="width:100%;display:block;max-height:280px;object-fit:cover;"/>`;
   } else {
     thumbEl.innerHTML = `<div class="detail-thumb-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>`;
   }
