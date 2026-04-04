@@ -120,7 +120,6 @@ def _storage_download(sid, filename):
     path = f"{sid}/{filename}"
     try:
         res = sb.storage.from_(STORAGE_BUCKET).download(path)
-        print(f"[storage] download {path}: type={type(res).__name__}")
         if isinstance(res, (bytes, bytearray)):
             return bytes(res)
         for attr in ("content", "data"):
@@ -1069,7 +1068,6 @@ def get_audit_detail(sid):
 
     # Load audit_data.json from Storage
     raw = _storage_download(sid, "audit_data.json")
-    print(f"[detail] {sid[:8]} audit_data.json download: {type(raw).__name__}, len={len(raw) if raw else 0}")
     if raw:
         try:
             result["analysis"] = json.loads(raw.decode())
@@ -1079,16 +1077,11 @@ def get_audit_detail(sid):
     # Load text files from Storage
     for filename, key in [("youtube_script.txt", "youtube_script"), ("claude_prompt.txt", "claude_prompt")]:
         raw = _storage_download(sid, filename)
-        print(f"[detail] {sid[:8]} {filename}: {type(raw).__name__}, len={len(raw) if raw else 0}")
         if raw:
-            try:
-                result[key] = raw.decode("utf-8")
-            except Exception as exc:
-                print(f"[detail] {sid[:8]} decode error {filename}: {exc}")
+            result[key] = raw.decode("utf-8")
 
     # Load dribbble.json from Storage
     raw = _storage_download(sid, "dribbble.json")
-    print(f"[detail] {sid[:8]} dribbble.json: {type(raw).__name__}, len={len(raw) if raw else 0}")
     if raw:
         try:
             result["dribbble"] = json.loads(raw.decode())
