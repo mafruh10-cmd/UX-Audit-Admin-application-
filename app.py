@@ -101,24 +101,37 @@ def _storage_signed_url(sid, filename, expires=3600):
         print(f"[storage] signed_url error {sid}/{filename}: {exc}")
         return ""
 
+def _to_bytes(data):
+    """Convert any storage response value to bytes, or return None."""
+    if data is None:
+        return None
+    if isinstance(data, bytes):
+        return data
+    if isinstance(data, bytearray):
+        return bytes(data)
+    if isinstance(data, str):
+        return data.encode("utf-8")
+    try:
+        return bytes(data)
+    except Exception:
+        return None
+
 def _storage_download(sid, filename):
     path = f"{sid}/{filename}"
     try:
         res = sb.storage.from_(STORAGE_BUCKET).download(path)
-        if isinstance(res, bytes):
-            return res
-        if hasattr(res, 'content'):
-            data = res.content
-            return data if isinstance(data, bytes) else (data.encode() if data else None)
-        if hasattr(res, 'data'):
-            data = res.data
-            return data if isinstance(data, bytes) else (data.encode() if data else None)
-        # Last resort: try converting to bytes
-        try:
+        print(f"[storage] download {path}: type={type(res).__name__}")
+        if isinstance(res, (bytes, bytearray)):
             return bytes(res)
-        except Exception:
-            print(f"[storage] cannot convert response to bytes for {path}: {type(res).__name__} = {repr(res)[:120]}")
-            return None
+        for attr in ("content", "data"):
+            if hasattr(res, attr):
+                converted = _to_bytes(getattr(res, attr))
+                if converted is not None:
+                    return converted
+        converted = _to_bytes(res)
+        if converted is None:
+            print(f"[storage] cannot convert {path}: {repr(res)[:120]}")
+        return converted
     except Exception as exc:
         print(f"[storage] download error {path}: {exc}")
         return None
