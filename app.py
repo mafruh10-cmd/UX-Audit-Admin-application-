@@ -93,8 +93,12 @@ def _storage_signed_url(sid, filename, expires=3600):
     path = f"{sid}/{filename}"
     try:
         res = sb.storage.from_(STORAGE_BUCKET).create_signed_url(path, expires)
-        return res.get("signedURL") or res.get("signed_url") or ""
-    except Exception:
+        # supabase-py v2 returns a dict; newer builds may return an object
+        if isinstance(res, dict):
+            return res.get("signedURL") or res.get("signedUrl") or res.get("signed_url") or ""
+        return getattr(res, "signed_url", None) or getattr(res, "signedURL", None) or getattr(res, "signedUrl", None) or ""
+    except Exception as exc:
+        print(f"[storage] signed_url error {sid}/{filename}: {exc}")
         return ""
 
 def _storage_download(sid, filename):
