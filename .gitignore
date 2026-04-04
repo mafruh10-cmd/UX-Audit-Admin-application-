@@ -13,6 +13,12 @@ venv/
 # macOS
 .DS_Store
 
+# Audit files — now stored in Supabase Storage
+audits/
+
+# Migration script — one-time use only
+migrate_to_supabase.py
+
 # Assets generated at runtime
 assets/.icon_applied
 assets/app_icon.icns

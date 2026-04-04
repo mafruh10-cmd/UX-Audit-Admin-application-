@@ -35,6 +35,8 @@ except ImportError:
     pass
 
 from openai import OpenAI as _OpenAI
+from functools import wraps
+from supabase import create_client, Client as _SupabaseClient
 
 # ─── Setup ────────────────────────────────────────────────────────────────────
 
@@ -45,6 +47,71 @@ app = Flask(__name__,
 CORS(app)
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+
+# ─── Supabase client ──────────────────────────────────────────────────────────
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://kkpvlpbfslxkutunbigi.supabase.co")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+sb: _SupabaseClient = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_KEY else None
+
+# ─── Auth decorator ───────────────────────────────────────────────────────────
+
+def auth_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not sb:
+            return jsonify({"error": "Supabase not configured"}), 503
+        # Accept token from Authorization header or ?token= query param (for EventSource)
+        token = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+        if not token:
+            token = request.args.get("token", "").strip()
+        if not token:
+            return jsonify({"error": "Unauthorized"}), 401
+        try:
+            user = sb.auth.get_user(token)
+            if not user or not user.user:
+                return jsonify({"error": "Unauthorized"}), 401
+        except Exception:
+            return jsonify({"error": "Unauthorized"}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+# ─── Supabase Storage helpers ─────────────────────────────────────────────────
+
+STORAGE_BUCKET = "ux-audits"
+
+def _storage_upload(sid, filename, data, content_type="application/octet-stream"):
+    path = f"{sid}/{filename}"
+    try:
+        sb.storage.from_(STORAGE_BUCKET).upload(
+            path, data, {"content-type": content_type, "upsert": "true"}
+        )
+    except Exception as exc:
+        print(f"[storage] Upload failed {path}: {exc}")
+
+def _storage_signed_url(sid, filename, expires=3600):
+    path = f"{sid}/{filename}"
+    try:
+        res = sb.storage.from_(STORAGE_BUCKET).create_signed_url(path, expires)
+        return res.get("signedURL") or res.get("signed_url") or ""
+    except Exception:
+        return ""
+
+def _storage_download(sid, filename):
+    path = f"{sid}/{filename}"
+    try:
+        return sb.storage.from_(STORAGE_BUCKET).download(path)
+    except Exception:
+        return None
+
+def _storage_delete_folder(sid):
+    try:
+        files = sb.storage.from_(STORAGE_BUCKET).list(sid)
+        paths = [f"{sid}/{f['name']}" for f in (files or [])]
+        if paths:
+            sb.storage.from_(STORAGE_BUCKET).remove(paths)
+    except Exception as exc:
+        print(f"[storage] Delete folder failed {sid}: {exc}")
 
 # ─── Model registry ───────────────────────────────────────────────────────────
 # Pipeline mode: Gemini reads the screenshot → Opus reasons about findings
@@ -125,22 +192,14 @@ def _fix_json_escapes(text):
             i += 1
     return ''.join(out)
 
-GITHUB_REPO   = "mafruh10-cmd/UX-Audit-Admin-application-"
-GITHUB_BRANCH = "main"
-
-def _github_preview_url(sid, filename):
-    raw = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}/audits/{sid}/{filename}"
-    return f"https://htmlpreview.github.io/?{raw}"
-
-def _audit_dir(sid):
-    return os.path.join(AUDITS_DIR, sid)
+def _supabase_report_url(sid, filename):
+    """Return a long-lived signed URL for a shareable HTML file."""
+    return _storage_signed_url(sid, filename, expires=315360000)  # 10 years
 
 def _save_audit_meta(sid):
     s = sessions.get(sid, {})
     analysis = s.get("analysis") or {}
     issues = analysis.get("issues", [])
-    d = _audit_dir(sid)
-    os.makedirs(d, exist_ok=True)
     meta = {
         "sid": sid,
         "date": s.get("date", datetime.utcnow().isoformat() + "Z"),
@@ -155,123 +214,85 @@ def _save_audit_meta(sid):
         "medium": sum(1 for i in issues if i.get("severity") == "Medium"),
         "low": sum(1 for i in issues if i.get("severity") == "Low"),
         "total_issues": len(issues),
-        "has_script":    os.path.exists(os.path.join(d, "youtube_script.txt")),
-        "has_dribbble":  os.path.exists(os.path.join(d, "dribbble.json")),
-        "has_redesign":  os.path.exists(os.path.join(d, "redesign.html")),
-        "status":        s.get("status", "uploaded"),
-        "model_label":   s.get("model_label", AUDIT_MODEL_LABEL),
+        "has_script":   s.get("has_script", False),
+        "has_dribbble": s.get("has_dribbble", False),
+        "has_redesign": s.get("has_redesign", False),
+        "status":       s.get("status", "uploaded"),
+        "model_label":  s.get("model_label", AUDIT_MODEL_LABEL),
     }
-    with open(os.path.join(d, "meta.json"), "w", encoding="utf-8") as f:
-        json.dump(meta, f, indent=2)
+    try:
+        sb.table("audits").upsert(meta).execute()
+    except Exception as exc:
+        print(f"[db] _save_audit_meta failed: {exc}")
 
 def _persist_audit(sid):
-    """Write all audit artefacts to ~/Desktop/ux-audits/{sid}/"""
+    """Upload all audit artefacts to Supabase Storage and save metadata to DB."""
     s = sessions.get(sid, {})
     if not s:
         return
-    d = _audit_dir(sid)
-    os.makedirs(d, exist_ok=True)
 
-    # Annotated screenshot (overwrite original placeholder if present)
+    # Annotated screenshot
     ann_b64 = s.get("annotated_b64") or s.get("image_b64", "")
     if ann_b64:
         try:
-            with open(os.path.join(d, "annotated.jpg"), "wb") as f:
-                f.write(base64.b64decode(ann_b64))
-        except Exception:
-            pass
+            _storage_upload(sid, "annotated.jpg", base64.b64decode(ann_b64), "image/jpeg")
+        except Exception as exc:
+            print(f"[persist] annotated upload error: {exc}")
 
     analysis = s.get("analysis")
     if analysis:
         # Full JSON
-        with open(os.path.join(d, "audit_data.json"), "w", encoding="utf-8") as f:
-            json.dump(analysis, f, indent=2, ensure_ascii=False)
+        _storage_upload(sid, "audit_data.json",
+                        json.dumps(analysis, indent=2, ensure_ascii=False).encode(),
+                        "application/json")
 
         # HTML report
         try:
             ann_type = s.get("ann_type", s.get("media_type", "image/jpeg"))
             html = _build_report(analysis, ann_b64, ann_type)
-            with open(os.path.join(d, "report.html"), "w", encoding="utf-8") as f:
-                f.write(html)
+            _storage_upload(sid, "report.html", html.encode("utf-8"), "text/html")
         except Exception as exc:
             print(f"[persist] report error: {exc}")
 
         # Claude redesign prompt
         try:
             prompt = _build_redesign_prompt(analysis)
-            with open(os.path.join(d, "claude_prompt.txt"), "w", encoding="utf-8") as f:
-                f.write(prompt)
+            _storage_upload(sid, "claude_prompt.txt", prompt.encode("utf-8"), "text/plain")
         except Exception as exc:
             print(f"[persist] prompt error: {exc}")
 
     _save_audit_meta(sid)
-    _push_audit_to_github(sid)
 
-def _push_audit_to_github(sid):
-    """Commit and push audit artefacts to GitHub in a background thread."""
-    def _run():
-        try:
-            rel_dir = os.path.join("audits", sid)
-            subprocess.run(["git", "add", rel_dir], cwd=BASE_DIR, check=True, capture_output=True)
-            result = subprocess.run(
-                ["git", "commit", "-m", f"Add audit {sid[:8]}"],
-                cwd=BASE_DIR, capture_output=True, text=True
-            )
-            if result.returncode == 0:
-                subprocess.run(["git", "push", "origin", GITHUB_BRANCH], cwd=BASE_DIR, capture_output=True)
-                print(f"[github] Pushed audit {sid[:8]}")
-            else:
-                print(f"[github] Nothing to commit for {sid[:8]}")
-        except Exception as exc:
-            print(f"[github] Push failed for {sid[:8]}: {exc}")
-    threading.Thread(target=_run, daemon=True).start()
-
-def _load_sessions_from_disk():
-    """Populate `sessions` dict from existing audit folders on startup."""
-    if not os.path.exists(AUDITS_DIR):
+def _load_sessions_from_db():
+    """Populate `sessions` dict from Supabase DB on startup."""
+    if not sb:
         return
-    count = 0
-    for sid in os.listdir(AUDITS_DIR):
-        d = os.path.join(AUDITS_DIR, sid)
-        if not os.path.isdir(d):
-            continue
-        meta_path = os.path.join(d, "meta.json")
-        if not os.path.exists(meta_path):
-            continue
-        try:
-            with open(meta_path, encoding="utf-8") as f:
-                meta = json.load(f)
-            analysis = {}
-            data_path = os.path.join(d, "audit_data.json")
-            if os.path.exists(data_path):
-                with open(data_path, encoding="utf-8") as f:
-                    analysis = json.load(f)
-            # Load screenshot
-            image_b64, media_type = "", "image/jpeg"
-            for ext, mt in [("jpg", "image/jpeg"), ("jpeg", "image/jpeg"), ("png", "image/png")]:
-                p = os.path.join(d, f"screenshot.{ext}")
-                if os.path.exists(p):
-                    with open(p, "rb") as f:
-                        image_b64 = base64.b64encode(f.read()).decode()
-                    media_type = mt
-                    break
+    try:
+        res = sb.table("audits").select("*").execute()
+        rows = res.data or []
+        count = 0
+        for row in rows:
+            sid = row["sid"]
             sessions[sid] = {
-                "image_b64":    image_b64,
-                "media_type":   media_type,
-                "filename":     meta.get("filename", ""),
-                "status":       "ready" if analysis else "uploaded",
-                "analysis":     analysis if analysis else None,
-                "date":         meta.get("date", ""),
-                "website_url":  meta.get("website_url", ""),
+                "image_b64":       "",
+                "media_type":      "image/jpeg",
+                "filename":        row.get("filename", ""),
+                "status":          "ready" if row.get("overall_score", 0) > 0 else "uploaded",
+                "analysis":        None,
+                "date":            row.get("date", ""),
+                "website_url":     row.get("website_url", ""),
                 "website_context": "",
-                "model_label":  meta.get("model_label", ""),
+                "model_label":     row.get("model_label", ""),
+                "has_script":      row.get("has_script", False),
+                "has_dribbble":    row.get("has_dribbble", False),
+                "has_redesign":    row.get("has_redesign", False),
             }
             count += 1
-        except Exception as exc:
-            print(f"[load] Could not load {sid}: {exc}")
-    print(f"[info] Loaded {count} audits from disk")
+        print(f"[info] Loaded {count} audits from Supabase")
+    except Exception as exc:
+        print(f"[db] _load_sessions_from_db failed: {exc}")
 
-_load_sessions_from_disk()
+_load_sessions_from_db()
 
 # ─── Training knowledge base ──────────────────────────────────────────────────
 
@@ -587,7 +608,28 @@ def health():
     return jsonify({"ok": True})
 
 
+@app.route("/api/login", methods=["POST"])
+def login():
+    data = request.get_json() or {}
+    email    = data.get("email", "").strip()
+    password = data.get("password", "").strip()
+    if not email or not password:
+        return jsonify({"error": "Email and password required"}), 400
+    try:
+        res = sb.auth.sign_in_with_password({"email": email, "password": password})
+        if res.user and res.session:
+            return jsonify({
+                "access_token":  res.session.access_token,
+                "refresh_token": res.session.refresh_token,
+                "email":         res.user.email,
+            })
+        return jsonify({"error": "Invalid credentials"}), 401
+    except Exception:
+        return jsonify({"error": "Invalid email or password"}), 401
+
+
 @app.route("/api/upload", methods=["POST"])
+@auth_required
 def upload():
     try:
         if "file" not in request.files:
@@ -624,18 +666,15 @@ def upload():
                 "model_label":     AUDIT_MODEL_LABEL,
             }
 
-        # Save screenshot to disk immediately
+        # Upload screenshot to Supabase Storage immediately
         try:
-            d = _audit_dir(sid)
-            os.makedirs(d, exist_ok=True)
             ext = "jpg" if "jpeg" in media_type else "png"
-            with open(os.path.join(d, f"screenshot.{ext}"), "wb") as fout:
-                fout.write(data)
+            _storage_upload(sid, f"screenshot.{ext}", data, media_type)
             with _lock:
                 sessions[sid]["date"] = datetime.utcnow().isoformat() + "Z"
             _save_audit_meta(sid)
         except Exception as exc:
-            print(f"[upload] disk save error: {exc}")
+            print(f"[upload] storage save error: {exc}")
 
         return jsonify({"session_id": sid})
     except Exception as exc:
@@ -643,6 +682,7 @@ def upload():
 
 
 @app.route("/api/audit/<sid>")
+@auth_required
 def audit_stream(sid):
     if sid not in sessions:
         return jsonify({"error": "Session not found"}), 404
@@ -913,6 +953,7 @@ def audit_stream(sid):
 
 
 @app.route("/api/download/<sid>", methods=["GET"])
+@auth_required
 def download_report(sid):
     if sid not in sessions:
         return jsonify({"error": "Session not found. Please run the audit again."}), 404
@@ -937,6 +978,7 @@ def download_report(sid):
 
 
 @app.route("/api/prompt/<sid>", methods=["GET"])
+@auth_required
 def download_prompt(sid):
     if sid not in sessions:
         return jsonify({"error": "Session not found. Please run the audit again."}), 404
@@ -960,87 +1002,86 @@ def download_prompt(sid):
 
 @app.route("/api/audits/<sid>/thumb")
 def audit_thumb(sid):
-    """Serve the screenshot/annotated image for a given audit."""
-    d = _audit_dir(sid)
+    """Serve the screenshot/annotated image for a given audit via signed URL redirect."""
     for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
-        p = os.path.join(d, fname)
-        if os.path.exists(p):
-            mime = "image/jpeg" if fname.endswith(".jpg") else "image/png"
-            return send_file(p, mimetype=mime)
+        url = _storage_signed_url(sid, fname, expires=3600)
+        if url:
+            from flask import redirect
+            return redirect(url)
     return ("", 404)
 
 
 @app.route("/api/audits")
+@auth_required
 def list_audits():
-    result = []
-    if not os.path.exists(AUDITS_DIR):
-        return jsonify([])
-    for sid in os.listdir(AUDITS_DIR):
-        meta_path = os.path.join(AUDITS_DIR, sid, "meta.json")
-        if os.path.exists(meta_path):
-            try:
-                with open(meta_path, encoding="utf-8") as f:
-                    meta = json.load(f)
-                # Add thumb_url so the card can load it directly
-                d = _audit_dir(sid)
-                for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
-                    if os.path.exists(os.path.join(d, fname)):
-                        meta["thumb_url"] = f"/api/audits/{sid}/thumb"
-                        break
-                result.append(meta)
-            except Exception:
-                pass
-    result.sort(key=lambda x: x.get("date", ""), reverse=True)
-    return jsonify(result)
+    try:
+        res = sb.table("audits").select("*").order("date", desc=True).execute()
+        result = res.data or []
+        for item in result:
+            item["thumb_url"] = f"/api/audits/{item['sid']}/thumb"
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.route("/api/audits/<sid>")
+@auth_required
 def get_audit_detail(sid):
-    d = _audit_dir(sid)
-    if not os.path.exists(d):
+    try:
+        res = sb.table("audits").select("*").eq("sid", sid).single().execute()
+        if not res.data:
+            return jsonify({"error": "Audit not found"}), 404
+        result = dict(res.data)
+    except Exception:
         return jsonify({"error": "Audit not found"}), 404
-    result = {}
-    for fname, key in [("meta.json", None), ("audit_data.json", "analysis"),
-                        ("youtube_script.txt", "youtube_script"), ("claude_prompt.txt", "claude_prompt"),
-                        ("dribbble.json", "dribbble")]:
-        p = os.path.join(d, fname)
-        if not os.path.exists(p):
-            continue
+
+    # Load audit_data.json from Storage
+    raw = _storage_download(sid, "audit_data.json")
+    if raw:
         try:
-            with open(p, encoding="utf-8") as f:
-                content = json.load(f) if fname.endswith(".json") else f.read()
-            if key:
-                result[key] = content
-            else:
-                result.update(content)
+            result["analysis"] = json.loads(raw.decode())
         except Exception:
             pass
-    # Thumbnail (annotated preferred, else screenshot)
-    for fname, fkey in [("annotated.jpg","annotated"), ("screenshot.jpg","screenshot"), ("screenshot.png","screenshot")]:
-        p = os.path.join(d, fname)
-        if os.path.exists(p):
-            try:
-                with open(p, "rb") as f:
-                    result["thumb_b64"] = base64.b64encode(f.read()).decode()
-                result["thumb_type"] = "image/jpeg" if fname.endswith(".jpg") else "image/png"
-                break
-            except Exception:
-                pass
-    # Shareable GitHub preview URLs
-    if os.path.exists(os.path.join(d, "report.html")):
-        result["report_url"] = _github_preview_url(sid, "report.html")
-    if os.path.exists(os.path.join(d, "redesign.html")):
-        result["redesign_url"] = _github_preview_url(sid, "redesign.html")
+
+    # Load text files from Storage
+    for filename, key in [("youtube_script.txt", "youtube_script"), ("claude_prompt.txt", "claude_prompt")]:
+        raw = _storage_download(sid, filename)
+        if raw:
+            result[key] = raw.decode()
+
+    # Load dribbble.json from Storage
+    raw = _storage_download(sid, "dribbble.json")
+    if raw:
+        try:
+            result["dribbble"] = json.loads(raw.decode())
+        except Exception:
+            pass
+
+    # Thumbnail signed URL
+    thumb_url = _storage_signed_url(sid, "annotated.jpg")
+    if not thumb_url:
+        thumb_url = _storage_signed_url(sid, "screenshot.png")
+    if thumb_url:
+        result["thumb_url"] = thumb_url
+
+    # Shareable long-lived signed URLs
+    report_url = _supabase_report_url(sid, "report.html")
+    if report_url:
+        result["report_url"] = report_url
+    if result.get("has_redesign"):
+        redesign_url = _supabase_report_url(sid, "redesign.html")
+        if redesign_url:
+            result["redesign_url"] = redesign_url
+
     return jsonify(result)
 
 
 @app.route("/api/audits/<sid>", methods=["DELETE"])
+@auth_required
 def delete_audit(sid):
-    d = _audit_dir(sid)
-    if not os.path.exists(d):
-        return jsonify({"error": "Audit not found"}), 404
     try:
-        shutil.rmtree(d)
+        sb.table("audits").delete().eq("sid", sid).execute()
+        _storage_delete_folder(sid)
         with _lock:
             sessions.pop(sid, None)
         return jsonify({"ok": True})
@@ -1049,13 +1090,12 @@ def delete_audit(sid):
 
 
 @app.route("/api/script/<sid>", methods=["POST"])
+@auth_required
 def generate_script(sid):
-    if sid not in sessions:
-        # Try loading from disk
-        data_path = os.path.join(_audit_dir(sid), "audit_data.json")
-        if os.path.exists(data_path):
-            with open(data_path, encoding="utf-8") as f:
-                sessions[sid] = {"analysis": json.load(f), "status": "ready"}
+    if sid not in sessions or not sessions[sid].get("analysis"):
+        raw = _storage_download(sid, "audit_data.json")
+        if raw:
+            sessions[sid] = {"analysis": json.loads(raw.decode()), "status": "ready"}
         else:
             return jsonify({"error": "Session not found"}), 404
     analysis = sessions[sid].get("analysis")
@@ -1065,63 +1105,61 @@ def generate_script(sid):
         script = _build_youtube_script(analysis)
     except Exception as exc:
         return jsonify({"error": f"Script generation failed: {exc}"}), 500
-    # Save to disk
-    d = _audit_dir(sid)
-    os.makedirs(d, exist_ok=True)
-    with open(os.path.join(d, "youtube_script.txt"), "w", encoding="utf-8") as f:
-        f.write(script)
+    _storage_upload(sid, "youtube_script.txt", script.encode("utf-8"), "text/plain")
+    with _lock:
+        sessions[sid]["has_script"] = True
     _save_audit_meta(sid)
     return jsonify({"script": script})
 
 
 @app.route("/api/dribbble/<sid>", methods=["POST"])
+@auth_required
 def generate_dribbble(sid):
-    if sid not in sessions:
-        data_path = os.path.join(_audit_dir(sid), "audit_data.json")
-        if os.path.exists(data_path):
-            with open(data_path, encoding="utf-8") as f:
-                sessions[sid] = {"analysis": json.load(f), "status": "ready"}
+    if sid not in sessions or not sessions[sid].get("analysis"):
+        raw = _storage_download(sid, "audit_data.json")
+        if raw:
+            sessions[sid] = {"analysis": json.loads(raw.decode()), "status": "ready"}
         else:
             return jsonify({"error": "Session not found"}), 404
     analysis = sessions[sid].get("analysis")
     if not analysis:
         return jsonify({"error": "No analysis data — run the audit first"}), 400
 
-    # Enrich analysis with product_name from meta.json if not already set
+    # Enrich with product_name from DB if not set
     if not analysis.get("product_name"):
-        meta_path = os.path.join(_audit_dir(sid), "meta.json")
-        if os.path.exists(meta_path):
-            with open(meta_path, encoding="utf-8") as f:
-                meta = json.load(f)
-            # Use stored product_name or derive from website domain
-            product_name = meta.get("product_name", "")
-            if not product_name:
-                url = meta.get("website_url", "")
-                if url:
-                    from urllib.parse import urlparse
-                    host = urlparse(url).hostname or ""
-                    # Strip www. and TLD — e.g. "sanalabs.com" → "Sana"
-                    brand = host.replace("www.", "").split(".")[0]
-                    product_name = brand.capitalize()
-            analysis["product_name"] = product_name
+        try:
+            res = sb.table("audits").select("product_name, website_url").eq("sid", sid).single().execute()
+            if res.data:
+                product_name = res.data.get("product_name", "")
+                if not product_name:
+                    url = res.data.get("website_url", "")
+                    if url:
+                        from urllib.parse import urlparse
+                        host = urlparse(url).hostname or ""
+                        brand = host.replace("www.", "").split(".")[0]
+                        product_name = brand.capitalize()
+                analysis["product_name"] = product_name
+        except Exception:
+            pass
 
     try:
         data = _build_dribbble_details(analysis)
     except Exception as exc:
         return jsonify({"error": f"Dribbble generation failed: {exc}"}), 500
-    d = _audit_dir(sid)
-    os.makedirs(d, exist_ok=True)
-    with open(os.path.join(d, "dribbble.json"), "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    _storage_upload(sid, "dribbble.json", json.dumps(data, indent=2).encode(), "application/json")
+    with _lock:
+        sessions[sid]["has_dribbble"] = True
     _save_audit_meta(sid)
     return jsonify(data)
 
 
 @app.route("/api/audits/<sid>/upload-redesign", methods=["POST"])
+@auth_required
 def upload_redesign(sid):
-    """Accept an HTML redesign file, save it, push to GitHub, return shareable URL."""
-    d = _audit_dir(sid)
-    if not os.path.exists(d):
+    """Accept an HTML redesign file, upload to Supabase Storage, return shareable URL."""
+    try:
+        sb.table("audits").select("sid").eq("sid", sid).single().execute()
+    except Exception:
         return jsonify({"error": "Audit not found"}), 404
 
     if "file" not in request.files:
@@ -1131,75 +1169,54 @@ def upload_redesign(sid):
     if not uploaded.filename.lower().endswith(".html"):
         return jsonify({"error": "Only .html files are accepted"}), 400
 
-    dest = os.path.join(d, "redesign.html")
-    uploaded.save(dest)
+    html_bytes = uploaded.read()
+    _storage_upload(sid, "redesign.html", html_bytes, "text/html")
 
-    # Commit + push to GitHub so the preview URL is live
-    rel_path = os.path.relpath(dest, BASE_DIR)
-    try:
-        subprocess.run(["git", "add", rel_path], cwd=BASE_DIR, check=True, capture_output=True)
-        result = subprocess.run(
-            ["git", "commit", "-m", f"Add redesign HTML for audit {sid[:8]}"],
-            cwd=BASE_DIR, capture_output=True, text=True
-        )
-        if result.returncode == 0:
-            subprocess.run(["git", "push", "origin", GITHUB_BRANCH], cwd=BASE_DIR, capture_output=True)
-    except Exception as exc:
-        print(f"[upload-redesign] git error: {exc}")
-
+    with _lock:
+        if sid in sessions:
+            sessions[sid]["has_redesign"] = True
     _save_audit_meta(sid)
-    redesign_url = _github_preview_url(sid, "redesign.html")
+    redesign_url = _supabase_report_url(sid, "redesign.html")
     return jsonify({"ok": True, "redesign_url": redesign_url})
 
 
 @app.route("/api/audits/<sid>/redesign", methods=["DELETE"])
+@auth_required
 def delete_redesign(sid):
     """Delete the redesign HTML file for an audit."""
-    d = _audit_dir(sid)
-    p = os.path.join(d, "redesign.html")
-    if not os.path.exists(p):
-        return jsonify({"error": "No redesign file found"}), 404
     try:
-        os.remove(p)
+        sb.storage.from_(STORAGE_BUCKET).remove([f"{sid}/redesign.html"])
         with _lock:
             if sid in sessions:
-                sessions[sid].pop("redesign_url", None)
-        _save_audit_meta(sid)
+                sessions[sid]["has_redesign"] = False
+        sb.table("audits").update({"has_redesign": False}).eq("sid", sid).execute()
         return jsonify({"ok": True})
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
 
 
 @app.route("/api/audits/<sid>/url", methods=["DELETE"])
+@auth_required
 def delete_url(sid):
     """Remove the website URL from an audit."""
-    d = _audit_dir(sid)
-    if not os.path.exists(d):
-        return jsonify({"error": "Audit not found"}), 404
     try:
         with _lock:
             if sid in sessions:
                 sessions[sid]["website_url"] = ""
                 sessions[sid]["website_context"] = ""
-        # Update meta.json
-        meta_path = os.path.join(d, "meta.json")
-        if os.path.exists(meta_path):
-            with open(meta_path, encoding="utf-8") as f:
-                meta = json.load(f)
-            meta["website_url"] = ""
-            with open(meta_path, "w", encoding="utf-8") as f:
-                json.dump(meta, f, indent=2)
+        sb.table("audits").update({"website_url": ""}).eq("sid", sid).execute()
         return jsonify({"ok": True})
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
 
 
 @app.route("/api/audits/<sid>/report")
+@auth_required
 def serve_report(sid):
     """Serve the HTML report file directly."""
-    p = os.path.join(_audit_dir(sid), "report.html")
-    if not os.path.exists(p):
-        # Try building it on the fly
+    raw = _storage_download(sid, "report.html")
+    if not raw:
+        # Try building it on the fly from in-memory session
         if sid in sessions and sessions[sid].get("analysis"):
             s = sessions[sid]
             ann_b64 = s.get("annotated_b64") or s.get("image_b64", "")
@@ -1208,8 +1225,7 @@ def serve_report(sid):
         else:
             return jsonify({"error": "Report not found"}), 404
     else:
-        with open(p, encoding="utf-8") as f:
-            html = f.read()
+        html = raw.decode("utf-8")
     slug = re.sub(r"[^\w\-]", "_", sessions.get(sid, {}).get("analysis", {}).get("screen_name", "screen").lower())
     return Response(html, mimetype="text/html; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="ux_audit_{slug}.html"'})

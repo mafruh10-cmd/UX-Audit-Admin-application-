@@ -387,6 +387,40 @@ body{
   font-size:13px;color:#DC2626;display:none;
 }
 
+/* ── Login screen ── */
+#loginScreen{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+}
+#loginScreen.hidden{display:none;}
+.login-card{
+  background:#fff;border:1px solid var(--border);border-radius:16px;
+  padding:40px 36px;width:100%;max-width:380px;
+  box-shadow:0 4px 24px rgba(0,0,0,.07);
+}
+.login-logo{height:28px;display:block;margin:0 auto 28px;}
+.login-title{font-size:20px;font-weight:800;letter-spacing:-.02em;text-align:center;margin-bottom:4px;}
+.login-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:28px;}
+.login-label{font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;display:block;}
+.login-input{
+  width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;
+  font-size:14px;font-family:inherit;outline:none;
+  transition:border-color .15s;margin-bottom:16px;
+}
+.login-input:focus{border-color:var(--cyan);}
+.login-btn{
+  width:100%;padding:11px;background:var(--orange);color:#fff;
+  border:none;border-radius:8px;font-size:14px;font-weight:600;
+  font-family:inherit;cursor:pointer;transition:background .15s;
+}
+.login-btn:hover{background:#d94518;}
+.login-btn:disabled{opacity:.6;cursor:not-allowed;}
+.login-error{
+  font-size:13px;color:#DC2626;text-align:center;
+  margin-top:12px;display:none;
+}
+
 /* ── Offline banner ── */
 .offline-banner{
   position:fixed;top:60px;left:0;right:0;z-index:150;
@@ -559,10 +593,14 @@ body{
     <span class="header-badge">UX Audit</span>
     <span class="admin-badge">Admin</span>
   </div>
-  <button class="btn btn-orange" onclick="openNewAuditModal()">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-    New Audit
-  </button>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span id="headerUserEmail" style="font-size:12px;color:var(--muted);"></span>
+    <button class="btn btn-orange" onclick="openNewAuditModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      New Audit
+    </button>
+    <button class="btn btn-ghost" onclick="handleLogout()" style="font-size:12px;padding:8px 14px;">Log out</button>
+  </div>
 </header>
 
 <!-- Main content -->
@@ -1058,6 +1096,65 @@ let detailData       = null;
 let pendingDeleteSid  = null;
 let pendingDeleteName = null;
 
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+
+function getToken()        { return localStorage.getItem('sb_token'); }
+function setToken(t, email){ localStorage.setItem('sb_token', t); localStorage.setItem('sb_email', email); }
+function clearToken()      { localStorage.removeItem('sb_token'); localStorage.removeItem('sb_email'); }
+
+async function apiFetch(url, opts = {}) {
+  const token = getToken();
+  opts.headers = { ...(opts.headers || {}), 'Authorization': `Bearer ${token}` };
+  const res = await fetch(url, opts);
+  if (res.status === 401) { handleLogout(); throw new Error('Session expired'); }
+  return res;
+}
+
+function showLogin() {
+  document.getElementById('loginScreen').classList.remove('hidden');
+}
+function hideLogin() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  const email = localStorage.getItem('sb_email') || '';
+  document.getElementById('headerUserEmail').textContent = email;
+}
+
+async function submitLogin() {
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const btn      = document.getElementById('loginBtn');
+  const errEl    = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  if (!email || !password) { errEl.textContent = 'Email and password required.'; errEl.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    const res  = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login failed');
+    setToken(data.access_token, data.email);
+    hideLogin();
+    checkServer();
+    loadAudits();
+  } catch (e) {
+    errEl.textContent = e.message || 'Login failed.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign in';
+  }
+}
+
+function handleLogout() {
+  clearToken();
+  document.getElementById('headerUserEmail').textContent = '';
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+  showLogin();
+}
+
 // ─── Multi-file queue ─────────────────────────────────────────────────────────
 let pendingFiles  = [];  // [{file, previewDataUrl}] — files staged in modal
 let auditQueue    = [];  // [{qid, file, websiteUrl, previewDataUrl, status, es, sid}]
@@ -1067,13 +1164,18 @@ let queueRunning  = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   renderSteps('pending');
-  checkServer();
-  loadAudits();
+  if (getToken()) {
+    hideLogin();
+    checkServer();
+    loadAudits();
+  } else {
+    showLogin();
+  }
 });
 
 async function checkServer() {
   try {
-    const res = await fetch('/api/health', { signal: AbortSignal.timeout(3000) });
+    const res = await apiFetch('/api/health', { signal: AbortSignal.timeout(3000) });
     if (res.ok) return;
   } catch (_) {}
   document.getElementById('offlineBanner').style.display = 'flex';
@@ -1083,7 +1185,7 @@ async function checkServer() {
 
 async function loadAudits() {
   try {
-    const res = await fetch('/api/audits');
+    const res = await apiFetch('/api/audits');
     if (!res.ok) return;
     const audits = await res.json();
     renderAuditGrid(audits);
@@ -1358,7 +1460,7 @@ async function _runQueueItem(item) {
 
   let res;
   try {
-    res = await fetch('/api/upload', { method: 'POST', body: fd });
+    res = await apiFetch('/api/upload', { method: 'POST', body: fd });
     if (!res.ok) throw new Error('Upload failed');
   } catch (e) {
     _removeSkeletonCard(item.qid);
@@ -1369,7 +1471,7 @@ async function _runQueueItem(item) {
   item.sid = session_id;
 
   await new Promise((resolve) => {
-    const es = new EventSource(`/api/audit/${session_id}`);
+    const es = new EventSource(`/api/audit/${session_id}?token=${encodeURIComponent(getToken())}`);
     item.es = es;
     es.onmessage = e => {
       const d = JSON.parse(e.data);
@@ -1418,7 +1520,7 @@ async function _replaceSkeletonWithCard(qid, sid) {
   // Retry up to 5 times — disk write may not be instant
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
-      const res   = await fetch(`/api/audits/${sid}`);
+      const res   = await apiFetch(`/api/audits/${sid}`);
       if (!res.ok) { await _sleep(800); continue; }
       const audit = await res.json();
       if (!audit || audit.error) { await _sleep(800); continue; }
@@ -1674,7 +1776,7 @@ async function openDetailModal(sid) {
   document.getElementById('detailOverlay').classList.add('open');
 
   try {
-    const res = await fetch(`/api/audits/${sid}`);
+    const res = await apiFetch(`/api/audits/${sid}`);
     if (!res.ok) throw new Error('Not found');
     detailData = await res.json();
     populateDetailModal(detailData);
@@ -1691,7 +1793,7 @@ function closeDetailModal() {
 
 async function removeRedesignFile() {
   if (!detailSid || !confirm('Remove the redesign file? The share link will stop working.')) return;
-  const res = await fetch(`/api/audits/${detailSid}/redesign`, { method: 'DELETE' });
+  const res = await apiFetch(`/api/audits/${detailSid}/redesign`, { method: 'DELETE' });
   const data = await res.json();
   if (data.ok) {
     document.getElementById('redesignShareRow').style.display = 'none';
@@ -1821,7 +1923,11 @@ function copyText(elId) {
 function downloadDetailFile(type) {
   if (!detailSid) return;
   if (type === 'report') {
-    window.location.href = `/api/audits/${detailSid}/report`;
+    apiFetch(`/api/audits/${detailSid}/report`)
+      .then(r => r.text())
+      .then(html => _downloadBlob(html, 'text/html', `ux_audit_${detailSid.slice(0,8)}.html`))
+      .catch(e => alert('Download failed: ' + e.message));
+    return;
   } else if (type === 'prompt') {
     const text = document.getElementById('detailPromptText').textContent || '';
     _downloadBlob(text, 'text/plain', `claude_prompt_${detailSid.slice(0,8)}.txt`);
@@ -1867,7 +1973,7 @@ async function handleRedesignUpload(file) {
   form.append('file', file);
 
   try {
-    const res = await fetch(`/api/audits/${detailSid}/upload-redesign`, { method: 'POST', body: form });
+    const res = await apiFetch(`/api/audits/${detailSid}/upload-redesign`, { method: 'POST', body: form });
     const data = await res.json();
     document.getElementById('redesignUploading').style.display = 'none';
     document.getElementById('redesignDropArea').style.display = 'block';
@@ -1894,7 +2000,7 @@ async function generateScript() {
   spinner.classList.add('show');
 
   try {
-    const res = await fetch(`/api/script/${detailSid}`, { method: 'POST' });
+    const res = await apiFetch(`/api/script/${detailSid}`, { method: 'POST' });
     const j   = await res.json();
     if (!res.ok) throw new Error(j.error || 'Script generation failed');
 
@@ -1921,7 +2027,7 @@ async function generateScriptFromCard(sid) {
   btn.disabled = true;
 
   try {
-    const res = await fetch(`/api/script/${sid}`, { method: 'POST' });
+    const res = await apiFetch(`/api/script/${sid}`, { method: 'POST' });
     const j   = await res.json();
     if (!res.ok) throw new Error(j.error || 'Script generation failed');
 
@@ -1941,7 +2047,7 @@ async function generateScriptFromCard(sid) {
 async function viewScriptFromCard(sid) {
   // Fetch full detail to get the script text
   try {
-    const res = await fetch(`/api/audits/${sid}`);
+    const res = await apiFetch(`/api/audits/${sid}`);
     const j   = await res.json();
     _openScriptViewer(sid, j.youtube_script || '', j.screen_name || '');
   } catch (e) {
@@ -2011,7 +2117,7 @@ async function generateDribbble() {
   document.getElementById('drbSpinner').classList.add('show');
 
   try {
-    const res = await fetch(`/api/dribbble/${detailSid}`, { method: 'POST' });
+    const res = await apiFetch(`/api/dribbble/${detailSid}`, { method: 'POST' });
     const j   = await res.json();
     if (!res.ok) throw new Error(j.error || 'Generation failed');
     _populateDribbble(j);
@@ -2116,7 +2222,7 @@ async function confirmDeleteForever() {
   pendingDeleteName = null;
 
   try {
-    const res = await fetch(`/api/audits/${sid}`, { method: 'DELETE' });
+    const res = await apiFetch(`/api/audits/${sid}`, { method: 'DELETE' });
     if (!res.ok) { const j = await res.json(); throw new Error(j.error || 'Delete failed'); }
   } catch (e) {
     alert('Delete failed: ' + e.message);
@@ -2191,5 +2297,25 @@ document.addEventListener('keydown', e => {
   }
 });
 </script>
+
+<!-- Login screen -->
+<div id="loginScreen">
+  <div class="login-card">
+    {% if logo_dark %}
+      <img class="login-logo" src="data:image/png;base64,{{ logo_dark }}" alt="Saasfactor"/>
+    {% else %}
+      <div style="text-align:center;font-weight:800;font-size:18px;margin-bottom:28px;">Saasfactor</div>
+    {% endif %}
+    <div class="login-title">UX Audit Admin</div>
+    <div class="login-sub">Sign in to your account</div>
+    <label class="login-label" for="loginEmail">Email</label>
+    <input class="login-input" id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email"/>
+    <label class="login-label" for="loginPassword">Password</label>
+    <input class="login-input" id="loginPassword" type="password" placeholder="••••••••" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter') submitLogin()"/>
+    <button class="login-btn" id="loginBtn" onclick="submitLogin()">Sign in</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
 </body>
 </html>
