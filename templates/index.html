@@ -1236,8 +1236,9 @@ function buildAuditCard(a) {
       ${sc('Redesign', !!a.has_redesign)}
     </div>`;
 
-  const dateStr  = relativeDate(a.date);
-  const name     = escHtml(a.screen_name || a.filename || 'Untitled');
+  const dateStr   = relativeDate(a.date);
+  const createdBy = a.created_by ? escHtml(a.created_by) : '';
+  const name      = escHtml(a.screen_name || a.filename || 'Untitled');
   const rawUrl   = a.website_url || '';
   const dispUrl  = rawUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
   const urlHtml  = rawUrl
@@ -1250,7 +1251,7 @@ function buildAuditCard(a) {
       <div class="card-body">
         <div class="card-name">${name}</div>
         ${urlHtml}
-        <div class="card-date">${dateStr}</div>
+        <div class="card-date">${dateStr}${createdBy ? ` · <span style="opacity:.7">${createdBy}</span>` : ''}</div>
         ${statusChips}
       </div>
       <div class="card-footer">

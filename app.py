@@ -18,7 +18,7 @@ import urllib.request as _urllib_req
 import urllib.parse as _urllib_parse
 from html.parser import HTMLParser
 
-from flask import Flask, Response, jsonify, render_template, request, send_file, stream_with_context
+from flask import Flask, Response, g, jsonify, render_template, request, send_file, stream_with_context
 from flask_cors import CORS
 
 try:
@@ -71,6 +71,7 @@ def auth_required(f):
             user = sb.auth.get_user(token)
             if not user or not user.user:
                 return jsonify({"error": "Unauthorized"}), 401
+            g.current_user_email = user.user.email or ""
         except Exception:
             return jsonify({"error": "Unauthorized"}), 401
         return f(*args, **kwargs)
@@ -250,6 +251,7 @@ def _save_audit_meta(sid):
         "has_redesign": s.get("has_redesign", False),
         "status":       s.get("status", "uploaded"),
         "model_label":  s.get("model_label", AUDIT_MODEL_LABEL),
+        "created_by":   s.get("created_by", ""),
     }
     try:
         sb.table("audits").upsert(meta).execute()
@@ -695,6 +697,7 @@ def upload():
                 "website_url":     website_url,
                 "website_context": website_context,
                 "model_label":     AUDIT_MODEL_LABEL,
+                "created_by":      getattr(g, "current_user_email", ""),
             }
 
         # Upload screenshot to Supabase Storage immediately
