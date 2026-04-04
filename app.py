@@ -104,8 +104,16 @@ def _storage_signed_url(sid, filename, expires=3600):
 def _storage_download(sid, filename):
     path = f"{sid}/{filename}"
     try:
-        return sb.storage.from_(STORAGE_BUCKET).download(path)
-    except Exception:
+        res = sb.storage.from_(STORAGE_BUCKET).download(path)
+        if isinstance(res, bytes):
+            return res
+        if hasattr(res, 'content'):
+            return res.content
+        if hasattr(res, 'data'):
+            return res.data if isinstance(res.data, bytes) else res.data.encode() if res.data else None
+        return bytes(res) if res else None
+    except Exception as exc:
+        print(f"[storage] download error {path}: {exc}")
         return None
 
 def _storage_delete_folder(sid):
@@ -1041,11 +1049,12 @@ def get_audit_detail(sid):
 
     # Load audit_data.json from Storage
     raw = _storage_download(sid, "audit_data.json")
+    print(f"[detail] {sid[:8]} audit_data.json download: {type(raw).__name__}, len={len(raw) if raw else 0}")
     if raw:
         try:
             result["analysis"] = json.loads(raw.decode())
-        except Exception:
-            pass
+        except Exception as exc:
+            print(f"[detail] {sid[:8]} JSON parse error: {exc}")
 
     # Load text files from Storage
     for filename, key in [("youtube_script.txt", "youtube_script"), ("claude_prompt.txt", "claude_prompt")]:
