@@ -108,10 +108,17 @@ def _storage_download(sid, filename):
         if isinstance(res, bytes):
             return res
         if hasattr(res, 'content'):
-            return res.content
+            data = res.content
+            return data if isinstance(data, bytes) else (data.encode() if data else None)
         if hasattr(res, 'data'):
-            return res.data if isinstance(res.data, bytes) else res.data.encode() if res.data else None
-        return bytes(res) if res else None
+            data = res.data
+            return data if isinstance(data, bytes) else (data.encode() if data else None)
+        # Last resort: try converting to bytes
+        try:
+            return bytes(res)
+        except Exception:
+            print(f"[storage] cannot convert response to bytes for {path}: {type(res).__name__} = {repr(res)[:120]}")
+            return None
     except Exception as exc:
         print(f"[storage] download error {path}: {exc}")
         return None
@@ -1059,11 +1066,16 @@ def get_audit_detail(sid):
     # Load text files from Storage
     for filename, key in [("youtube_script.txt", "youtube_script"), ("claude_prompt.txt", "claude_prompt")]:
         raw = _storage_download(sid, filename)
+        print(f"[detail] {sid[:8]} {filename}: {type(raw).__name__}, len={len(raw) if raw else 0}")
         if raw:
-            result[key] = raw.decode()
+            try:
+                result[key] = raw.decode("utf-8")
+            except Exception as exc:
+                print(f"[detail] {sid[:8]} decode error {filename}: {exc}")
 
     # Load dribbble.json from Storage
     raw = _storage_download(sid, "dribbble.json")
+    print(f"[detail] {sid[:8]} dribbble.json: {type(raw).__name__}, len={len(raw) if raw else 0}")
     if raw:
         try:
             result["dribbble"] = json.loads(raw.decode())
