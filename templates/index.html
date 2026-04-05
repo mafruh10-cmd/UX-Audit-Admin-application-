@@ -1182,6 +1182,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function checkServer() {
+  // Only relevant on localhost — on Railway the server is always up
+  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') return;
   try {
     const res = await apiFetch('/api/health', { signal: AbortSignal.timeout(3000) });
     if (res.ok) return;
