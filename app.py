@@ -136,7 +136,9 @@ def _to_bytes(data):
 def _storage_download(sid, filename):
     # Use signed URL + urllib fetch — same mechanism that works for thumbnails.
     # Avoids supabase-py's download() which can fail differently across environments.
-    url = _storage_signed_url(sid, filename, expires=300)
+    # expires=3600 must match or exceed _SIGNED_URL_TTL (3000s) so cached URLs never expire
+    # while still in the cache.
+    url = _storage_signed_url(sid, filename, expires=3600)
     if url:
         try:
             with _urllib_req.urlopen(url, timeout=20) as resp:
@@ -355,21 +357,32 @@ _load_sessions_from_db()
 
 
 def _prewarm_thumb_cache():
-    """Pre-generate signed URLs for all known audits so the first page load
-    never triggers a concurrent flood of Storage requests."""
+    """Pre-generate signed URLs for all known audits at startup.
+    Covers both thumbnails and detail-view files so no request ever hits
+    a cold concurrent Storage flood."""
     if not sb:
         return
     sids = list(sessions.keys())
-    print(f"[info] Pre-warming thumb cache for {len(sids)} audits…")
-    warmed = 0
+    print(f"[info] Pre-warming Storage cache for {len(sids)} audits…")
+    thumb_warmed = 0
     for sid in sids:
+        # Thumbnail (first match wins)
         for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
             url = _storage_signed_url(sid, fname, expires=3600)
             if url:
-                warmed += 1
+                thumb_warmed += 1
                 break
-        time.sleep(0.05)   # 50 ms between requests — avoids socket flood
-    print(f"[info] Thumb cache warm: {warmed}/{len(sids)} audits have Storage screenshots")
+        time.sleep(0.05)   # 50 ms gap — avoids socket flood
+    print(f"[info] Thumb cache: {thumb_warmed}/{len(sids)} ready")
+
+    # Detail files — pre-warm audit_data.json for every audit
+    detail_warmed = 0
+    for sid in sids:
+        url = _storage_signed_url(sid, "audit_data.json", expires=3600)
+        if url:
+            detail_warmed += 1
+        time.sleep(0.05)
+    print(f"[info] Detail cache: {detail_warmed}/{len(sids)} audit_data.json ready")
 
 threading.Thread(target=_prewarm_thumb_cache, daemon=True).start()
 
