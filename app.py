@@ -91,15 +91,31 @@ def _storage_upload(sid, filename, data, content_type="application/octet-stream"
         print(f"[storage] Upload failed {path}: {exc}")
 
 def _storage_signed_url(sid, filename, expires=3600):
+    # Return cached URL if still fresh
+    cache_key = (sid, filename)
+    cached = _signed_url_cache.get(cache_key)
+    if cached:
+        url, expires_at = cached
+        if time.time() < expires_at:
+            return url
+
     path = f"{sid}/{filename}"
     try:
         res = sb.storage.from_(STORAGE_BUCKET).create_signed_url(path, expires)
-        # supabase-py v2 returns a dict; newer builds may return an object
+        # supabase-py v2 returns a dict; newer builds return an object; even newer raise on 404
         if isinstance(res, dict):
-            return res.get("signedURL") or res.get("signedUrl") or res.get("signed_url") or ""
-        return getattr(res, "signed_url", None) or getattr(res, "signedURL", None) or getattr(res, "signedUrl", None) or ""
+            url = res.get("signedURL") or res.get("signedUrl") or res.get("signed_url") or ""
+        else:
+            url = (getattr(res, "signed_url", None) or getattr(res, "signedURL", None)
+                   or getattr(res, "signedUrl", None) or "")
+        if url:
+            _signed_url_cache[cache_key] = (url, time.time() + _SIGNED_URL_TTL)
+        return url
     except Exception as exc:
-        print(f"[storage] signed_url error {sid}/{filename}: {exc}")
+        err = str(exc)
+        # Suppress noisy 404s (file simply not in Storage); log everything else
+        if "not_found" not in err and "404" not in err:
+            print(f"[storage] signed_url error {sid}/{filename}: {exc}")
         return ""
 
 def _to_bytes(data):
@@ -187,6 +203,10 @@ LOGO_DARK_B64  = _load_b64(os.path.join(BASE_DIR, "assets", "logo_dark.png"))
 
 sessions: dict = {}
 _lock = threading.Lock()
+
+# ─── Signed URL cache (avoids hammering Storage on every page load) ───────────
+_signed_url_cache: dict = {}          # {(sid, filename): (url, expires_at)}
+_SIGNED_URL_TTL = 3000                # seconds — refresh before Supabase's 3600 expiry
 
 AUDIT_STEPS = [
     "Parsing layout and structure",
@@ -1037,11 +1057,29 @@ def download_prompt(sid):
 @app.route("/api/audits/<sid>/thumb")
 def audit_thumb(sid):
     """Serve the screenshot/annotated image for a given audit via signed URL redirect."""
+    from flask import redirect, send_file
+    # 1. Try Supabase Storage (cached signed URL)
     for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
         url = _storage_signed_url(sid, fname, expires=3600)
         if url:
-            from flask import redirect
             return redirect(url)
+    # 2. Fall back to local disk (audits created before Storage migration)
+    audit_dir = os.path.join(AUDITS_DIR, sid)
+    for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
+        local_path = os.path.join(audit_dir, fname)
+        if os.path.isfile(local_path):
+            mime = "image/jpeg" if fname.endswith(".jpg") else "image/png"
+            return send_file(local_path, mimetype=mime)
+    # 3. Try in-memory session image (audit in progress or just uploaded)
+    s = sessions.get(sid, {})
+    if s.get("annotated_b64"):
+        data = base64.b64decode(s["annotated_b64"])
+        mime = s.get("ann_type", "image/jpeg")
+        return Response(data, mimetype=mime)
+    if s.get("image_b64"):
+        data = base64.b64decode(s["image_b64"])
+        mime = s.get("media_type", "image/jpeg")
+        return Response(data, mimetype=mime)
     return ("", 404)
 
 
