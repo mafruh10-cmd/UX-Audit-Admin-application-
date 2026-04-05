@@ -134,6 +134,16 @@ def _to_bytes(data):
         return None
 
 def _storage_download(sid, filename):
+    # Use signed URL + urllib fetch — same mechanism that works for thumbnails.
+    # Avoids supabase-py's download() which can fail differently across environments.
+    url = _storage_signed_url(sid, filename, expires=300)
+    if url:
+        try:
+            with _urllib_req.urlopen(url, timeout=20) as resp:
+                return resp.read()
+        except Exception as exc:
+            print(f"[storage] download error {sid}/{filename}: {exc}")
+    # Fallback: direct supabase-py download (kept as secondary attempt)
     path = f"{sid}/{filename}"
     try:
         res = sb.storage.from_(STORAGE_BUCKET).download(path)
@@ -144,12 +154,8 @@ def _storage_download(sid, filename):
                 converted = _to_bytes(getattr(res, attr))
                 if converted is not None:
                     return converted
-        converted = _to_bytes(res)
-        if converted is None:
-            print(f"[storage] cannot convert {path}: {repr(res)[:120]}")
-        return converted
-    except Exception as exc:
-        print(f"[storage] download error {path}: {exc}")
+        return _to_bytes(res)
+    except Exception:
         return None
 
 def _storage_delete_folder(sid):
@@ -1107,22 +1113,32 @@ def get_audit_detail(sid):
     except Exception:
         return jsonify({"error": "Audit not found"}), 404
 
-    # Load audit_data.json from Storage
-    raw = _storage_download(sid, "audit_data.json")
+    # Helper: download from Storage, fall back to local disk
+    def _load_file(filename):
+        raw = _storage_download(sid, filename)
+        if raw:
+            return raw
+        local = os.path.join(AUDITS_DIR, sid, filename)
+        if os.path.isfile(local):
+            return open(local, "rb").read()
+        return None
+
+    # Load audit_data.json
+    raw = _load_file("audit_data.json")
     if raw:
         try:
             result["analysis"] = json.loads(raw.decode())
         except Exception as exc:
             print(f"[detail] {sid[:8]} JSON parse error: {exc}")
 
-    # Load text files from Storage
+    # Load text files
     for filename, key in [("youtube_script.txt", "youtube_script"), ("claude_prompt.txt", "claude_prompt")]:
-        raw = _storage_download(sid, filename)
+        raw = _load_file(filename)
         if raw:
             result[key] = raw.decode("utf-8")
 
-    # Load dribbble.json from Storage
-    raw = _storage_download(sid, "dribbble.json")
+    # Load dribbble.json
+    raw = _load_file("dribbble.json")
     if raw:
         try:
             result["dribbble"] = json.loads(raw.decode())
