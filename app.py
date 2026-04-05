@@ -353,6 +353,27 @@ def _load_sessions_from_db():
 
 _load_sessions_from_db()
 
+
+def _prewarm_thumb_cache():
+    """Pre-generate signed URLs for all known audits so the first page load
+    never triggers a concurrent flood of Storage requests."""
+    if not sb:
+        return
+    sids = list(sessions.keys())
+    print(f"[info] Pre-warming thumb cache for {len(sids)} audits…")
+    warmed = 0
+    for sid in sids:
+        for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
+            url = _storage_signed_url(sid, fname, expires=3600)
+            if url:
+                warmed += 1
+                break
+        time.sleep(0.05)   # 50 ms between requests — avoids socket flood
+    print(f"[info] Thumb cache warm: {warmed}/{len(sids)} audits have Storage screenshots")
+
+threading.Thread(target=_prewarm_thumb_cache, daemon=True).start()
+
+
 # ─── Training knowledge base ──────────────────────────────────────────────────
 
 _TRAINING_FILES = {
