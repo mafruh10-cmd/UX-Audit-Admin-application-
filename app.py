@@ -133,32 +133,49 @@ def _to_bytes(data):
     except Exception:
         return None
 
+def _storage_public_url(sid, filename):
+    """Construct the public URL for a file (works if bucket is public)."""
+    return f"{SUPABASE_URL}/storage/v1/object/public/{STORAGE_BUCKET}/{sid}/{filename}"
+
+def _storage_direct_download(sid, filename):
+    """Download a file from Supabase Storage via raw urllib — bypasses supabase-py/httpx
+    entirely so it works identically on every environment (Railway, localhost, etc.)."""
+    if not SUPABASE_KEY:
+        return None
+    path = f"{sid}/{filename}"
+    # 1. Authenticated endpoint — works for both public and private buckets
+    url = f"{SUPABASE_URL}/storage/v1/object/{STORAGE_BUCKET}/{path}"
+    req = _urllib_req.Request(url, headers={
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "apikey": SUPABASE_KEY,
+    })
+    try:
+        with _urllib_req.urlopen(req, timeout=20) as resp:
+            return resp.read()
+    except Exception:
+        pass
+    # 2. Public URL — works if bucket is set to public (no auth needed)
+    try:
+        with _urllib_req.urlopen(_storage_public_url(sid, filename), timeout=20) as resp:
+            return resp.read()
+    except Exception as exc:
+        print(f"[storage] direct download failed {path}: {exc}")
+        return None
+
 def _storage_download(sid, filename):
-    # Use signed URL + urllib fetch — same mechanism that works for thumbnails.
-    # Avoids supabase-py's download() which can fail differently across environments.
-    # expires=3600 must match or exceed _SIGNED_URL_TTL (3000s) so cached URLs never expire
-    # while still in the cache.
+    # Try direct urllib download first (bypasses supabase-py, works everywhere)
+    data = _storage_direct_download(sid, filename)
+    if data:
+        return data
+    # Fallback: signed URL → urllib fetch
     url = _storage_signed_url(sid, filename, expires=3600)
     if url:
         try:
             with _urllib_req.urlopen(url, timeout=20) as resp:
                 return resp.read()
-        except Exception as exc:
-            print(f"[storage] download error {sid}/{filename}: {exc}")
-    # Fallback: direct supabase-py download (kept as secondary attempt)
-    path = f"{sid}/{filename}"
-    try:
-        res = sb.storage.from_(STORAGE_BUCKET).download(path)
-        if isinstance(res, (bytes, bytearray)):
-            return bytes(res)
-        for attr in ("content", "data"):
-            if hasattr(res, attr):
-                converted = _to_bytes(getattr(res, attr))
-                if converted is not None:
-                    return converted
-        return _to_bytes(res)
-    except Exception:
-        return None
+        except Exception:
+            pass
+    return None
 
 def _storage_delete_folder(sid):
     try:
@@ -375,14 +392,20 @@ def _prewarm_thumb_cache():
         time.sleep(0.05)   # 50 ms gap — avoids socket flood
     print(f"[info] Thumb cache: {thumb_warmed}/{len(sids)} ready")
 
-    # Detail files — pre-warm audit_data.json for every audit
+    # Detail files — verify audit_data.json is reachable via direct download
     detail_warmed = 0
     for sid in sids:
+        # Try signed URL first (caches it), then confirm direct download works
         url = _storage_signed_url(sid, "audit_data.json", expires=3600)
         if url:
             detail_warmed += 1
+        else:
+            # Verify direct download route works (no cache needed, just confirms accessibility)
+            data = _storage_direct_download(sid, "audit_data.json")
+            if data:
+                detail_warmed += 1
         time.sleep(0.05)
-    print(f"[info] Detail cache: {detail_warmed}/{len(sids)} audit_data.json ready")
+    print(f"[info] Detail cache: {detail_warmed}/{len(sids)} audit_data.json accessible")
 
 threading.Thread(target=_prewarm_thumb_cache, daemon=True).start()
 
@@ -1098,12 +1121,18 @@ def download_prompt(sid):
 def audit_thumb(sid):
     """Serve the screenshot/annotated image for a given audit via signed URL redirect."""
     from flask import redirect, send_file
-    # 1. Try Supabase Storage (cached signed URL)
+    # 1. Try Supabase Storage signed URL redirect (browser fetches from CDN directly)
     for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
         url = _storage_signed_url(sid, fname, expires=3600)
         if url:
             return redirect(url)
-    # 2. Fall back to local disk (audits created before Storage migration)
+    # 2. Direct download from Storage and pipe bytes (fallback when signed URL fails)
+    for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
+        data = _storage_direct_download(sid, fname)
+        if data:
+            mime = "image/jpeg" if fname.endswith(".jpg") else "image/png"
+            return Response(data, mimetype=mime)
+    # 3. Local disk (audits created before Storage migration)
     audit_dir = os.path.join(AUDITS_DIR, sid)
     for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
         local_path = os.path.join(audit_dir, fname)
@@ -1147,44 +1176,8 @@ def get_audit_detail(sid):
     except Exception:
         return jsonify({"error": "Audit not found"}), 404
 
-    # Helper: download from Storage, fall back to local disk
-    def _load_file(filename):
-        raw = _storage_download(sid, filename)
-        if raw:
-            return raw
-        local = os.path.join(AUDITS_DIR, sid, filename)
-        if os.path.isfile(local):
-            return open(local, "rb").read()
-        return None
-
-    # Load audit_data.json
-    raw = _load_file("audit_data.json")
-    if raw:
-        try:
-            result["analysis"] = json.loads(raw.decode())
-        except Exception as exc:
-            print(f"[detail] {sid[:8]} JSON parse error: {exc}")
-
-    # Load text files
-    for filename, key in [("youtube_script.txt", "youtube_script"), ("claude_prompt.txt", "claude_prompt")]:
-        raw = _load_file(filename)
-        if raw:
-            result[key] = raw.decode("utf-8")
-
-    # Load dribbble.json
-    raw = _load_file("dribbble.json")
-    if raw:
-        try:
-            result["dribbble"] = json.loads(raw.decode())
-        except Exception:
-            pass
-
-    # Thumbnail signed URL
-    thumb_url = _storage_signed_url(sid, "annotated.jpg")
-    if not thumb_url:
-        thumb_url = _storage_signed_url(sid, "screenshot.png")
-    if thumb_url:
-        result["thumb_url"] = thumb_url
+    # Thumbnail — point to the thumb endpoint (handles all fallbacks)
+    result["thumb_url"] = f"/api/audits/{sid}/thumb"
 
     # Proxy view URLs (render in browser, no auth required)
     result["report_url"] = f"/audits/{sid}/report-view"
@@ -1192,6 +1185,38 @@ def get_audit_detail(sid):
         result["redesign_url"] = f"/audits/{sid}/redesign-view"
 
     return jsonify(result)
+
+
+@app.route("/api/audits/<sid>/file/<fname>")
+@auth_required
+def get_audit_file(sid, fname):
+    """Serve a single audit file on demand — called one at a time by the frontend."""
+    ALLOWED = {"audit_data.json", "claude_prompt.txt", "youtube_script.txt", "dribbble.json"}
+    if fname not in ALLOWED:
+        return jsonify({"error": "Not allowed"}), 400
+
+    # Try Storage (direct urllib), then local disk
+    raw = _storage_direct_download(sid, fname)
+    if not raw:
+        raw = _storage_download(sid, fname)   # signed URL fallback
+    if not raw:
+        local = os.path.join(AUDITS_DIR, sid, fname)
+        if os.path.isfile(local):
+            with open(local, "rb") as f:
+                raw = f.read()
+
+    if not raw:
+        return jsonify({"error": "File not found"}), 404
+
+    if fname.endswith(".json"):
+        try:
+            return jsonify({"ok": True, "data": json.loads(_fix_json_escapes(raw.decode()))})
+        except Exception as exc:
+            return jsonify({"error": f"Parse error: {exc}"}), 500
+    try:
+        return jsonify({"ok": True, "data": raw.decode("utf-8")})
+    except Exception:
+        return jsonify({"error": "Decode error"}), 500
 
 
 @app.route("/api/audits/<sid>", methods=["DELETE"])
