@@ -460,7 +460,13 @@ def _persist_audit(sid):
         # Claude redesign prompt — immutable after first write
         try:
             prompt = _build_redesign_prompt(analysis)
-            _storage_upload(sid, "claude_prompt.txt", prompt.encode("utf-8"), "text/plain",
+            prompt_bytes = prompt.encode("utf-8")
+            # Save locally
+            with open(os.path.join(local_dir, "claude_prompt.txt"), "wb") as f:
+                f.write(prompt_bytes)
+            print(f"[persist] Saved claude_prompt.txt locally")
+            # Try Supabase
+            _storage_upload(sid, "claude_prompt.txt", prompt_bytes, "text/plain",
                             cache_control="public, max-age=86400")
         except Exception as exc:
             print(f"[persist] prompt error: {exc}")
