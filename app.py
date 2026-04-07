@@ -16,6 +16,16 @@ from pathlib import Path
 
 import urllib.request as _urllib_req
 import urllib.parse as _urllib_parse
+import ssl as _ssl
+
+# SSL context: disable verification for local dev, enable for production
+if os.environ.get("ENVIRONMENT") == "production":
+    _ssl_context = _ssl.create_default_context()
+else:
+    # Local development only - disable SSL verification for macOS compatibility
+    _ssl_context = _ssl.create_default_context()
+    _ssl_context.check_hostname = False
+    _ssl_context.verify_mode = _ssl.CERT_NONE
 from html.parser import HTMLParser
 
 from flask import Flask, Response, g, jsonify, redirect, render_template, request, send_file, stream_with_context
@@ -49,6 +59,7 @@ app = Flask(__name__,
 CORS(app)
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+print(f"[startup] ANTHROPIC_API_KEY loaded: {bool(ANTHROPIC_API_KEY)} (length: {len(ANTHROPIC_API_KEY)})")
 
 # ─── Supabase client ──────────────────────────────────────────────────────────
 
@@ -103,8 +114,16 @@ def auth_required(f):
                 g.current_user_email = user.user.email or ""
         except _jwt.ExpiredSignatureError:
             return jsonify({"error": "Session expired"}), 401
-        except Exception:
-            return jsonify({"error": "Unauthorized"}), 401
+        except Exception as e:
+            # Fallback to Supabase API auth
+            try:
+                user = sb.auth.get_user(token)
+                if not user or not user.user:
+                    return jsonify({"error": "Unauthorized"}), 401
+                g.current_user_email = user.user.email or ""
+            except Exception as e2:
+                print(f"[auth] JWT and Supabase auth failed: {e} | {e2}")
+                return jsonify({"error": "Unauthorized"}), 401
         return f(*args, **kwargs)
     return decorated
 
@@ -181,13 +200,13 @@ def _storage_direct_download(sid, filename):
         "apikey": SUPABASE_KEY,
     })
     try:
-        with _urllib_req.urlopen(req, timeout=20) as resp:
+        with _urllib_req.urlopen(req, timeout=20, context=_ssl_context) as resp:
             return resp.read()
     except Exception:
         pass
     # 2. Public URL — works if bucket is set to public (no auth needed)
     try:
-        with _urllib_req.urlopen(_storage_public_url(sid, filename), timeout=20) as resp:
+        with _urllib_req.urlopen(_storage_public_url(sid, filename), timeout=20, context=_ssl_context) as resp:
             return resp.read()
     except Exception as exc:
         print(f"[storage] direct download failed {path}: {exc}")
@@ -202,7 +221,7 @@ def _storage_download(sid, filename):
     url = _storage_signed_url(sid, filename, expires=3600)
     if url:
         try:
-            with _urllib_req.urlopen(url, timeout=20) as resp:
+            with _urllib_req.urlopen(url, timeout=20, context=_ssl_context) as resp:
                 return resp.read()
         except Exception:
             pass
@@ -210,16 +229,30 @@ def _storage_download(sid, filename):
 
 def _cached_storage_download(sid, filename):
     """Like _storage_download but caches the result in memory for FILE_CACHE_TTL seconds.
-    Eliminates repeated Storage round-trips when the same file is requested multiple times."""
+    Also checks local disk as fallback. Eliminates repeated Storage round-trips."""
     cache_key = (sid, filename)
     now = time.time()
     with _file_cache_lock:
         cached = _file_cache.get(cache_key)
         if cached and now < cached[1]:
             return cached[0]
+    
+    # Try Supabase Storage first
     data = _storage_direct_download(sid, filename)
     if not data:
         data = _storage_download(sid, filename)
+    
+    # Fallback to local disk
+    if not data:
+        local_path = os.path.join(AUDITS_DIR, sid, filename)
+        if os.path.isfile(local_path):
+            try:
+                with open(local_path, "rb") as f:
+                    data = f.read()
+                print(f"[storage] Loaded {sid}/{filename} from local disk")
+            except Exception as exc:
+                print(f"[storage] Local file read failed: {exc}")
+    
     if data:
         with _file_cache_lock:
             _file_cache[cache_key] = (data, now + _FILE_CACHE_TTL)
@@ -244,12 +277,12 @@ def _storage_delete_folder(sid):
 # Pipeline mode: Gemini reads the screenshot → Opus reasons about findings
 USE_SPLIT_PIPELINE = True
 VISION_MODEL       = "google/gemini-2.5-pro"       # sees the image
-REASONING_MODEL    = "anthropic/claude-opus-4-6"   # reasons with thinking
+REASONING_MODEL    = "anthropic/claude-opus-4.6"   # reasons with thinking
 AUDIT_MODEL_LABEL  = "Gemini+Opus"
 
 # Single-model fallback (used when USE_SPLIT_PIPELINE = False)
-AUDIT_MODEL        = "anthropic/claude-opus-4-6"
-CONTENT_GEN_MODEL  = "anthropic/claude-sonnet-4-6" # YouTube script + Dribbble
+AUDIT_MODEL        = "anthropic/claude-opus-4.6"
+CONTENT_GEN_MODEL  = "anthropic/claude-sonnet-4.6" # YouTube script + Dribbble
 
 VISION_PROMPT = """You are a precise visual analyst examining a UI screenshot.
 
@@ -367,12 +400,25 @@ def _persist_audit(sid):
     s = sessions.get(sid, {})
     if not s:
         return
+    
+    # Ensure local storage directory exists
+    local_dir = os.path.join(AUDITS_DIR, sid)
+    os.makedirs(local_dir, exist_ok=True)
 
     # Annotated screenshot — immutable once written
     ann_b64 = s.get("annotated_b64") or s.get("image_b64", "")
     if ann_b64:
+        ann_data = base64.b64decode(ann_b64)
+        # Save locally first
         try:
-            _storage_upload(sid, "annotated.jpg", base64.b64decode(ann_b64), "image/jpeg",
+            with open(os.path.join(local_dir, "annotated.jpg"), "wb") as f:
+                f.write(ann_data)
+            print(f"[persist] Saved annotated.jpg locally")
+        except Exception as exc:
+            print(f"[persist] local annotated save error: {exc}")
+        # Try Supabase
+        try:
+            _storage_upload(sid, "annotated.jpg", ann_data, "image/jpeg",
                             cache_control="public, max-age=86400")
         except Exception as exc:
             print(f"[persist] annotated upload error: {exc}")
@@ -380,16 +426,33 @@ def _persist_audit(sid):
     analysis = s.get("analysis")
     if analysis:
         # Full JSON — immutable after first write
-        _storage_upload(sid, "audit_data.json",
-                        json.dumps(analysis, indent=2, ensure_ascii=False).encode(),
-                        "application/json",
-                        cache_control="public, max-age=86400")
+        audit_json = json.dumps(analysis, indent=2, ensure_ascii=False).encode()
+        # Save locally
+        try:
+            with open(os.path.join(local_dir, "audit_data.json"), "wb") as f:
+                f.write(audit_json)
+            print(f"[persist] Saved audit_data.json locally")
+        except Exception as exc:
+            print(f"[persist] local audit_data save error: {exc}")
+        # Try Supabase
+        try:
+            _storage_upload(sid, "audit_data.json", audit_json,
+                            "application/json",
+                            cache_control="public, max-age=86400")
+        except Exception as exc:
+            print(f"[persist] audit_data upload error: {exc}")
 
         # HTML report — immutable after first write
         try:
             ann_type = s.get("ann_type", s.get("media_type", "image/jpeg"))
             html = _build_report(analysis, ann_b64, ann_type)
-            _storage_upload(sid, "report.html", html.encode("utf-8"), "text/html",
+            html_bytes = html.encode("utf-8")
+            # Save locally
+            with open(os.path.join(local_dir, "report.html"), "wb") as f:
+                f.write(html_bytes)
+            print(f"[persist] Saved report.html locally")
+            # Try Supabase
+            _storage_upload(sid, "report.html", html_bytes, "text/html",
                             cache_control="public, max-age=86400")
         except Exception as exc:
             print(f"[persist] report error: {exc}")
@@ -501,8 +564,8 @@ def _extract_principles(path, max_chars=8000):
 
 def _build_knowledge_base():
     parts = []
-    # Training data lives in ../ux-audit-app/training_data/ relative to this app
-    base = os.path.normpath(os.path.join(BASE_DIR, "..", "ux-audit-app", "training_data"))
+    # Training data lives in ./training_data/ relative to this app
+    base = os.path.join(BASE_DIR, "training_data")
     for fname, label in _TRAINING_FILES.items():
         path = os.path.join(base, fname)
         content = _extract_principles(path)
@@ -609,7 +672,7 @@ def _fetch_website_context(url):
         if not url.startswith(("http://", "https://")):
             url = "https://" + url
         req = _urllib_req.Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; UXAudit/1.0)"})
-        with _urllib_req.urlopen(req, timeout=8) as resp:
+        with _urllib_req.urlopen(req, timeout=8, context=_ssl_context) as resp:
             raw = resp.read(150_000).decode("utf-8", errors="ignore")
 
         class _Stripper(HTMLParser):
@@ -852,10 +915,16 @@ def upload():
 @app.route("/api/audit/<sid>")
 @auth_required
 def audit_stream(sid):
+    print(f"\n[audit_endpoint] Request received for sid: {sid}", flush=True)
+    print(f"[audit_endpoint] Sessions loaded: {len(sessions)}", flush=True)
+    import sys
+    print(f"[audit_stream] Called for sid: {sid}", flush=True)
     if sid not in sessions:
+        print(f"[audit_stream] Session not found: {sid}", flush=True)
         return jsonify({"error": "Session not found"}), 404
 
     session = sessions[sid]
+    print(f"[audit_stream] Session status: {session.get('status')}", flush=True)
     if session["status"] == "ready":
         def _done():
             yield f"data: {json.dumps({'type': 'complete'})}\n\n"
@@ -863,15 +932,20 @@ def audit_stream(sid):
                         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
     def _generate():
+        print(f"[_generate] Starting generator for {sid}", flush=True)
         result_box = [None]
         error_box  = [None]
         done_evt   = threading.Event()
 
         def _run():
+            print(f"[_run] Thread started for {sid}", flush=True)
             try:
+                print(f"[audit] Starting audit for {sid}", flush=True)
+                print(f"[audit] API Key present: {bool(ANTHROPIC_API_KEY)}", flush=True)
                 if not ANTHROPIC_API_KEY:
                     raise ValueError("ANTHROPIC_API_KEY is not set")
                 client = _OpenAI(api_key=ANTHROPIC_API_KEY, base_url="https://openrouter.ai/api/v1")
+                print(f"[audit] OpenAI client created, USE_SPLIT_PIPELINE: {USE_SPLIT_PIPELINE}", flush=True)
 
                 if USE_SPLIT_PIPELINE:
                     # ── Step 1: Gemini reads the screenshot ───────────────────
@@ -891,6 +965,7 @@ def audit_stream(sid):
                     })
                     vision_content.append({"type": "text", "text": VISION_PROMPT})
 
+                    print(f"[audit] Calling Gemini vision model: {VISION_MODEL}", flush=True)
                     vision_msg = client.chat.completions.create(
                         model=VISION_MODEL,
                         max_tokens=3000,
@@ -898,7 +973,7 @@ def audit_stream(sid):
                         timeout=60,
                     )
                     visual_description = vision_msg.choices[0].message.content
-                    print(f"[pipeline] Vision description: {len(visual_description)} chars")
+                    print(f"[audit] Vision description received: {len(visual_description)} chars", flush=True)
 
                     # ── Step 2: Opus reasons about the findings ────────────────
                     reasoning_content = []
@@ -927,6 +1002,7 @@ def audit_stream(sid):
                     reasoning_content.append({"type": "text", "text": AUDIT_PROMPT})
 
                     messages = [{"role": "user", "content": reasoning_content}]
+                    print(f"[audit] Calling Opus reasoning model: {REASONING_MODEL}", flush=True)
                     _api_kwargs = dict(
                         model=REASONING_MODEL,
                         max_tokens=6000,
@@ -970,8 +1046,10 @@ def audit_stream(sid):
                 last_exc = None
                 for attempt in range(2):
                     try:
+                        print(f"[audit] Making API call (attempt {attempt+1}/2)", flush=True)
                         msg = client.chat.completions.create(**_api_kwargs)
                         result_box[0] = msg.choices[0].message.content
+                        print(f"[audit] API call successful, response length: {len(result_box[0])}", flush=True)
                         return
                     except Exception as exc:
                         last_exc = exc
@@ -990,7 +1068,9 @@ def audit_stream(sid):
                 done_evt.set()
 
         thread = threading.Thread(target=_run, daemon=True)
+        print(f"[_generate] Starting thread for {sid}", flush=True)
         thread.start()
+        print(f"[_generate] Thread started, yielding first step", flush=True)
 
         step_min_durations = [4.0, 5.0, 5.0, 4.5]
 
@@ -1239,6 +1319,7 @@ def get_audit_detail(sid):
     # needs only one request instead of two sequential ones
     if request.args.get("include") == "issues":
         raw = _cached_storage_download(sid, "audit_data.json")
+        print(f"[debug] Loading audit_data.json for {sid}: {'found' if raw else 'NOT FOUND'}")
         if raw:
             try:
                 audit_data = json.loads(_fix_json_escapes(raw.decode()))
@@ -1417,15 +1498,33 @@ def view_redesign(sid):
 
 @app.route("/audits/<sid>/report-view")
 def view_report(sid):
-    """Redirect to a CDN-served signed URL — browser fetches directly, no Railway proxy."""
+    """Serve the HTML report — try local disk first, then Supabase Storage."""
+    # Try local disk FIRST (most reliable for local dev)
+    local_path = os.path.join(AUDITS_DIR, sid, "report.html")
+    if os.path.isfile(local_path):
+        try:
+            with open(local_path, "rb") as f:
+                data = f.read()
+            print(f"[view_report] Serving from local disk: {local_path}")
+            return Response(data, mimetype="text/html; charset=utf-8", 
+                          headers={"Content-Disposition": "inline"})
+        except Exception as exc:
+            print(f"[view_report] Local read failed: {exc}")
+    
+    # Fallback: Try Supabase Storage download (not just signed URL)
+    data = _storage_download(sid, "report.html")
+    if data:
+        print(f"[view_report] Serving from Supabase download")
+        return Response(data, mimetype="text/html; charset=utf-8", 
+                       headers={"Content-Disposition": "inline"})
+    
+    # Last resort: signed URL redirect
     url = _storage_signed_url(sid, "report.html", expires=3600)
     if url:
+        print(f"[view_report] Redirecting to signed URL")
         return redirect(url, code=302)
-    # Fallback: proxy it (e.g. signed URL generation failed)
-    data = _storage_download(sid, "report.html")
-    if not data:
-        return "Report not found", 404
-    return Response(data, mimetype="text/html", headers={"Content-Disposition": "inline"})
+    
+    return "Report not found", 404
 
 
 @app.route("/api/audits/<sid>/url", methods=["DELETE"])
