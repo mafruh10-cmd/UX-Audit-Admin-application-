@@ -140,6 +140,15 @@ body{
   display:flex;align-items:center;justify-content:center;
   flex-shrink:0;transition:opacity .15s;
 }
+.card-thumb-progress-track{
+  position:absolute;bottom:0;left:0;right:0;height:4px;
+  background:rgba(0,0,0,.25);overflow:hidden;
+}
+.card-thumb-progress-bar{
+  height:100%;width:0%;
+  background:var(--cyan);
+  transition:width .4s ease;
+}
 .card-body{padding:16px 16px 12px;flex:1;}
 .card-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;line-height:1.3;}
 .card-url{display:block;font-size:11px;color:var(--primary);text-decoration:none;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
@@ -1529,6 +1538,12 @@ async function _runQueueItem(item) {
     item.es = es;
     es.onmessage = e => {
       const d = JSON.parse(e.data);
+      if (d.type === 'step') {
+        item.step = d.step;
+        item.stepStatus = d.status;
+        item.stepLabel = d.label;
+        _updateSkeletonCard(item);
+      }
       if (d.type === 'complete') {
         es.close(); item.es = null;
         _replaceSkeletonWithCard(item.qid, session_id);
@@ -1625,7 +1640,21 @@ function _updateSkeletonCard(item) {
     }
   }
   const dateEl = card.querySelector('.card-date');
-  if (dateEl) dateEl.textContent = item.status === 'running' ? 'Analyzing now…' : 'In queue';
+  if (dateEl) dateEl.textContent = item.stepLabel && item.status === 'running' ? item.stepLabel : (item.status === 'running' ? 'Analyzing now…' : 'In queue');
+  const track = card.querySelector('.card-thumb-progress-track');
+  const bar = card.querySelector('.card-thumb-progress-bar');
+  if (track && bar) {
+    if (item.status === 'running') {
+      track.style.display = 'block';
+      const pct = item.step !== undefined
+        ? Math.round((item.step + (item.stepStatus === 'done' ? 1 : 0)) / 5 * 100)
+        : 0;
+      bar.style.width = pct + '%';
+    } else {
+      track.style.display = 'none';
+      bar.style.width = '0%';
+    }
+  }
 }
 
 function buildSkeletonCard(item) {
@@ -1637,6 +1666,9 @@ function buildSkeletonCard(item) {
       <div class="card-thumb-wrap">
         ${thumb}
         <span class="queue-status-badge waiting">Waiting</span>
+        <div class="card-thumb-progress-track" style="display:none;">
+          <div class="card-thumb-progress-bar"></div>
+        </div>
       </div>
       <div class="card-body">
         <div class="card-name">${escHtml(item.file.name)}</div>
