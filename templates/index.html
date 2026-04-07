@@ -1118,6 +1118,43 @@ async function apiFetch(url, opts = {}) {
   return res;
 }
 
+// ─── localStorage cache (1-day TTL) ───────────────────────────────────────────
+// Keys: 'list' → audit grid, 'd_<sid>' → detail+issues, 'f_<sid>_<fname>' → file
+const _lsCache = {
+  TTL: 86400 * 1000, // 1 day
+  _k: k => 'uxc_' + k,
+
+  get(key) {
+    try {
+      const raw = localStorage.getItem(this._k(key));
+      if (!raw) return null;
+      const { d, e } = JSON.parse(raw);
+      if (Date.now() > e) { localStorage.removeItem(this._k(key)); return null; }
+      return d;
+    } catch { return null; }
+  },
+
+  set(key, data) {
+    try {
+      localStorage.setItem(this._k(key), JSON.stringify({ d: data, e: Date.now() + this.TTL }));
+    } catch {} // ignore quota exceeded
+  },
+
+  bust(key) {
+    try { localStorage.removeItem(this._k(key)); } catch {}
+  },
+
+  // Bust all cached entries for a specific audit sid
+  bustSid(sid) {
+    try {
+      const prefix = this._k('f_' + sid + '_');
+      Object.keys(localStorage).filter(k =>
+        k === this._k('d_' + sid) || k.startsWith(prefix)
+      ).forEach(k => localStorage.removeItem(k));
+    } catch {}
+  }
+};
+
 function showLogin() {
   document.getElementById('loginScreen').classList.remove('hidden');
 }
@@ -1194,10 +1231,15 @@ async function checkServer() {
 // ─── Audit grid ───────────────────────────────────────────────────────────────
 
 async function loadAudits() {
+  // Serve from localStorage cache instantly if available (1-day TTL)
+  const cached = _lsCache.get('list');
+  if (cached) { renderAuditGrid(cached); return; }
+
   try {
     const res = await apiFetch('/api/audits');
     if (!res.ok) return;
     const audits = await res.json();
+    _lsCache.set('list', audits);
     renderAuditGrid(audits);
   } catch (_) {}
 }
@@ -1292,6 +1334,7 @@ function closeNewAuditModal() {
 }
 
 function closeAndReset() {
+  _lsCache.bust('list'); // new audit was added — grid list is stale
   closeNewAuditModal();
   resetUpload();
 }
@@ -1794,47 +1837,65 @@ async function openDetailModal(sid) {
   document.getElementById('detailScriptText').textContent = '';
   document.getElementById('detailOverlay').classList.add('open');
 
-  // Single request: metadata + issues in one call (backend serves from memory cache after first load)
+  // Check localStorage cache first — serves instantly on repeat opens
+  const _renderDetail = (data) => {
+    if (detailSid !== sid) return;
+    detailData = data;
+    populateDetailModal(data);
+    document.getElementById('detailSummary').textContent = data.summary || '';
+    const issues = data.issues || [];
+    const issuesEl = document.getElementById('detailIssuesList');
+    if (!issues.length) {
+      issuesEl.innerHTML = '<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px;">No issues data available.</div>';
+    } else {
+      issuesEl.innerHTML = issues.map((iss, i) => {
+        const sev = (iss.severity || '').toLowerCase();
+        const num = String(i + 1).padStart(2, '0');
+        const wcag = iss.wcag_criterion ? `<span class="issue-wcag">WCAG ${escHtml(iss.wcag_criterion)}</span>` : '';
+        return `<div class="issue-card sev-${sev}">
+          <div class="issue-card-top"><span class="issue-num">${num}</span>${wcag}</div>
+          <div class="issue-card-title">${escHtml(iss.title || '')}</div>
+          <span class="issue-sev-chip sev-${sev}">${escHtml(iss.severity || '')}</span>
+        </div>`;
+      }).join('');
+    }
+  };
+
+  const cachedDetail = _lsCache.get('d_' + sid);
+  if (cachedDetail) { _renderDetail(cachedDetail); return; }
+
+  // Not cached — fetch from server, cache result for 1 day
   try {
     const res = await apiFetch(`/api/audits/${sid}?include=issues`);
     if (!res.ok) throw new Error('Not found');
-    detailData = await res.json();
-    populateDetailModal(detailData);
-
-    // Render issues from the combined response — no second network call needed
-    if (detailSid === sid) {
-      document.getElementById('detailSummary').textContent = detailData.summary || '';
-      const issues = detailData.issues || [];
-      const issuesEl = document.getElementById('detailIssuesList');
-      if (!issues.length) {
-        issuesEl.innerHTML = '<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px;">No issues data available.</div>';
-      } else {
-        issuesEl.innerHTML = issues.map((iss, i) => {
-          const sev = (iss.severity || '').toLowerCase();
-          const num = String(i + 1).padStart(2, '0');
-          const wcag = iss.wcag_criterion ? `<span class="issue-wcag">WCAG ${escHtml(iss.wcag_criterion)}</span>` : '';
-          return `<div class="issue-card sev-${sev}">
-            <div class="issue-card-top"><span class="issue-num">${num}</span>${wcag}</div>
-            <div class="issue-card-title">${escHtml(iss.title || '')}</div>
-            <span class="issue-sev-chip sev-${sev}">${escHtml(iss.severity || '')}</span>
-          </div>`;
-        }).join('');
-      }
-    }
+    const data = await res.json();
+    _lsCache.set('d_' + sid, data);
+    _renderDetail(data);
   } catch (e) {
     document.getElementById('detailTitle').textContent = 'Error loading audit';
     return;
   }
 }
 
-// Fetch a single file from the server one at a time; call onData(parsedData) on success
+// Fetch a single file; serves from localStorage cache on repeat loads
 async function _loadDetailFile(sid, fname, onData) {
+  const cacheKey = 'f_' + sid + '_' + fname;
+  const cached = _lsCache.get(cacheKey);
+  if (cached !== null) { if (detailSid === sid) onData(cached); return; }
+
   try {
     const res = await apiFetch(`/api/audits/${sid}/file/${fname}`);
-    if (!res.ok) return;
+    if (!res.ok) { if (detailSid === sid) onData(null); return; } // call onData(null) so UI clears "Loading..."
     const j = await res.json();
-    if (j.ok && detailSid === sid) onData(j.data);
-  } catch (_) {}
+    if (detailSid === sid) {
+      if (j.ok) {
+        _lsCache.set(cacheKey, j.data);
+        onData(j.data);
+      } else {
+        onData(null);
+      }
+    }
+  } catch (_) { if (detailSid === sid) onData(null); }
 }
 
 function closeDetailModal() {
@@ -1850,6 +1911,7 @@ async function removeRedesignFile() {
   if (data.ok) {
     document.getElementById('redesignShareRow').style.display = 'none';
     document.getElementById('redesignDropArea').querySelector('div[style*="font-weight:600"]').textContent = 'Drop redesign HTML here';
+    _lsCache.bust('d_' + detailSid);
     // Downgrade chip back to pending
     const card = document.querySelector(`.audit-card[data-sid="${detailSid}"]`);
     if (card) card.querySelectorAll('.schip').forEach(c => { if (c.textContent.trim() === 'Redesign') c.className = 'schip pending'; });
@@ -2029,6 +2091,7 @@ async function handleRedesignUpload(file) {
       document.getElementById('redesignShareUrl').value = data.redesign_url;
       document.getElementById('redesignShareRow').style.display = 'block';
       document.getElementById('redesignDropArea').querySelector('[style*="font-weight:600"]').textContent = 'Replace redesign file';
+      _lsCache.bust('d_' + detailSid);
       _upgradeStatusChip(detailSid, 'Redesign');
     } else {
       alert(data.error || 'Upload failed.');
@@ -2057,6 +2120,9 @@ async function generateScript() {
     document.getElementById('detailScriptText').style.display = 'block';
     document.getElementById('scriptEmptyState').style.display = 'none';
     document.getElementById('scriptActions').style.display = 'flex';
+    // Bust detail + file cache so regenerated content is fresh next open
+    _lsCache.bust('d_' + detailSid);
+    _lsCache.bust('f_' + detailSid + '_youtube_script.txt');
     // Update the card button to "View Script"
     _upgradeCardScriptBtn(detailSid);
   } catch (e) {
@@ -2169,6 +2235,8 @@ async function generateDribbble() {
     const j   = await res.json();
     if (!res.ok) throw new Error(j.error || 'Generation failed');
     _populateDribbble(j);
+    _lsCache.bust('d_' + detailSid);
+    _lsCache.bust('f_' + detailSid + '_dribbble.json');
     _upgradeStatusChip(detailSid, 'Dribbble');
   } catch (e) {
     document.getElementById('drbEmpty').style.display = 'block';
@@ -2276,6 +2344,10 @@ async function confirmDeleteForever() {
     alert('Delete failed: ' + e.message);
     return;
   }
+
+  // Bust all cache entries for this audit + the grid list
+  _lsCache.bust('list');
+  _lsCache.bustSid(sid);
 
   // Remove card from DOM
   const card = document.querySelector(`.audit-card[data-sid="${sid}"]`);
