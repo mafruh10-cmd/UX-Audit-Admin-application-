@@ -1170,24 +1170,27 @@ def download_prompt(sid):
 
 @app.route("/api/audits/<sid>/thumb")
 def audit_thumb(sid):
-    """Serve the screenshot/annotated image — proxy bytes so we verify file exists."""
-    from flask import send_file
-    # 1. Server-side cached download (returns None if file missing — no blind redirect)
+    """Serve the screenshot/annotated image for a given audit via signed URL redirect."""
+    from flask import redirect, send_file
+    # 1. Try Supabase Storage signed URL redirect (browser fetches from CDN directly)
     for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
-        data = _cached_storage_download(sid, fname)
+        url = _storage_signed_url(sid, fname, expires=3600)
+        if url:
+            return redirect(url)
+    # 2. Direct download from Storage and pipe bytes (fallback when signed URL fails)
+    for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
+        data = _storage_direct_download(sid, fname)
         if data:
             mime = "image/jpeg" if fname.endswith(".jpg") else "image/png"
-            resp = Response(data, mimetype=mime)
-            resp.headers["Cache-Control"] = "public, max-age=86400"
-            return resp
-    # 2. Local disk (audits created before Storage migration)
+            return Response(data, mimetype=mime)
+    # 3. Local disk (audits created before Storage migration)
     audit_dir = os.path.join(AUDITS_DIR, sid)
     for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
         local_path = os.path.join(audit_dir, fname)
         if os.path.isfile(local_path):
             mime = "image/jpeg" if fname.endswith(".jpg") else "image/png"
             return send_file(local_path, mimetype=mime)
-    # 3. In-memory session (audit just completed, not yet persisted)
+    # 4. In-memory session (audit in progress or just uploaded)
     s = sessions.get(sid, {})
     if s.get("annotated_b64"):
         data = base64.b64decode(s["annotated_b64"])
