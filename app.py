@@ -18,7 +18,7 @@ import urllib.request as _urllib_req
 import urllib.parse as _urllib_parse
 from html.parser import HTMLParser
 
-from flask import Flask, Response, g, jsonify, render_template, request, send_file, stream_with_context
+from flask import Flask, Response, g, jsonify, redirect, render_template, request, send_file, stream_with_context
 from flask_cors import CORS
 
 try:
@@ -34,6 +34,8 @@ try:
 except ImportError:
     pass
 
+import jwt as _jwt
+from jwt import PyJWKClient as _PyJWKClient
 from openai import OpenAI as _OpenAI
 from functools import wraps
 from supabase import create_client, Client as _SupabaseClient
@@ -54,13 +56,25 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://kkpvlpbfslxkutunbigi.supa
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 sb: _SupabaseClient = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_KEY else None
 
+# ─── JWKS client for local JWT verification (no per-request Supabase API call) ──
+# Fetches public keys once from Supabase's JWKS endpoint and caches them for
+# 10 minutes. Supports both current ECC P-256 (ES256) and legacy HS256 keys.
+_jwks_client: _PyJWKClient | None = None
+try:
+    _jwks_client = _PyJWKClient(
+        f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json",
+        cache_keys=True,
+        lifespan=600,   # re-fetch keys after 10 min (matches Supabase edge cache)
+    )
+    print("[info] JWKS client initialised — local JWT verification active")
+except Exception as _e:
+    print(f"[warn] JWKS client init failed ({_e}); falling back to sb.auth.get_user()")
+
 # ─── Auth decorator ───────────────────────────────────────────────────────────
 
 def auth_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not sb:
-            return jsonify({"error": "Supabase not configured"}), 503
         # Accept token from Authorization header or ?token= query param (for EventSource)
         token = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
         if not token:
@@ -68,10 +82,27 @@ def auth_required(f):
         if not token:
             return jsonify({"error": "Unauthorized"}), 401
         try:
-            user = sb.auth.get_user(token)
-            if not user or not user.user:
-                return jsonify({"error": "Unauthorized"}), 401
-            g.current_user_email = user.user.email or ""
+            if _jwks_client:
+                # Local verification via cached JWKS public keys — no Supabase API call.
+                # Handles both current ECC P-256 (ES256) and legacy HS256 tokens.
+                signing_key = _jwks_client.get_signing_key_from_jwt(token)
+                payload = _jwt.decode(
+                    token,
+                    signing_key.key,
+                    algorithms=["ES256", "RS256", "HS256"],
+                    audience="authenticated",
+                )
+                g.current_user_email = payload.get("email", "")
+            else:
+                # Fallback: Supabase API call (used only if JWKS client failed to init)
+                if not sb:
+                    return jsonify({"error": "Auth not configured"}), 503
+                user = sb.auth.get_user(token)
+                if not user or not user.user:
+                    return jsonify({"error": "Unauthorized"}), 401
+                g.current_user_email = user.user.email or ""
+        except _jwt.ExpiredSignatureError:
+            return jsonify({"error": "Session expired"}), 401
         except Exception:
             return jsonify({"error": "Unauthorized"}), 401
         return f(*args, **kwargs)
@@ -81,11 +112,11 @@ def auth_required(f):
 
 STORAGE_BUCKET = "ux-audits"
 
-def _storage_upload(sid, filename, data, content_type="application/octet-stream"):
+def _storage_upload(sid, filename, data, content_type="application/octet-stream", cache_control="no-cache"):
     path = f"{sid}/{filename}"
     try:
         sb.storage.from_(STORAGE_BUCKET).upload(
-            path, data, {"content-type": content_type, "upsert": "true"}
+            path, data, {"content-type": content_type, "upsert": "true", "cache-control": cache_control}
         )
     except Exception as exc:
         print(f"[storage] Upload failed {path}: {exc}")
@@ -177,6 +208,29 @@ def _storage_download(sid, filename):
             pass
     return None
 
+def _cached_storage_download(sid, filename):
+    """Like _storage_download but caches the result in memory for FILE_CACHE_TTL seconds.
+    Eliminates repeated Storage round-trips when the same file is requested multiple times."""
+    cache_key = (sid, filename)
+    now = time.time()
+    with _file_cache_lock:
+        cached = _file_cache.get(cache_key)
+        if cached and now < cached[1]:
+            return cached[0]
+    data = _storage_direct_download(sid, filename)
+    if not data:
+        data = _storage_download(sid, filename)
+    if data:
+        with _file_cache_lock:
+            _file_cache[cache_key] = (data, now + _FILE_CACHE_TTL)
+    return data
+
+def _invalidate_file_cache(sid, *filenames):
+    """Bust the in-memory cache for one or more files after they are written or deleted."""
+    with _file_cache_lock:
+        for fname in filenames:
+            _file_cache.pop((sid, fname), None)
+
 def _storage_delete_folder(sid):
     try:
         files = sb.storage.from_(STORAGE_BUCKET).list(sid)
@@ -232,6 +286,11 @@ _lock = threading.Lock()
 # ─── Signed URL cache (avoids hammering Storage on every page load) ───────────
 _signed_url_cache: dict = {}          # {(sid, filename): (url, expires_at)}
 _SIGNED_URL_TTL = 3000                # seconds — refresh before Supabase's 3600 expiry
+
+# ─── File content cache (avoids re-downloading audit files on every modal open) ─
+_file_cache: dict = {}                # {(sid, filename): (bytes, expires_at)}
+_FILE_CACHE_TTL = 1800               # 30 minutes — audit data is immutable after write
+_file_cache_lock = threading.Lock()
 
 AUDIT_STEPS = [
     "Parsing layout and structure",
@@ -309,35 +368,42 @@ def _persist_audit(sid):
     if not s:
         return
 
-    # Annotated screenshot
+    # Annotated screenshot — immutable once written
     ann_b64 = s.get("annotated_b64") or s.get("image_b64", "")
     if ann_b64:
         try:
-            _storage_upload(sid, "annotated.jpg", base64.b64decode(ann_b64), "image/jpeg")
+            _storage_upload(sid, "annotated.jpg", base64.b64decode(ann_b64), "image/jpeg",
+                            cache_control="public, max-age=86400")
         except Exception as exc:
             print(f"[persist] annotated upload error: {exc}")
 
     analysis = s.get("analysis")
     if analysis:
-        # Full JSON
+        # Full JSON — immutable after first write
         _storage_upload(sid, "audit_data.json",
                         json.dumps(analysis, indent=2, ensure_ascii=False).encode(),
-                        "application/json")
+                        "application/json",
+                        cache_control="public, max-age=86400")
 
-        # HTML report
+        # HTML report — immutable after first write
         try:
             ann_type = s.get("ann_type", s.get("media_type", "image/jpeg"))
             html = _build_report(analysis, ann_b64, ann_type)
-            _storage_upload(sid, "report.html", html.encode("utf-8"), "text/html")
+            _storage_upload(sid, "report.html", html.encode("utf-8"), "text/html",
+                            cache_control="public, max-age=86400")
         except Exception as exc:
             print(f"[persist] report error: {exc}")
 
-        # Claude redesign prompt
+        # Claude redesign prompt — immutable after first write
         try:
             prompt = _build_redesign_prompt(analysis)
-            _storage_upload(sid, "claude_prompt.txt", prompt.encode("utf-8"), "text/plain")
+            _storage_upload(sid, "claude_prompt.txt", prompt.encode("utf-8"), "text/plain",
+                            cache_control="public, max-age=86400")
         except Exception as exc:
             print(f"[persist] prompt error: {exc}")
+
+        # Bust file cache so next modal open re-reads from Storage (fresh just-written data)
+        _invalidate_file_cache(sid, "audit_data.json", "report.html", "claude_prompt.txt")
 
     _save_audit_meta(sid)
 
@@ -374,38 +440,23 @@ _load_sessions_from_db()
 
 
 def _prewarm_thumb_cache():
-    """Pre-generate signed URLs for all known audits at startup.
-    Covers both thumbnails and detail-view files so no request ever hits
-    a cold concurrent Storage flood."""
+    """Pre-generate signed URLs for the most recent audits at startup.
+    Capped at 30 to avoid socket floods on Railway. Detail files are now
+    served from _cached_storage_download and warm on first real request."""
     if not sb:
         return
-    sids = list(sessions.keys())
-    print(f"[info] Pre-warming Storage cache for {len(sids)} audits…")
+    # Only warm the most recent 30 — older audits load on demand
+    sids = list(sessions.keys())[-30:]
+    print(f"[info] Pre-warming thumb cache for {len(sids)} recent audits…")
     thumb_warmed = 0
     for sid in sids:
-        # Thumbnail (first match wins)
         for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
             url = _storage_signed_url(sid, fname, expires=3600)
             if url:
                 thumb_warmed += 1
                 break
-        time.sleep(0.05)   # 50 ms gap — avoids socket flood
+        time.sleep(0.02)   # 20 ms gap — enough to avoid socket flood
     print(f"[info] Thumb cache: {thumb_warmed}/{len(sids)} ready")
-
-    # Detail files — verify audit_data.json is reachable via direct download
-    detail_warmed = 0
-    for sid in sids:
-        # Try signed URL first (caches it), then confirm direct download works
-        url = _storage_signed_url(sid, "audit_data.json", expires=3600)
-        if url:
-            detail_warmed += 1
-        else:
-            # Verify direct download route works (no cache needed, just confirms accessibility)
-            data = _storage_direct_download(sid, "audit_data.json")
-            if data:
-                detail_warmed += 1
-        time.sleep(0.05)
-    print(f"[info] Detail cache: {detail_warmed}/{len(sids)} audit_data.json accessible")
 
 threading.Thread(target=_prewarm_thumb_cache, daemon=True).start()
 
@@ -783,10 +834,10 @@ def upload():
                 "created_by":      getattr(g, "current_user_email", ""),
             }
 
-        # Upload screenshot to Supabase Storage immediately
+        # Upload screenshot to Supabase Storage immediately — immutable
         try:
             ext = "jpg" if "jpeg" in media_type else "png"
-            _storage_upload(sid, f"screenshot.{ext}", data, media_type)
+            _storage_upload(sid, f"screenshot.{ext}", data, media_type, cache_control="public, max-age=86400")
             with _lock:
                 sessions[sid]["date"] = datetime.utcnow().isoformat() + "Z"
             _save_audit_meta(sid)
@@ -1184,6 +1235,18 @@ def get_audit_detail(sid):
     if result.get("has_redesign"):
         result["redesign_url"] = f"/audits/{sid}/redesign-view"
 
+    # ?include=issues — embed issues + summary directly so the frontend
+    # needs only one request instead of two sequential ones
+    if request.args.get("include") == "issues":
+        raw = _cached_storage_download(sid, "audit_data.json")
+        if raw:
+            try:
+                audit_data = json.loads(_fix_json_escapes(raw.decode()))
+                result["issues"]  = audit_data.get("issues", [])
+                result["summary"] = audit_data.get("summary", result.get("summary", ""))
+            except Exception:
+                result["issues"] = []
+
     return jsonify(result)
 
 
@@ -1195,10 +1258,8 @@ def get_audit_file(sid, fname):
     if fname not in ALLOWED:
         return jsonify({"error": "Not allowed"}), 400
 
-    # Try Storage (direct urllib), then local disk
-    raw = _storage_direct_download(sid, fname)
-    if not raw:
-        raw = _storage_download(sid, fname)   # signed URL fallback
+    # Try in-memory cache first, then Storage, then local disk
+    raw = _cached_storage_download(sid, fname)
     if not raw:
         local = os.path.join(AUDITS_DIR, sid, fname)
         if os.path.isfile(local):
@@ -1248,7 +1309,9 @@ def generate_script(sid):
         script = _build_youtube_script(analysis)
     except Exception as exc:
         return jsonify({"error": f"Script generation failed: {exc}"}), 500
-    _storage_upload(sid, "youtube_script.txt", script.encode("utf-8"), "text/plain")
+    _storage_upload(sid, "youtube_script.txt", script.encode("utf-8"), "text/plain",
+                    cache_control="public, max-age=3600")
+    _invalidate_file_cache(sid, "youtube_script.txt")
     with _lock:
         sessions[sid]["has_script"] = True
     _save_audit_meta(sid)
@@ -1289,7 +1352,9 @@ def generate_dribbble(sid):
         data = _build_dribbble_details(analysis)
     except Exception as exc:
         return jsonify({"error": f"Dribbble generation failed: {exc}"}), 500
-    _storage_upload(sid, "dribbble.json", json.dumps(data, indent=2).encode(), "application/json")
+    _storage_upload(sid, "dribbble.json", json.dumps(data, indent=2).encode(), "application/json",
+                    cache_control="public, max-age=3600")
+    _invalidate_file_cache(sid, "dribbble.json")
     with _lock:
         sessions[sid]["has_dribbble"] = True
     _save_audit_meta(sid)
@@ -1339,7 +1404,11 @@ def delete_redesign(sid):
 
 @app.route("/audits/<sid>/redesign-view")
 def view_redesign(sid):
-    """Proxy redesign.html from Supabase Storage so it renders in the browser (not downloads)."""
+    """Redirect to a CDN-served signed URL — browser fetches directly, no Railway proxy."""
+    url = _storage_signed_url(sid, "redesign.html", expires=3600)
+    if url:
+        return redirect(url, code=302)
+    # Fallback: proxy it (e.g. signed URL generation failed)
     data = _storage_download(sid, "redesign.html")
     if not data:
         return "Redesign not found", 404
@@ -1348,7 +1417,11 @@ def view_redesign(sid):
 
 @app.route("/audits/<sid>/report-view")
 def view_report(sid):
-    """Proxy report.html from Supabase Storage so it renders in the browser (not downloads)."""
+    """Redirect to a CDN-served signed URL — browser fetches directly, no Railway proxy."""
+    url = _storage_signed_url(sid, "report.html", expires=3600)
+    if url:
+        return redirect(url, code=302)
+    # Fallback: proxy it (e.g. signed URL generation failed)
     data = _storage_download(sid, "report.html")
     if not data:
         return "Report not found", 404

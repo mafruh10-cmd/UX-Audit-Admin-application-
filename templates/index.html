@@ -1794,38 +1794,37 @@ async function openDetailModal(sid) {
   document.getElementById('detailScriptText').textContent = '';
   document.getElementById('detailOverlay').classList.add('open');
 
-  // Step 1: load DB metadata (instant — no Storage involved)
+  // Single request: metadata + issues in one call (backend serves from memory cache after first load)
   try {
-    const res = await apiFetch(`/api/audits/${sid}`);
+    const res = await apiFetch(`/api/audits/${sid}?include=issues`);
     if (!res.ok) throw new Error('Not found');
     detailData = await res.json();
     populateDetailModal(detailData);
+
+    // Render issues from the combined response — no second network call needed
+    if (detailSid === sid) {
+      document.getElementById('detailSummary').textContent = detailData.summary || '';
+      const issues = detailData.issues || [];
+      const issuesEl = document.getElementById('detailIssuesList');
+      if (!issues.length) {
+        issuesEl.innerHTML = '<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px;">No issues data available.</div>';
+      } else {
+        issuesEl.innerHTML = issues.map((iss, i) => {
+          const sev = (iss.severity || '').toLowerCase();
+          const num = String(i + 1).padStart(2, '0');
+          const wcag = iss.wcag_criterion ? `<span class="issue-wcag">WCAG ${escHtml(iss.wcag_criterion)}</span>` : '';
+          return `<div class="issue-card sev-${sev}">
+            <div class="issue-card-top"><span class="issue-num">${num}</span>${wcag}</div>
+            <div class="issue-card-title">${escHtml(iss.title || '')}</div>
+            <span class="issue-sev-chip sev-${sev}">${escHtml(iss.severity || '')}</span>
+          </div>`;
+        }).join('');
+      }
+    }
   } catch (e) {
     document.getElementById('detailTitle').textContent = 'Error loading audit';
     return;
   }
-
-  // Step 2: load analysis (issues) in the background — one file, no rush
-  _loadDetailFile(sid, 'audit_data.json', data => {
-    if (detailSid !== sid) return;
-    document.getElementById('detailSummary').textContent = data?.summary || '';
-    const issues = data?.issues || [];
-    const issuesEl = document.getElementById('detailIssuesList');
-    if (!issues.length) {
-      issuesEl.innerHTML = '<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px;">No issues data available.</div>';
-    } else {
-      issuesEl.innerHTML = issues.map((iss, i) => {
-        const sev = (iss.severity || '').toLowerCase();
-        const num = String(i + 1).padStart(2, '0');
-        const wcag = iss.wcag_criterion ? `<span class="issue-wcag">WCAG ${escHtml(iss.wcag_criterion)}</span>` : '';
-        return `<div class="issue-card sev-${sev}">
-          <div class="issue-card-top"><span class="issue-num">${num}</span>${wcag}</div>
-          <div class="issue-card-title">${escHtml(iss.title || '')}</div>
-          <span class="issue-sev-chip sev-${sev}">${escHtml(iss.severity || '')}</span>
-        </div>`;
-      }).join('');
-    }
-  });
 }
 
 // Fetch a single file from the server one at a time; call onData(parsedData) on success
