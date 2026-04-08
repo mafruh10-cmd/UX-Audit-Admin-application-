@@ -1099,6 +1099,147 @@ const STEPS = [
   'Generating audit report',
 ];
 
+// ─── Error Tracking System (Debug Support) ─────────────────────────────────────
+// Captures frontend errors with context for debugging
+
+const FrontendErrorTracker = {
+  logs: [],
+  MAX_LOGS: 50,
+  
+  // Generate unique error ID
+  generateId() {
+    return Math.random().toString(36).substring(2, 10);
+  },
+  
+  // Capture error with full context
+  capture(code, error, context = {}) {
+    const entry = {
+      id: this.generateId(),
+      code: code,
+      message: error?.message || error || 'Unknown error',
+      stack: error?.stack,
+      context: context,
+      timestamp: new Date().toISOString(),
+      url: window.location.href,
+      userAgent: navigator.userAgent
+    };
+    
+    this.logs.push(entry);
+    if (this.logs.length > this.MAX_LOGS) {
+      this.logs = this.logs.slice(-this.MAX_LOGS);
+    }
+    
+    // Also log to console for server logs
+    console.error(`[ERR-${code}]`, error, context);
+    
+    // Update debug panel if visible
+    this.updateDebugPanel();
+    
+    return entry;
+  },
+  
+  // Format for user to copy
+  formatForUser(entry) {
+    return `[${entry.code}] Frontend Error
+Location: ${entry.context?.location || 'unknown'}
+Time: ${entry.timestamp}
+Message: ${entry.message}
+Context: ${JSON.stringify(entry.context, null, 2)}
+URL: ${entry.url}`;
+  },
+  
+  // Get recent logs
+  getLogs(limit = 20) {
+    return this.logs.slice(-limit).reverse();
+  },
+  
+  // Clear logs
+  clear() {
+    this.logs = [];
+    this.updateDebugPanel();
+  },
+  
+  // Update debug panel UI
+  updateDebugPanel() {
+    const panel = document.getElementById('debugPanel');
+    if (!panel || panel.style.display === 'none') return;
+    
+    const list = document.getElementById('debugErrorList');
+    if (!list) return;
+    
+    const logs = this.getLogs(10);
+    if (logs.length === 0) {
+      list.innerHTML = '<div style="padding:16px;color:#888;text-align:center;">No errors captured yet</div>';
+      return;
+    }
+    
+    list.innerHTML = logs.map(log => `
+      <div style="padding:12px;border-bottom:1px solid #eee;font-size:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-weight:600;color:#d32f2f;">${log.code}</span>
+          <span style="color:#888;font-size:11px;">${new Date(log.timestamp).toLocaleTimeString()}</span>
+        </div>
+        <div style="color:#333;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${log.message}</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="FrontendErrorTracker.copyToClipboard('${log.id}')" 
+                  style="font-size:11px;padding:2px 8px;background:#f5f5f5;border:1px solid #ddd;border-radius:4px;cursor:pointer;">
+            Copy Details
+          </button>
+          <button onclick="FrontendErrorTracker.showDetails('${log.id}')" 
+                  style="font-size:11px;padding:2px 8px;background:#f5f5f5;border:1px solid #ddd;border-radius:4px;cursor:pointer;">
+            View
+          </button>
+        </div>
+      </div>
+    `).join('');
+  },
+  
+  // Copy error details to clipboard
+  copyToClipboard(id) {
+    const entry = this.logs.find(l => l.id === id);
+    if (!entry) return;
+    
+    navigator.clipboard.writeText(this.formatForUser(entry)).then(() => {
+      alert('Error details copied! You can paste this to send to the developer.');
+    });
+  },
+  
+  // Show error details in alert
+  showDetails(id) {
+    const entry = this.logs.find(l => l.id === id);
+    if (!entry) return;
+    alert(this.formatForUser(entry));
+  },
+  
+  // Toggle debug panel
+  togglePanel() {
+    const panel = document.getElementById('debugPanel');
+    if (!panel) return;
+    
+    if (panel.style.display === 'none' || !panel.style.display) {
+      panel.style.display = 'block';
+      this.updateDebugPanel();
+    } else {
+      panel.style.display = 'none';
+    }
+  }
+};
+
+// Global error handler for uncaught errors
+window.addEventListener('error', (e) => {
+  FrontendErrorTracker.capture('ERR-UI-000', e.error || e.message, {
+    location: `${e.filename}:${e.lineno}`,
+    type: 'uncaught'
+  });
+});
+
+// Unhandled promise rejection handler
+window.addEventListener('unhandledrejection', (e) => {
+  FrontendErrorTracker.capture('ERR-UI-000', e.reason, {
+    type: 'unhandled_promise'
+  });
+});
+
 // ─── State ────────────────────────────────────────────────────────────────────
 
 let sessionId        = null;
@@ -1246,11 +1387,24 @@ async function loadAudits() {
 
   try {
     const res = await apiFetch('/api/audits');
-    if (!res.ok) return;
+    if (!res.ok) {
+      const errText = await res.text().catch(() => 'Unknown error');
+      FrontendErrorTracker.capture('ERR-UI-001', new Error(`Failed to load audits: ${res.status} ${errText}`), {
+        location: 'loadAudits',
+        status: res.status,
+        endpoint: '/api/audits'
+      });
+      return;
+    }
     const audits = await res.json();
     _lsCache.set('list', audits);
     renderAuditGrid(audits);
-  } catch (_) {}
+  } catch (e) {
+    FrontendErrorTracker.capture('ERR-UI-001', e, {
+      location: 'loadAudits',
+      endpoint: '/api/audits'
+    });
+  }
 }
 
 function renderAuditGrid(audits) {
@@ -2399,6 +2553,19 @@ async function confirmDeleteForever() {
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 function thumbErr(img) {
+  // Capture error context before replacing
+  const src = img.src || '';
+  const match = src.match(/\/api\/audits\/([^\/]+)\/thumb/);
+  const sid = match ? match[1] : 'unknown';
+  
+  FrontendErrorTracker.capture('ERR-UI-003', new Error('Thumbnail failed to load'), {
+    location: 'thumbErr',
+    sid: sid,
+    src: src.substring(0, 100),  // Truncate for privacy
+    naturalWidth: img.naturalWidth,
+    naturalHeight: img.naturalHeight
+  });
+  
   const ph = document.createElement('div');
   ph.className = 'card-thumb-placeholder';
   ph.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';
@@ -2445,6 +2612,26 @@ document.getElementById('deleteConfirm2Overlay').addEventListener('click', e => 
   if (e.target === e.currentTarget) closeDeleteConfirm2();
 });
 
+// ─── Debug Functions ──────────────────────────────────────────────────────────
+
+async function loadServerErrors() {
+  try {
+    const res = await apiFetch('/api/errors?limit=20');
+    if (!res.ok) throw new Error('Failed to load server errors');
+    const data = await res.json();
+    
+    // Show server errors in alert for now (can be improved later)
+    let msg = `Server Errors (${data.errors.length}):\n\n`;
+    data.errors.slice(0, 5).forEach(e => {
+      msg += `[${e.code}] ${e.location}\n${e.message}\n\n`;
+    });
+    if (data.errors.length > 5) msg += `... and ${data.errors.length - 5} more\n`;
+    alert(msg);
+  } catch (e) {
+    alert('Failed to load server errors: ' + e.message);
+  }
+}
+
 // ─── Keyboard ─────────────────────────────────────────────────────────────────
 
 document.addEventListener('keydown', e => {
@@ -2454,7 +2641,20 @@ document.addEventListener('keydown', e => {
     else if (document.getElementById('detailOverlay').classList.contains('open')) closeDetailModal();
     else if (document.getElementById('newAuditOverlay').classList.contains('open')) closeNewAuditModal();
   }
+  
+  // Debug panel toggle: Ctrl+Shift+D
+  if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+    e.preventDefault();
+    FrontendErrorTracker.togglePanel();
+  }
 });
+
+// Show debug toggle button after login
+setTimeout(() => {
+  if (getToken()) {
+    document.getElementById('debugToggleBtn').style.display = 'block';
+  }
+}, 1000);
 </script>
 
 <!-- Login screen -->
@@ -2476,5 +2676,32 @@ document.addEventListener('keydown', e => {
     <div class="login-error" id="loginError"></div>
   </div>
 </div>
+
+<!-- Debug Panel (hidden by default, toggle with Ctrl+Shift+D) -->
+<div id="debugPanel" style="display:none;position:fixed;top:60px;right:20px;width:400px;max-height:70vh;background:#fff;border:1px solid #ddd;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.2);z-index:9999;font-family:monospace;font-size:12px;overflow:hidden;">
+  <div style="padding:12px 16px;background:#f8f9fa;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
+    <div style="font-weight:600;color:#333;">🔧 Debug Console</div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="FrontendErrorTracker.clear();" style="font-size:11px;padding:4px 10px;background:#fff;border:1px solid #ddd;border-radius:6px;cursor:pointer;color:#666;">Clear</button>
+      <button onclick="FrontendErrorTracker.togglePanel();" style="font-size:11px;padding:4px 10px;background:#fff;border:1px solid #ddd;border-radius:6px;cursor:pointer;color:#666;">✕</button>
+    </div>
+  </div>
+  <div id="debugErrorList" style="max-height:50vh;overflow-y:auto;">
+    <div style="padding:16px;color:#888;text-align:center;">No errors captured yet</div>
+  </div>
+  <div style="padding:12px 16px;background:#f8f9fa;border-top:1px solid #eee;">
+    <button onclick="loadServerErrors()" style="font-size:11px;padding:6px 12px;background:#1AC8D4;color:#fff;border:none;border-radius:6px;cursor:pointer;width:100%;">
+      Load Server Errors
+    </button>
+  </div>
+</div>
+
+<!-- Debug Toggle Button (small, in corner) -->
+<button id="debugToggleBtn" onclick="FrontendErrorTracker.togglePanel();" 
+        style="position:fixed;bottom:20px;right:20px;width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid #ddd;box-shadow:0 2px 8px rgba(0,0,0,.1);cursor:pointer;z-index:9998;font-size:16px;display:none;"
+        title="Open Debug Console (Ctrl+Shift+D)">
+  🐛
+</button>
+
 </body>
 </html>

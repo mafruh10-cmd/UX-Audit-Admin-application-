@@ -50,6 +50,144 @@ from openai import OpenAI as _OpenAI
 from functools import wraps
 from supabase import create_client, Client as _SupabaseClient
 
+# ─── Error Tracking System (Debug Support) ─────────────────────────────────────
+# NON-BREAKING: This class adds error tracking without changing existing functionality
+
+class ErrorTracker:
+    """
+    Captures errors with full context for debugging.
+    User can copy error codes to send to developer.
+    """
+    MAX_LOGS = 50  # Keep last 50 errors
+    
+    def __init__(self):
+        self._logs = []
+        self._lock = threading.Lock()
+    
+    def log(self, code: str, exc: Exception, context: dict = None, location: str = None):
+        """
+        Log an error with full debug context.
+        
+        Args:
+            code: Unique error code (e.g., 'ERR-STOR-001')
+            exc: The exception that occurred
+            context: Additional context (audit_id, filename, etc.)
+            location: Manual location string, or auto-detected from traceback
+        """
+        import traceback
+        import sys
+        
+        # Auto-detect location from traceback if not provided
+        if location is None and exc.__traceback__:
+            tb = traceback.extract_tb(exc.__traceback__)
+            if tb:
+                last_frame = tb[-1]
+                location = f"{last_frame.filename}:{last_frame.name}:{last_frame.lineno}"
+            else:
+                location = "unknown"
+        elif location is None:
+            location = "unknown"
+        
+        entry = {
+            "id": str(uuid.uuid4())[:8],
+            "code": code,
+            "location": location,
+            "message": str(exc),
+            "type": exc.__class__.__name__,
+            "context": context or {},
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "traceback": traceback.format_exc() if exc else None
+        }
+        
+        with self._lock:
+            self._logs.append(entry)
+            # Keep only last MAX_LOGS
+            if len(self._logs) > self.MAX_LOGS:
+                self._logs = self._logs[-self.MAX_LOGS:]
+        
+        # Also print to console for server logs
+        context_str = json.dumps(context) if context else "{}"
+        print(f"[ERROR {code}] {location} | {exc} | Context: {context_str}", file=sys.stderr)
+        
+        return entry
+    
+    def get_logs(self, limit=None):
+        """Get recent error logs (newest first)"""
+        with self._lock:
+            logs = list(self._logs)
+        logs.reverse()  # Newest first
+        if limit:
+            logs = logs[:limit]
+        return logs
+    
+    def get_error_for_user(self, log_id: str) -> str:
+        """Format error for user to copy/send to developer"""
+        with self._lock:
+            for log in self._logs:
+                if log["id"] == log_id:
+                    return self._format_for_user(log)
+        return "Error not found"
+    
+    def _format_for_user(self, log: dict) -> str:
+        """Format error in copy-paste friendly format"""
+        lines = [
+            f"Error Code: [{log['code']}]",
+            f"Location: {log['location']}",
+            f"Time: {log['timestamp']}",
+            f"Message: {log['message']}",
+        ]
+        if log['context']:
+            lines.append(f"Context: {json.dumps(log['context'], indent=2)}")
+        return "\n".join(lines)
+
+# Global error tracker instance
+_error_tracker = ErrorTracker()
+
+# Helper function for quick error logging
+def log_error(code: str, exc: Exception, **context):
+    """Quick helper to log an error with context"""
+    return _error_tracker.log(code, exc, context)
+
+# Error code reference (for documentation)
+ERROR_CODES = {
+    # Storage errors
+    "ERR-STOR-001": "Supabase storage upload failed",
+    "ERR-STOR-002": "Supabase signed URL generation failed", 
+    "ERR-STOR-003": "Storage direct download failed",
+    "ERR-STOR-004": "Storage file not found (404)",
+    "ERR-STOR-005": "Storage authentication failed",
+    
+    # API/AI errors
+    "ERR-API-001": "OpenRouter/OpenAI API call failed",
+    "ERR-API-002": "AI service overloaded (529)",
+    "ERR-API-003": "AI analysis timeout (>120s)",
+    "ERR-API-004": "Invalid JSON response from AI",
+    "ERR-API-005": "API rate limit exceeded",
+    
+    # Auth errors
+    "ERR-AUTH-001": "JWT verification failed",
+    "ERR-AUTH-002": "Supabase auth.get_user failed",
+    "ERR-AUTH-003": "Session expired",
+    
+    # Database errors
+    "ERR-DB-001": "Database query failed (load sessions)",
+    "ERR-DB-002": "Database save failed (save audit meta)",
+    "ERR-DB-003": "Database connection failed",
+    
+    # Network errors
+    "ERR-NET-001": "Network connection failed",
+    "ERR-NET-002": "Request timeout",
+    
+    # Validation errors
+    "ERR-VAL-001": "Invalid file type",
+    "ERR-VAL-002": "File too large (>20MB)",
+    "ERR-VAL-003": "Missing required field",
+    
+    # System errors
+    "ERR-SYS-001": "Unexpected server error",
+    "ERR-SYS-002": "Thread execution error",
+}
+
 # ─── Setup ────────────────────────────────────────────────────────────────────
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -139,6 +277,7 @@ def _storage_upload(sid, filename, data, content_type="application/octet-stream"
         )
     except Exception as exc:
         print(f"[storage] Upload failed {path}: {exc}")
+        log_error("ERR-STOR-001", exc, sid=sid, filename=path, operation="upload")
 
 def _storage_signed_url(sid, filename, expires=3600):
     # Return cached URL if still fresh
@@ -166,6 +305,10 @@ def _storage_signed_url(sid, filename, expires=3600):
         # Suppress noisy 404s (file simply not in Storage); log everything else
         if "not_found" not in err and "404" not in err:
             print(f"[storage] signed_url error {sid}/{filename}: {exc}")
+            log_error("ERR-STOR-002", exc, sid=sid, filename=filename, expires=expires)
+        else:
+            # Still log 404s but with different code for debugging
+            log_error("ERR-STOR-004", exc, sid=sid, filename=filename, note="File not found in storage")
         return ""
 
 def _to_bytes(data):
@@ -210,6 +353,7 @@ def _storage_direct_download(sid, filename):
             return resp.read()
     except Exception as exc:
         print(f"[storage] direct download failed {path}: {exc}")
+        log_error("ERR-STOR-003", exc, sid=sid, filename=filename, path=path)
         return None
 
 def _storage_download(sid, filename):
@@ -272,6 +416,7 @@ def _storage_delete_folder(sid):
             sb.storage.from_(STORAGE_BUCKET).remove(paths)
     except Exception as exc:
         print(f"[storage] Delete folder failed {sid}: {exc}")
+        log_error("ERR-STOR-001", exc, sid=sid, operation="delete_folder")
 
 # ─── Model registry ───────────────────────────────────────────────────────────
 # Pipeline mode: Gemini reads the screenshot → Opus reasons about findings
@@ -394,6 +539,7 @@ def _save_audit_meta(sid):
         sb.table("audits").upsert(meta).execute()
     except Exception as exc:
         print(f"[db] _save_audit_meta failed: {exc}")
+        log_error("ERR-DB-002", exc, sid=sid, operation="save_audit_meta")
 
 def _persist_audit(sid):
     """Upload all audit artefacts to Supabase Storage and save metadata to DB."""
@@ -504,6 +650,7 @@ def _load_sessions_from_db():
         print(f"[info] Loaded {count} audits from Supabase")
     except Exception as exc:
         print(f"[db] _load_sessions_from_db failed: {exc}")
+        log_error("ERR-DB-001", exc, operation="load_sessions_from_db")
 
 _load_sessions_from_db()
 
@@ -844,6 +991,28 @@ def health():
     return jsonify({"ok": True})
 
 
+@app.route("/api/errors")
+@auth_required
+def get_errors():
+    """Get recent error logs for debugging. 
+    User can copy these to send to developer."""
+    limit = request.args.get('limit', 20, type=int)
+    logs = _error_tracker.get_logs(limit=limit)
+    return jsonify({
+        "errors": logs,
+        "count": len(logs),
+        "error_codes": ERROR_CODES
+    })
+
+
+@app.route("/api/errors/clear", methods=["POST"])
+@auth_required
+def clear_errors():
+    """Clear error logs."""
+    _error_tracker._logs = []
+    return jsonify({"ok": True})
+
+
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json() or {}
@@ -1070,6 +1239,9 @@ def audit_stream(sid):
                 raise last_exc
             except Exception as exc:
                 error_box[0] = str(exc)
+                # Log API error with full context for debugging
+                error_code = "ERR-API-002" if ("529" in str(exc) or "overload" in str(exc).lower()) else "ERR-API-001"
+                log_error(error_code, exc, sid=sid, operation="ai_analysis", model=VISION_MODEL if USE_SPLIT_PIPELINE else AUDIT_MODEL)
             finally:
                 done_evt.set()
 
