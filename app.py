@@ -716,7 +716,24 @@ def _extract_principles(path, max_chars=8000):
     return "\n".join(out)[:max_chars]
 
 
+def _load_precompiled_knowledge_base():
+    """Load knowledge base from pre-compiled JSON file (fast path)."""
+    kb_path = os.path.join(BASE_DIR, "knowledge_base.json")
+    try:
+        with open(kb_path, "r", encoding="utf-8") as f:
+            kb_data = json.load(f)
+        content = kb_data.get("content", "")
+        stats = kb_data.get("stats", {})
+        print(f"[info] Knowledge base (pre-compiled): {stats.get('num_sources', 0)} sources, "
+              f"{len(content):,} chars (~{len(content)//4:,} tokens)")
+        return content
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"[warn] Pre-compiled knowledge base not available ({e}), building from source...")
+        return None
+
+
 def _build_knowledge_base():
+    """Build knowledge base from training files (fallback/slow path)."""
     parts = []
     # Training data lives in ./training_data/ relative to this app
     base = os.path.join(BASE_DIR, "training_data")
@@ -726,11 +743,15 @@ def _build_knowledge_base():
         if content:
             parts.append(f"\n\n=== SOURCE: {label} ===\n{content}")
     kb = "".join(parts)
-    print(f"[info] Knowledge base: {len(parts)} sources, {len(kb):,} chars "
+    print(f"[info] Knowledge base (built from source): {len(parts)} sources, {len(kb):,} chars "
           f"(~{len(kb)//4:,} tokens)")
     return kb
 
-KNOWLEDGE_BASE = _build_knowledge_base()
+
+# Load knowledge base: prefer pre-compiled, fall back to building from source
+KNOWLEDGE_BASE = _load_precompiled_knowledge_base()
+if KNOWLEDGE_BASE is None:
+    KNOWLEDGE_BASE = _build_knowledge_base()
 
 
 AUDIT_PROMPT = """You are a senior UX and accessibility auditor. You have been trained on the Saasfactor UX curriculum AND the WCAG 2.2 accessibility guidelines AND Saasfactor AI learned patterns from 2,229 screens across 5 major SaaS products.
