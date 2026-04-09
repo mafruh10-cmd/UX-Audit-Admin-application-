@@ -1416,24 +1416,24 @@ def list_audits():
     Full audit data is loaded on-demand when user clicks.
     """
     try:
-        # Select only fields needed for thumbnail display
-        res = sb.table("audits").select(
-            "sid", "product_name", "screen_name", "overall_score", 
-            "score_label", "date", "has_script", "has_dribbble", "has_redesign"
-        ).order("date", desc=True).execute()
+        # Load from local file
+        audits = _load_audits_index()
         
-        result = res.data or []
-        for item in result:
-            sid = item["sid"]
+        # Sort by date (newest first)
+        audits.sort(key=lambda x: x.get("date", ""), reverse=True)
+        
+        for item in audits:
+            sid = item.get("sid")
             # Check if this audit is already loaded in memory
-            is_loaded = sid in sessions and sessions[sid].get("loaded_from_db", False)
+            is_loaded = sid in sessions and sessions[sid].get("loaded_from_local", False)
             
             item["thumb_url"] = f"/api/audits/{sid}/thumb"
             item["is_loaded"] = is_loaded  # Frontend shows "Click to load" if False
             item["detail_url"] = f"/api/audits/{sid}"
             
-        return jsonify(result)
+        return jsonify(audits)
     except Exception as exc:
+        print(f"[error] list_audits failed: {exc}")
         return jsonify({"error": str(exc)}), 500
 
 
