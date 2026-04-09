@@ -157,8 +157,8 @@ def log_error(code: str, exc: Exception, **context):
 # Error code reference (for documentation)
 ERROR_CODES = {
     # Storage errors
-    "ERR-STOR-001": "Supabase storage upload failed",
-    "ERR-STOR-002": "Supabase signed URL generation failed", 
+    "ERR-STOR-001": "Local storage upload failed",
+    "ERR-STOR-002": "Local file URL generation failed", 
     "ERR-STOR-003": "Storage direct download failed",
     "ERR-STOR-004": "Storage file not found (404)",
     "ERR-STOR-005": "Storage authentication failed",
@@ -172,7 +172,7 @@ ERROR_CODES = {
     
     # Auth errors
     "ERR-AUTH-001": "JWT verification failed",
-    "ERR-AUTH-002": "Supabase auth.get_user failed",
+    "ERR-AUTH-002": "Authentication check failed",
     "ERR-AUTH-003": "Session expired",
     
     # Database errors
@@ -288,8 +288,8 @@ def _to_bytes(data):
         return None
 
 def _storage_public_url(sid, filename):
-    """Construct the public URL for a file (works if bucket is public)."""
-    return f"{SUPABASE_URL}/storage/v1/object/public/{STORAGE_BUCKET}/{sid}/{filename}"
+    """Construct the local URL for a file (local version)."""
+    return f"/api/local-file/{sid}/{filename}"
 
 def _storage_direct_download(sid, filename):
     """Read file from local storage."""
@@ -316,7 +316,7 @@ def _cached_storage_download(sid, filename):
         if cached and now < cached[1]:
             return cached[0]
     
-    # Try Supabase Storage first
+    # Try local storage first
     data = _storage_direct_download(sid, filename)
     if not data:
         data = _storage_download(sid, filename)
@@ -344,11 +344,12 @@ def _invalidate_file_cache(sid, *filenames):
             _file_cache.pop((sid, fname), None)
 
 def _storage_delete_folder(sid):
+    """Delete all files for an audit from local storage."""
     try:
-        files = sb.storage.from_(STORAGE_BUCKET).list(sid)
-        paths = [f"{sid}/{f['name']}" for f in (files or [])]
-        if paths:
-            sb.storage.from_(STORAGE_BUCKET).remove(paths)
+        audit_dir = os.path.join(LOCAL_STORAGE_DIR, sid)
+        if os.path.exists(audit_dir):
+            shutil.rmtree(audit_dir)
+            print(f"[storage] Deleted folder {sid}")
     except Exception as exc:
         print(f"[storage] Delete folder failed {sid}: {exc}")
         log_error("ERR-STOR-001", exc, sid=sid, operation="delete_folder")
@@ -398,7 +399,7 @@ _lock = threading.Lock()
 
 # ─── Signed URL cache (avoids hammering Storage on every page load) ───────────
 _signed_url_cache: dict = {}          # {(sid, filename): (url, expires_at)}
-_SIGNED_URL_TTL = 3000                # seconds — refresh before Supabase's 3600 expiry
+_SIGNED_URL_TTL = 3000                # seconds — URL expiry time for local file access
 
 # ─── File content cache (avoids re-downloading audit files on every modal open) ─
 _file_cache: dict = {}                # {(sid, filename): (bytes, expires_at)}
@@ -442,8 +443,8 @@ def _fix_json_escapes(text):
             i += 1
     return ''.join(out)
 
-def _supabase_report_url(sid, filename):
-    """Return a long-lived signed URL for a shareable HTML file."""
+def _storage_report_url(sid, filename):
+    """Return a long-lived URL for a shareable HTML file."""
     return _storage_signed_url(sid, filename, expires=315360000)  # 10 years
 
 def _save_audit_meta(sid):
@@ -973,22 +974,17 @@ def clear_errors():
 
 @app.route("/api/login", methods=["POST"])
 def login():
+    """Local mode: accept any credentials."""
     data = request.get_json() or {}
-    email    = data.get("email", "").strip()
-    password = data.get("password", "").strip()
-    if not email or not password:
-        return jsonify({"error": "Email and password required"}), 400
-    try:
-        res = sb.auth.sign_in_with_password({"email": email, "password": password})
-        if res.user and res.session:
-            return jsonify({
-                "access_token":  res.session.access_token,
-                "refresh_token": res.session.refresh_token,
-                "email":         res.user.email,
-            })
-        return jsonify({"error": "Invalid credentials"}), 401
-    except Exception:
-        return jsonify({"error": "Invalid email or password"}), 401
+    email = data.get("email", "").strip()
+    if not email:
+        return jsonify({"error": "Email required"}), 400
+    # Local mode: no authentication, return dummy token
+    return jsonify({
+        "access_token": "local-token",
+        "refresh_token": "local-refresh",
+        "email": email or "local-user",
+    })
 
 
 @app.route("/api/upload", methods=["POST"])
@@ -1030,7 +1026,7 @@ def upload():
                 "created_by":      getattr(g, "current_user_email", ""),
             }
 
-        # Upload screenshot to Supabase Storage immediately — immutable
+        # Save screenshot to local storage immediately — immutable
         try:
             ext = "jpg" if "jpeg" in media_type else "png"
             _storage_upload(sid, f"screenshot.{ext}", data, media_type, cache_control="public, max-age=86400")
@@ -1583,14 +1579,15 @@ def generate_dribbble(sid):
     if not analysis:
         return jsonify({"error": "No analysis data — run the audit first"}), 400
 
-    # Enrich with product_name from DB if not set
+    # Enrich with product_name from local index if not set
     if not analysis.get("product_name"):
         try:
-            res = sb.table("audits").select("product_name, website_url").eq("sid", sid).single().execute()
-            if res.data:
-                product_name = res.data.get("product_name", "")
+            audits = _load_audits_index()
+            audit = next((a for a in audits if a.get("sid") == sid), None)
+            if audit:
+                product_name = audit.get("product_name", "")
                 if not product_name:
-                    url = res.data.get("website_url", "")
+                    url = audit.get("website_url", "")
                     if url:
                         from urllib.parse import urlparse
                         host = urlparse(url).hostname or ""
@@ -1616,10 +1613,10 @@ def generate_dribbble(sid):
 @app.route("/api/audits/<sid>/upload-redesign", methods=["POST"])
 @auth_required
 def upload_redesign(sid):
-    """Accept an HTML redesign file, upload to Supabase Storage, return shareable URL."""
-    try:
-        sb.table("audits").select("sid").eq("sid", sid).single().execute()
-    except Exception:
+    """Accept an HTML redesign file, upload to local storage, return shareable URL."""
+    # Check if audit exists locally
+    audits = _load_audits_index()
+    if not any(a.get("sid") == sid for a in audits):
         return jsonify({"error": "Audit not found"}), 404
 
     if "file" not in request.files:
@@ -1644,11 +1641,24 @@ def upload_redesign(sid):
 def delete_redesign(sid):
     """Delete the redesign HTML file for an audit."""
     try:
-        sb.storage.from_(STORAGE_BUCKET).remove([f"{sid}/redesign.html"])
+        # Delete local file
+        audit_dir = os.path.join(LOCAL_STORAGE_DIR, sid)
+        filepath = os.path.join(audit_dir, "redesign.html")
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        
         with _lock:
             if sid in sessions:
                 sessions[sid]["has_redesign"] = False
-        sb.table("audits").update({"has_redesign": False}).eq("sid", sid).execute()
+        
+        # Update local metadata
+        audits = _load_audits_index()
+        for audit in audits:
+            if audit.get("sid") == sid:
+                audit["has_redesign"] = False
+                break
+        _save_audits_index(audits)
+        
         return jsonify({"ok": True})
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
@@ -1669,7 +1679,7 @@ def view_redesign(sid):
 
 @app.route("/audits/<sid>/report-view")
 def view_report(sid):
-    """Serve the HTML report — try local disk first, then Supabase Storage."""
+    """Serve the HTML report from local storage."""
     # Try local disk FIRST (most reliable for local dev)
     local_path = os.path.join(AUDITS_DIR, sid, "report.html")
     if os.path.isfile(local_path):
@@ -1682,18 +1692,12 @@ def view_report(sid):
         except Exception as exc:
             print(f"[view_report] Local read failed: {exc}")
     
-    # Fallback: Try Supabase Storage download (not just signed URL)
+    # Try local storage via _storage_download
     data = _storage_download(sid, "report.html")
     if data:
-        print(f"[view_report] Serving from Supabase download")
+        print(f"[view_report] Serving from local storage")
         return Response(data, mimetype="text/html; charset=utf-8", 
                        headers={"Content-Disposition": "inline"})
-    
-    # Last resort: signed URL redirect
-    url = _storage_signed_url(sid, "report.html", expires=3600)
-    if url:
-        print(f"[view_report] Redirecting to signed URL")
-        return redirect(url, code=302)
     
     return "Report not found", 404
 
@@ -1707,7 +1711,15 @@ def delete_url(sid):
             if sid in sessions:
                 sessions[sid]["website_url"] = ""
                 sessions[sid]["website_context"] = ""
-        sb.table("audits").update({"website_url": ""}).eq("sid", sid).execute()
+        
+        # Update local metadata
+        audits = _load_audits_index()
+        for audit in audits:
+            if audit.get("sid") == sid:
+                audit["website_url"] = ""
+                break
+        _save_audits_index(audits)
+        
         return jsonify({"ok": True})
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500

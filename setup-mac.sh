@@ -213,6 +213,41 @@ fix_permissions() {
     print_success "Permissions set"
 }
 
+# Create desktop icon (macOS app)
+create_desktop_icon() {
+    print_header "Creating Desktop Icon"
+    
+    INSTALL_DIR=$(pwd)
+    APP_NAME="UX Audit Admin"
+    APP_PATH="$HOME/Desktop/$APP_NAME.app"
+    
+    # Remove old version if exists
+    if [ -d "$APP_PATH" ]; then
+        rm -rf "$APP_PATH"
+    fi
+    
+    # Create the AppleScript app
+    osacompile -o "$APP_PATH" << EOF
+#!/usr/bin/osascript
+tell application "Terminal"
+    do script "cd \"$INSTALL_DIR\" && ./run.sh"
+    set frontmost to true
+end tell
+tell application "Safari"
+    activate
+    delay 3
+    set URL of front document to "http://localhost:5001"
+end tell
+EOF
+    
+    # Set icon (use generic app icon)
+    # Copy the app's Info.plist to set a custom name
+    /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string '$APP_NAME'" "$APP_PATH/Contents/Info.plist" 2>/dev/null || true
+    
+    print_success "Desktop icon created: $APP_PATH"
+    print_info "Double-click the icon to launch UX Audit Admin"
+}
+
 # Test the installation
 test_installation() {
     print_header "Testing Installation"
@@ -245,14 +280,14 @@ print_final_instructions() {
     echo -e "${GREEN}The UX Audit Admin (Local Version) is ready to use!${NC}"
     echo ""
     echo -e "${BLUE}To start the application:${NC}"
-    echo "  cd $INSTALL_DIR"
-    echo "  ./run.sh"
+    echo "  • Double-click the 'UX Audit Admin' icon on your Desktop"
+    echo "  • OR run: cd $INSTALL_DIR && ./run.sh"
     echo ""
     echo -e "${BLUE}Then open in your browser:${NC}"
     echo "  http://localhost:5001"
     echo ""
     echo -e "${BLUE}To stop the application:${NC}"
-    echo "  Press Ctrl+C in the terminal"
+    echo "  Press Ctrl+C in the terminal window"
     echo ""
     echo -e "${BLUE}To update to latest version:${NC}"
     echo "  cd $INSTALL_DIR"
@@ -287,6 +322,7 @@ main() {
     setup_env
     setup_local_data
     fix_permissions
+    create_desktop_icon
     test_installation
     print_final_instructions
 }
