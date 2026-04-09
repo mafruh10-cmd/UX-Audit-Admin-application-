@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""Saasfactor UX Audit — Local Version (No Supabase, No Auth)
-
-This version runs entirely on local machine:
-- Data stored in local_data/ folder (not committed to git)
-- No authentication required
-- AI APIs still work (Claude, Gemini via OpenRouter)
-"""
+"""Saasfactor UX Audit — Admin Tool (internal use)"""
 
 import base64
 import io
@@ -50,11 +44,11 @@ try:
 except ImportError:
     pass
 
+import jwt as _jwt
+from jwt import PyJWKClient as _PyJWKClient
 from openai import OpenAI as _OpenAI
 from functools import wraps
-
-# Note: Supabase removed - using local file system instead
-# Note: JWT/Auth removed - open access for local use
+from supabase import create_client, Client as _SupabaseClient
 
 # ─── Error Tracking System (Debug Support) ─────────────────────────────────────
 # NON-BREAKING: This class adds error tracking without changing existing functionality
@@ -205,57 +199,117 @@ CORS(app)
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 print(f"[startup] ANTHROPIC_API_KEY loaded: {bool(ANTHROPIC_API_KEY)} (length: {len(ANTHROPIC_API_KEY)})")
 
-# ─── Local Data Configuration ─────────────────────────────────────────────────
+# ─── Supabase client ──────────────────────────────────────────────────────────
 
-LOCAL_DATA_DIR = os.path.join(BASE_DIR, "local_data")
-LOCAL_AUDITS_FILE = os.path.join(LOCAL_DATA_DIR, "audits.json")
-LOCAL_STORAGE_DIR = os.path.join(LOCAL_DATA_DIR, "storage")
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://kkpvlpbfslxkutunbigi.supabase.co")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+sb: _SupabaseClient = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_KEY else None
 
-# Ensure local directories exist
-os.makedirs(LOCAL_STORAGE_DIR, exist_ok=True)
+# ─── JWKS client for local JWT verification (no per-request Supabase API call) ──
+# Fetches public keys once from Supabase's JWKS endpoint and caches them for
+# 10 minutes. Supports both current ECC P-256 (ES256) and legacy HS256 keys.
+_jwks_client: _PyJWKClient | None = None
+try:
+    _jwks_client = _PyJWKClient(
+        f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json",
+        cache_keys=True,
+        lifespan=600,   # re-fetch keys after 10 min (matches Supabase edge cache)
+    )
+    print("[info] JWKS client initialised — local JWT verification active")
+except Exception as _e:
+    print(f"[warn] JWKS client init failed ({_e}); falling back to sb.auth.get_user()")
 
-# Initialize audits index if not exists
-if not os.path.exists(LOCAL_AUDITS_FILE):
-    with open(LOCAL_AUDITS_FILE, 'w') as f:
-        json.dump([], f)
-    print(f"[init] Created {LOCAL_AUDITS_FILE}")
-
-print(f"[info] Local data directory: {LOCAL_DATA_DIR}")
-
-# ─── Auth decorator (disabled for local version) ───────────────────────────────
+# ─── Auth decorator ───────────────────────────────────────────────────────────
 
 def auth_required(f):
-    """No-op decorator for local version - authentication disabled."""
     @wraps(f)
     def decorated(*args, **kwargs):
-        g.current_user_email = "local-user"
+        # Accept token from Authorization header or ?token= query param (for EventSource)
+        token = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+        if not token:
+            token = request.args.get("token", "").strip()
+        if not token:
+            return jsonify({"error": "Unauthorized"}), 401
+        try:
+            if _jwks_client:
+                # Local verification via cached JWKS public keys — no Supabase API call.
+                # Handles both current ECC P-256 (ES256) and legacy HS256 tokens.
+                signing_key = _jwks_client.get_signing_key_from_jwt(token)
+                payload = _jwt.decode(
+                    token,
+                    signing_key.key,
+                    algorithms=["ES256", "RS256", "HS256"],
+                    audience="authenticated",
+                )
+                g.current_user_email = payload.get("email", "")
+            else:
+                # Fallback: Supabase API call (used only if JWKS client failed to init)
+                if not sb:
+                    return jsonify({"error": "Auth not configured"}), 503
+                user = sb.auth.get_user(token)
+                if not user or not user.user:
+                    return jsonify({"error": "Unauthorized"}), 401
+                g.current_user_email = user.user.email or ""
+        except _jwt.ExpiredSignatureError:
+            return jsonify({"error": "Session expired"}), 401
+        except Exception as e:
+            # Fallback to Supabase API auth
+            try:
+                user = sb.auth.get_user(token)
+                if not user or not user.user:
+                    return jsonify({"error": "Unauthorized"}), 401
+                g.current_user_email = user.user.email or ""
+            except Exception as e2:
+                print(f"[auth] JWT and Supabase auth failed: {e} | {e2}")
+                return jsonify({"error": "Unauthorized"}), 401
         return f(*args, **kwargs)
     return decorated
 
-# ─── Local File Storage helpers ───────────────────────────────────────────────
+# ─── Supabase Storage helpers ─────────────────────────────────────────────────
 
-def _storage_upload(sid, filename, data, content_type="application/octet-stream", cache_control=None):
-    """Save file to local storage directory."""
-    audit_dir = os.path.join(LOCAL_STORAGE_DIR, sid)
-    os.makedirs(audit_dir, exist_ok=True)
-    filepath = os.path.join(audit_dir, filename)
+STORAGE_BUCKET = "ux-audits"
+
+def _storage_upload(sid, filename, data, content_type="application/octet-stream", cache_control="no-cache"):
+    path = f"{sid}/{filename}"
     try:
-        mode = 'wb' if isinstance(data, bytes) else 'w'
-        with open(filepath, mode) as f:
-            f.write(data)
-        return True
+        sb.storage.from_(STORAGE_BUCKET).upload(
+            path, data, {"content-type": content_type, "upsert": "true", "cache-control": cache_control}
+        )
     except Exception as exc:
-        print(f"[storage] Upload failed {filepath}: {exc}")
-        log_error("ERR-STOR-001", exc, sid=sid, filename=filepath, operation="upload")
-        return False
+        print(f"[storage] Upload failed {path}: {exc}")
+        log_error("ERR-STOR-001", exc, sid=sid, filename=path, operation="upload")
 
 def _storage_signed_url(sid, filename, expires=3600):
-    """For local version, return a direct API URL instead of signed URL."""
-    filepath = os.path.join(LOCAL_STORAGE_DIR, sid, filename)
-    if os.path.exists(filepath):
-        # Return local API endpoint that serves the file directly
-        return f"/api/local-file/{sid}/{filename}"
-    return ""
+    # Return cached URL if still fresh
+    cache_key = (sid, filename)
+    cached = _signed_url_cache.get(cache_key)
+    if cached:
+        url, expires_at = cached
+        if time.time() < expires_at:
+            return url
+
+    path = f"{sid}/{filename}"
+    try:
+        res = sb.storage.from_(STORAGE_BUCKET).create_signed_url(path, expires)
+        # supabase-py v2 returns a dict; newer builds return an object; even newer raise on 404
+        if isinstance(res, dict):
+            url = res.get("signedURL") or res.get("signedUrl") or res.get("signed_url") or ""
+        else:
+            url = (getattr(res, "signed_url", None) or getattr(res, "signedURL", None)
+                   or getattr(res, "signedUrl", None) or "")
+        if url:
+            _signed_url_cache[cache_key] = (url, time.time() + _SIGNED_URL_TTL)
+        return url
+    except Exception as exc:
+        err = str(exc)
+        # Suppress noisy 404s (file simply not in Storage); log everything else
+        if "not_found" not in err and "404" not in err:
+            print(f"[storage] signed_url error {sid}/{filename}: {exc}")
+            log_error("ERR-STOR-002", exc, sid=sid, filename=filename, expires=expires)
+        else:
+            # Still log 404s but with different code for debugging
+            log_error("ERR-STOR-004", exc, sid=sid, filename=filename, note="File not found in storage")
+        return ""
 
 def _to_bytes(data):
     """Convert any storage response value to bytes, or return None."""
@@ -277,19 +331,45 @@ def _storage_public_url(sid, filename):
     return f"{SUPABASE_URL}/storage/v1/object/public/{STORAGE_BUCKET}/{sid}/{filename}"
 
 def _storage_direct_download(sid, filename):
-    """Read file from local storage."""
-    filepath = os.path.join(LOCAL_STORAGE_DIR, sid, filename)
-    if os.path.exists(filepath):
-        try:
-            with open(filepath, 'rb') as f:
-                return f.read()
-        except Exception as exc:
-            print(f"[storage] Read failed {filepath}: {exc}")
-    return None
+    """Download a file from Supabase Storage via raw urllib — bypasses supabase-py/httpx
+    entirely so it works identically on every environment (Railway, localhost, etc.)."""
+    if not SUPABASE_KEY:
+        return None
+    path = f"{sid}/{filename}"
+    # 1. Authenticated endpoint — works for both public and private buckets
+    url = f"{SUPABASE_URL}/storage/v1/object/{STORAGE_BUCKET}/{path}"
+    req = _urllib_req.Request(url, headers={
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "apikey": SUPABASE_KEY,
+    })
+    try:
+        with _urllib_req.urlopen(req, timeout=20, context=_ssl_context) as resp:
+            return resp.read()
+    except Exception:
+        pass
+    # 2. Public URL — works if bucket is set to public (no auth needed)
+    try:
+        with _urllib_req.urlopen(_storage_public_url(sid, filename), timeout=20, context=_ssl_context) as resp:
+            return resp.read()
+    except Exception as exc:
+        print(f"[storage] direct download failed {path}: {exc}")
+        log_error("ERR-STOR-003", exc, sid=sid, filename=filename, path=path)
+        return None
 
 def _storage_download(sid, filename):
-    """Download (read) file from local storage."""
-    return _storage_direct_download(sid, filename)
+    # Try direct urllib download first (bypasses supabase-py, works everywhere)
+    data = _storage_direct_download(sid, filename)
+    if data:
+        return data
+    # Fallback: signed URL → urllib fetch
+    url = _storage_signed_url(sid, filename, expires=3600)
+    if url:
+        try:
+            with _urllib_req.urlopen(url, timeout=20, context=_ssl_context) as resp:
+                return resp.read()
+        except Exception:
+            pass
+    return None
 
 def _cached_storage_download(sid, filename):
     """Like _storage_download but caches the result in memory for FILE_CACHE_TTL seconds.
@@ -431,16 +511,9 @@ def _supabase_report_url(sid, filename):
     return _storage_signed_url(sid, filename, expires=315360000)  # 10 years
 
 def _save_audit_meta(sid):
-    """Save audit metadata to local JSON index."""
     s = sessions.get(sid, {})
     analysis = s.get("analysis") or {}
     issues = analysis.get("issues", [])
-    
-    audits = _load_audits_index()
-    
-    # Find existing or create new
-    existing_idx = next((i for i, a in enumerate(audits) if a.get("sid") == sid), None)
-    
     meta = {
         "sid": sid,
         "date": s.get("date", datetime.utcnow().isoformat() + "Z"),
@@ -451,125 +524,162 @@ def _save_audit_meta(sid):
         "accessibility_score": analysis.get("accessibility_score", 0),
         "filename": s.get("filename", ""),
         "website_url": s.get("website_url", ""),
+        "high": sum(1 for i in issues if i.get("severity") == "High"),
+        "medium": sum(1 for i in issues if i.get("severity") == "Medium"),
+        "low": sum(1 for i in issues if i.get("severity") == "Low"),
+        "total_issues": len(issues),
         "has_script":   s.get("has_script", False),
         "has_dribbble": s.get("has_dribbble", False),
         "has_redesign": s.get("has_redesign", False),
-        "model_label":  s.get("model_label", ""),
+        "status":       s.get("status", "uploaded"),
+        "model_label":  s.get("model_label", AUDIT_MODEL_LABEL),
+        "created_by":   s.get("created_by", ""),
     }
-    
-    if existing_idx is not None:
-        audits[existing_idx].update(meta)
-    else:
-        audits.append(meta)
-    
     try:
-        _save_audits_index(audits)
+        sb.table("audits").upsert(meta).execute()
     except Exception as exc:
         print(f"[db] _save_audit_meta failed: {exc}")
         log_error("ERR-DB-002", exc, sid=sid, operation="save_audit_meta")
 
 def _persist_audit(sid):
-    """Save all audit artifacts to local storage."""
+    """Upload all audit artefacts to Supabase Storage and save metadata to DB."""
     s = sessions.get(sid, {})
     if not s:
         return
     
     # Ensure local storage directory exists
-    audit_dir = os.path.join(LOCAL_STORAGE_DIR, sid)
-    os.makedirs(audit_dir, exist_ok=True)
+    local_dir = os.path.join(AUDITS_DIR, sid)
+    os.makedirs(local_dir, exist_ok=True)
 
-    # Annotated screenshot
+    # Annotated screenshot — immutable once written
     ann_b64 = s.get("annotated_b64") or s.get("image_b64", "")
     if ann_b64:
+        ann_data = base64.b64decode(ann_b64)
+        # Save locally first
         try:
-            ann_data = base64.b64decode(ann_b64)
-            with open(os.path.join(audit_dir, "annotated.jpg"), "wb") as f:
+            with open(os.path.join(local_dir, "annotated.jpg"), "wb") as f:
                 f.write(ann_data)
-            print(f"[persist] Saved annotated.jpg")
+            print(f"[persist] Saved annotated.jpg locally")
         except Exception as exc:
-            print(f"[persist] annotated save error: {exc}")
+            print(f"[persist] local annotated save error: {exc}")
+        # Try Supabase
+        try:
+            _storage_upload(sid, "annotated.jpg", ann_data, "image/jpeg",
+                            cache_control="public, max-age=86400")
+        except Exception as exc:
+            print(f"[persist] annotated upload error: {exc}")
 
     analysis = s.get("analysis")
     if analysis:
         # Full JSON — immutable after first write
         audit_json = json.dumps(analysis, indent=2, ensure_ascii=False).encode()
+        # Save locally
         try:
-            with open(os.path.join(audit_dir, "audit_data.json"), "wb") as f:
+            with open(os.path.join(local_dir, "audit_data.json"), "wb") as f:
                 f.write(audit_json)
-            print(f"[persist] Saved audit_data.json")
+            print(f"[persist] Saved audit_data.json locally")
         except Exception as exc:
-            print(f"[persist] audit_data save error: {exc}")
+            print(f"[persist] local audit_data save error: {exc}")
+        # Try Supabase
+        try:
+            _storage_upload(sid, "audit_data.json", audit_json,
+                            "application/json",
+                            cache_control="public, max-age=86400")
+        except Exception as exc:
+            print(f"[persist] audit_data upload error: {exc}")
 
-        # HTML report
+        # HTML report — immutable after first write
         try:
             ann_type = s.get("ann_type", s.get("media_type", "image/jpeg"))
             html = _build_report(analysis, ann_b64, ann_type)
             html_bytes = html.encode("utf-8")
-            with open(os.path.join(audit_dir, "report.html"), "wb") as f:
+            # Save locally
+            with open(os.path.join(local_dir, "report.html"), "wb") as f:
                 f.write(html_bytes)
-            print(f"[persist] Saved report.html")
+            print(f"[persist] Saved report.html locally")
+            # Try Supabase
+            _storage_upload(sid, "report.html", html_bytes, "text/html",
+                            cache_control="public, max-age=86400")
         except Exception as exc:
             print(f"[persist] report error: {exc}")
 
-        # Claude redesign prompt
+        # Claude redesign prompt — immutable after first write
         try:
             prompt = _build_redesign_prompt(analysis)
             prompt_bytes = prompt.encode("utf-8")
-            with open(os.path.join(audit_dir, "claude_prompt.txt"), "wb") as f:
+            # Save locally
+            with open(os.path.join(local_dir, "claude_prompt.txt"), "wb") as f:
                 f.write(prompt_bytes)
-            print(f"[persist] Saved claude_prompt.txt")
+            print(f"[persist] Saved claude_prompt.txt locally")
+            # Try Supabase
+            _storage_upload(sid, "claude_prompt.txt", prompt_bytes, "text/plain",
+                            cache_control="public, max-age=86400")
         except Exception as exc:
             print(f"[persist] prompt error: {exc}")
 
+        # Bust file cache so next modal open re-reads from Storage (fresh just-written data)
+        _invalidate_file_cache(sid, "audit_data.json", "report.html", "claude_prompt.txt")
+
     _save_audit_meta(sid)
 
-def _load_sessions_from_local():
-    """Minimal startup load — only count audits from local file.
+def _load_sessions_from_db():
+    """Minimal startup load — only count audits, don't load data.
     
     LAZY LOADING ARCHITECTURE:
     - Don't load audit data at startup
+    - Don't pre-warm caches
     - Load individual audits on-demand when user clicks
     """
+    if not sb:
+        return
     try:
-        audits = _load_audits_index()
-        count = len(audits)
-        print(f"[info] Local lazy loading: {count} audits available (loaded on-demand)")
+        # Only count audits, don't load them
+        res = sb.table("audits").select("sid", count="exact", head=True).execute()
+        count = res.count if hasattr(res, 'count') else 0
+        print(f"[info] Lazy loading mode: {count} audits available (loaded on-demand)")
     except Exception as exc:
-        print(f"[db] _load_sessions_from_local failed: {exc}")
+        print(f"[db] _load_sessions_from_db count failed: {exc}")
+        log_error("ERR-DB-001", exc, operation="load_sessions_count")
 
-# Run minimal count at startup
-_load_sessions_from_local()
+# Run minimal count at startup (fast, doesn't block)
+_load_sessions_from_db()
 
 
 def _load_single_audit(sid):
-    """Load a single audit from local storage into sessions (lazy loading).
+    """Load a single audit from Supabase into sessions (lazy loading).
     
     Called when user clicks on an audit thumbnail.
     Returns True if loaded successfully, False otherwise.
     """
-    # Load from local index
+    if not sb:
+        return False
+    
+    # Already loaded?
+    if sid in sessions and sessions[sid].get("status") == "ready":
+        return True
+    
     try:
-        audits = _load_audits_index()
-        audit = next((a for a in audits if a.get("sid") == sid), None)
-        if not audit:
+        res = sb.table("audits").select("*").eq("sid", sid).single().execute()
+        if not res.data:
             return False
         
+        row = res.data
         sessions[sid] = {
             "image_b64":       "",
             "media_type":      "image/jpeg",
-            "filename":        audit.get("filename", ""),
-            "status":          "ready" if audit.get("overall_score", 0) > 0 else "uploaded",
+            "filename":        row.get("filename", ""),
+            "status":          "ready" if row.get("overall_score", 0) > 0 else "uploaded",
             "analysis":        None,  # Will be loaded from file on demand
-            "date":            audit.get("date", ""),
-            "website_url":     audit.get("website_url", ""),
+            "date":            row.get("date", ""),
+            "website_url":     row.get("website_url", ""),
             "website_context": "",
-            "model_label":     audit.get("model_label", ""),
-            "has_script":      audit.get("has_script", False),
-            "has_dribbble":    audit.get("has_dribbble", False),
-            "has_redesign":    audit.get("has_redesign", False),
-            "loaded_from_local": True,
+            "model_label":     row.get("model_label", ""),
+            "has_script":      row.get("has_script", False),
+            "has_dribbble":    row.get("has_dribbble", False),
+            "has_redesign":    row.get("has_redesign", False),
+            "loaded_from_db":  True,  # Mark as loaded
         }
-        print(f"[lazy-load] Loaded audit {sid} from local storage")
+        print(f"[lazy-load] Loaded audit {sid} into session")
         return True
     except Exception as exc:
         print(f"[lazy-load] Failed to load audit {sid}: {exc}")
@@ -1370,16 +1480,25 @@ def download_prompt(sid):
 
 @app.route("/api/audits/<sid>/thumb")
 def audit_thumb(sid):
-    """Serve the screenshot/annotated image from local storage."""
-    # Try local storage first
-    audit_dir = os.path.join(LOCAL_STORAGE_DIR, sid)
+    """Serve the screenshot/annotated image for a given audit via signed URL redirect."""
+    from flask import redirect, send_file
+    # 1. Try Supabase Storage signed URL redirect (browser fetches from CDN directly)
+    for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
+        url = _storage_signed_url(sid, fname, expires=3600)
+        if url:
+            return redirect(url)
+    # 2. Direct download from Storage and pipe bytes (fallback when signed URL fails)
+    for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
+        data = _storage_direct_download(sid, fname)
+        if data:
+            mime = "image/jpeg" if fname.endswith(".jpg") else "image/png"
+            return Response(data, mimetype=mime)
+    # 3. Local disk (audits created before Storage migration)
+    audit_dir = os.path.join(AUDITS_DIR, sid)
     for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
         local_path = os.path.join(audit_dir, fname)
         if os.path.isfile(local_path):
             mime = "image/jpeg" if fname.endswith(".jpg") else "image/png"
-            return send_file(local_path, mimetype=mime)
-    # Fallback to in-memory session
-    s = sessions.get(sid, {})
             return send_file(local_path, mimetype=mime)
     # 4. In-memory session (audit in progress or just uploaded)
     s = sessions.get(sid, {})
@@ -1509,22 +1628,11 @@ def get_audit_file(sid, fname):
 @app.route("/api/audits/<sid>", methods=["DELETE"])
 @auth_required
 def delete_audit(sid):
-    """Delete audit from local storage."""
     try:
-        # Remove from index
-        audits = _load_audits_index()
-        audits = [a for a in audits if a.get("sid") != sid]
-        _save_audits_index(audits)
-        
-        # Delete storage folder
-        audit_dir = os.path.join(LOCAL_STORAGE_DIR, sid)
-        if os.path.exists(audit_dir):
-            shutil.rmtree(audit_dir)
-        
-        # Remove from sessions
+        sb.table("audits").delete().eq("sid", sid).execute()
+        _storage_delete_folder(sid)
         with _lock:
             sessions.pop(sid, None)
-        
         return jsonify({"ok": True})
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
@@ -2429,36 +2537,6 @@ def _build_report(analysis, image_b64, media_type):
         f'{REPORT_JS}'
         "</body></html>"
     )
-
-
-# ─── Local file serving route ─────────────────────────────────────────────────
-
-@app.route("/api/local-file/<sid>/<path:filename>")
-def serve_local_file(sid, filename):
-    """Serve files directly from local storage."""
-    # Security: prevent directory traversal
-    if ".." in filename or filename.startswith("/"):
-        return jsonify({"error": "Invalid filename"}), 400
-    
-    filepath = os.path.join(LOCAL_STORAGE_DIR, sid, filename)
-    if not os.path.exists(filepath):
-        return jsonify({"error": "File not found"}), 404
-    
-    # Determine MIME type
-    if filename.endswith('.jpg') or filename.endswith('.jpeg'):
-        mime = 'image/jpeg'
-    elif filename.endswith('.png'):
-        mime = 'image/png'
-    elif filename.endswith('.json'):
-        mime = 'application/json'
-    elif filename.endswith('.html'):
-        mime = 'text/html'
-    elif filename.endswith('.txt'):
-        mime = 'text/plain'
-    else:
-        mime = 'application/octet-stream'
-    
-    return send_file(filepath, mimetype=mime)
 
 
 # ─── Run ──────────────────────────────────────────────────────────────────────

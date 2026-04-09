@@ -13,8 +13,12 @@ venv/
 # macOS
 .DS_Store
 
-# Audit files — now stored in Supabase Storage
+# Audit files — now stored in Supabase Storage (cloud version)
 audits/
+
+# Local data (local version) — do not commit audit data
+local_data/*
+!local_data/.gitkeep
 
 # Migration script — one-time use only
 migrate_to_supabase.py
