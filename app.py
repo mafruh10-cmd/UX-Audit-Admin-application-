@@ -222,6 +222,21 @@ if not os.path.exists(LOCAL_AUDITS_FILE):
 
 print(f"[info] Local data directory: {LOCAL_DATA_DIR}")
 
+# ─── Local Data Index Helpers ─────────────────────────────────────────────────
+
+def _load_audits_index():
+    """Load the audits index from local JSON file."""
+    try:
+        with open(LOCAL_AUDITS_FILE, 'r') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        return []
+
+def _save_audits_index(audits):
+    """Save the audits index to local JSON file."""
+    with open(LOCAL_AUDITS_FILE, 'w') as f:
+        json.dump(audits, f, indent=2, default=str)
+
 # ─── Auth decorator (disabled for local version) ───────────────────────────────
 
 def auth_required(f):
