@@ -695,6 +695,7 @@ _TRAINING_FILES = {
     "training_wcag22.md":     "WCAG 2.2 — Web Content Accessibility Guidelines",
     "training_upd.md":        "Universal Principles of Design — Lidwell, Holden & Butler (200 Principles)",
     "training_doet.md":       "The Design of Everyday Things — Don Norman (Revised Edition)",
+    "training_saasfactor_ai.md": "Saasfactor AI — Learned Patterns from 2,229 SaaS Screens",
 }
 
 _PRINCIPLE_PATTERNS = (
@@ -732,8 +733,15 @@ def _build_knowledge_base():
 KNOWLEDGE_BASE = _build_knowledge_base()
 
 
-AUDIT_PROMPT = """You are a senior UX and accessibility auditor. You have been trained on the Saasfactor UX curriculum AND the WCAG 2.2 accessibility guidelines.
+AUDIT_PROMPT = """You are a senior UX and accessibility auditor. You have been trained on the Saasfactor UX curriculum AND the WCAG 2.2 accessibility guidelines AND Saasfactor AI learned patterns from 2,229 screens across 5 major SaaS products.
 The training knowledge base is provided above. Use it to ground every finding.
+
+When analyzing, leverage Saasfactor AI benchmarks to contextualize your findings:
+- Compare dashboard layouts against the typical 25-35 element range
+- Flag lists with >20 items that lack search/filter functionality
+- Note when forms exceed the optimal 3-7 field range
+- Reference navigation patterns (71% of B2B SaaS use left sidebar)
+- Apply severity benchmarks (e.g., >50 elements = High severity)
 
 Analyze the UI screenshot below carefully. Produce a unified list of 7–10 findings that covers BOTH UX issues (usability, hierarchy, clarity, psychology) AND accessibility violations (WCAG 2.2 Level A/AA). Do NOT separate them — accessibility issues appear inline alongside UX issues in the same list, ordered by severity.
 
@@ -807,7 +815,13 @@ Rules:
   "The Design of Everyday Things (Norman) — Gulf of Execution: user cannot figure out how to do what they want",
   "The Design of Everyday Things (Norman) — Gulf of Evaluation: user cannot tell if their action worked",
   "The Design of Everyday Things (Norman) — Feedback: every action must produce an immediate, clear response",
-  "The Design of Everyday Things (Norman) — Forcing Function: prevent irreversible actions with confirmation"
+  "The Design of Everyday Things (Norman) — Forcing Function: prevent irreversible actions with confirmation",
+  "Saasfactor AI — Dashboard Layouts: Typical range 25-35 UI elements",
+  "Saasfactor AI — List Screens: 67% include search/filter when displaying >20 items",
+  "Saasfactor AI — Navigation Patterns: Left sidebar navigation in 71% of B2B SaaS",
+  "Saasfactor AI — Form Patterns: 34% higher abandonment with >7 fields on single screen",
+  "Saasfactor AI — Severity Flags: Dashboards with >50 elements indicate information overload",
+  "Saasfactor AI — Accessibility Analysis: 10.5% of screens have contrast ratio violations"
 - Focus on visually detectable accessibility issues: contrast ratios, color-only information, missing labels,
   touch target sizes, focus indicator absence, images of text, heading structure, icon-only buttons,
   placeholder-only form fields, error states without text labels.
