@@ -46,35 +46,85 @@ check_macos() {
     print_success "Running on macOS"
 }
 
-# Check for required tools
-check_prerequisites() {
-    print_header "Checking Prerequisites"
-    
-    # Check for Python 3
-    if command -v python3 &> /dev/null; then
-        PYTHON_VERSION=$(python3 --version)
-        print_success "Found $PYTHON_VERSION"
-    else
-        print_error "Python 3 not found. Please install Python 3.9 or higher."
-        echo "Visit: https://www.python.org/downloads/mac-osx/"
-        exit 1
+# Auto-install Homebrew
+install_homebrew() {
+    if command -v brew &> /dev/null; then
+        print_success "Homebrew already installed"
+        return
     fi
     
-    # Check for Git
+    print_header "Installing Homebrew"
+    print_info "This is a package manager for macOS (one-time setup)"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    
+    # Add Homebrew to PATH for Apple Silicon Macs
+    if [[ $(uname -m) == "arm64" ]]; then
+        echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    fi
+    
+    print_success "Homebrew installed"
+}
+
+# Auto-install Git
+install_git() {
     if command -v git &> /dev/null; then
         GIT_VERSION=$(git --version)
         print_success "Found $GIT_VERSION"
-    else
-        print_error "Git not found. Please install Git."
-        echo "Run: brew install git"
-        exit 1
+        return
     fi
     
-    # Check Python version (need 3.9+)
-    PYTHON_MINOR=$(python3 -c 'import sys; print(sys.version_info.minor)')
-    if [ "$PYTHON_MINOR" -lt 9 ]; then
-        print_warning "Python 3.9+ recommended. Current version may work but is not tested."
+    print_header "Installing Git"
+    brew install git
+    print_success "Git installed"
+}
+
+# Auto-install Python 3.9+
+install_python() {
+    if command -v python3 &> /dev/null; then
+        PYTHON_MINOR=$(python3 -c 'import sys; print(sys.version_info.minor)')
+        if [ "$PYTHON_MINOR" -ge 9 ]; then
+            PYTHON_VERSION=$(python3 --version)
+            print_success "Found $PYTHON_VERSION"
+            return
+        else
+            print_warning "Python 3.$PYTHON_MINOR found, but 3.9+ required"
+        fi
     fi
+    
+    print_header "Installing Python 3"
+    brew install python@3.11
+    
+    # Link python3 command
+    brew link python@3.11 --force 2>/dev/null || true
+    
+    # Add to PATH if needed
+    if [[ $(uname -m) == "arm64" ]]; then
+        export PATH="/opt/homebrew/opt/python@3.11/libexec/bin:$PATH"
+        echo 'export PATH="/opt/homebrew/opt/python@3.11/libexec/bin:$PATH"' >> ~/.zprofile
+    else
+        export PATH="/usr/local/opt/python@3.11/libexec/bin:$PATH"
+        echo 'export PATH="/usr/local/opt/python@3.11/libexec/bin:$PATH"' >> ~/.zprofile
+    fi
+    
+    print_success "Python $(python3 --version) installed"
+}
+
+# Check and auto-install all prerequisites
+check_prerequisites() {
+    print_header "Checking Prerequisites"
+    print_info "Installing anything that's missing..."
+    
+    # Install Homebrew first (needed for other installs)
+    install_homebrew
+    
+    # Install Git
+    install_git
+    
+    # Install Python
+    install_python
+    
+    print_success "All prerequisites ready!"
 }
 
 # Clone repository
@@ -279,28 +329,26 @@ print_final_instructions() {
     echo ""
     echo -e "${GREEN}The UX Audit Admin (Local Version) is ready to use!${NC}"
     echo ""
-    echo -e "${BLUE}To start the application:${NC}"
-    echo "  • Double-click the 'UX Audit Admin' icon on your Desktop"
-    echo "  • OR run: cd $INSTALL_DIR && ./run.sh"
     echo ""
-    echo -e "${BLUE}Then open in your browser:${NC}"
-    echo "  http://localhost:5001"
+    echo -e "${GREEN}✅ UX Audit Admin is installed and ready!${NC}"
     echo ""
-    echo -e "${BLUE}To stop the application:${NC}"
-    echo "  Press Ctrl+C in the terminal window"
+    echo -e "${YELLOW}🚀 TO START THE APP:${NC}"
+    echo "   Double-click the 'UX Audit Admin' icon on your Desktop"
     echo ""
-    echo -e "${BLUE}To update to latest version:${NC}"
-    echo "  cd $INSTALL_DIR"
-    echo "  git pull origin local"
+    echo -e "${BLUE}📍 What just got installed:${NC}"
+    echo "   • App location: $INSTALL_DIR"
+    echo "   • Desktop icon: ~/Desktop/UX Audit Admin.app"
+    echo "   • Your data: $INSTALL_DIR/local_data/"
     echo ""
-    echo -e "${YELLOW}Important Notes:${NC}"
-    echo "  • All audit data is stored locally in: $INSTALL_DIR/local_data/"
-    echo "  • Data is NOT synced to GitHub or other team members"
-    echo "  • Each team member has their own separate data"
-    echo "  • Export HTML reports to share audits with team"
+    echo -e "${BLUE}🌐 The app will open at:${NC}"
+    echo "   http://localhost:5001"
     echo ""
-    echo -e "${BLUE}Need help?${NC}"
-    echo "  Read README_LOCAL.md for detailed instructions"
+    echo -e "${BLUE}⏹️  To stop the app:${NC}"
+    echo "   Press Ctrl+C in the terminal window"
+    echo ""
+    echo -e "${YELLOW}⚠️  Important:${NC}"
+    echo "   Your audit data is stored ONLY on this Mac."
+    echo "   Export HTML reports to share with your team."
     echo ""
 }
 
@@ -308,8 +356,11 @@ print_final_instructions() {
 main() {
     print_header "UX Audit Admin - macOS Setup"
     echo ""
-    echo "This script will set up the local version of UX Audit Admin."
-    echo "All data will be stored on your machine (not in the cloud)."
+    echo "This will install UX Audit Admin on your Mac."
+    echo ""
+    echo "✓ Auto-installs: Homebrew, Git, Python (if missing)"
+    echo "✓ Creates Desktop icon for one-click launch"
+    echo "✓ Stores all data locally on your machine"
     echo ""
     read -p "Press Enter to continue or Ctrl+C to cancel..."
     

@@ -1,39 +1,46 @@
 #!/bin/bash
 #
-# One-liner install script for UX Audit Admin (Local)
-# 
-# Team members can run this with:
-# curl -fsSL https://raw.githubusercontent.com/mafruh10-cmd/UX-Audit-Admin-application-/local/install.sh | bash
+# UX Audit Admin - One-Command Installer for macOS
 #
-# This will:
-#   - Install the application to ~/UX-Audit-Admin-application-
-#   - Create a "UX Audit Admin" icon on the Desktop
-#   - Set up local data storage (no cloud)
+# 💻 Copy and paste this ONE command in Terminal:
+#
+#   curl -fsSL https://raw.githubusercontent.com/mafruh10-cmd/UX-Audit-Admin-application-/local/install.sh | bash
+#
+# ✅ This will automatically install EVERYTHING needed:
+#    • Homebrew (package manager) - if missing
+#    • Git (version control) - if missing  
+#    • Python 3.11 - if missing or outdated
+#    • All Python dependencies (Flask, Pillow, OpenAI, etc.)
+#    • The UX Audit Admin app
+#    • A Desktop icon for one-click launch
+#
+# 📝 Notes:
+#    • May ask for your Mac password (for Homebrew installation)
+#    • Will prompt for Anthropic API key at the end
+#    • All data stored locally (not in cloud)
 #
 
 set -e
 
-echo "🚀 UX Audit Admin - Local Version Installer"
+echo "🚀 UX Audit Admin Installer"
 echo ""
-echo "This script will:"
-echo "  • Install UX Audit Admin to ~/UX-Audit-Admin-application-"
-echo "  • Create a Desktop icon you can click to run"
-echo "  • Store all data locally on your Mac"
+echo "This will install everything automatically."
+echo "Sit back and relax... ☕️"
 echo ""
 
 # Download and run the full setup script
 SETUP_URL="https://raw.githubusercontent.com/mafruh10-cmd/UX-Audit-Admin-application-/local/setup-mac.sh"
 TEMP_SCRIPT="/tmp/ux-audit-setup.sh"
 
-echo "📥 Downloading setup script..."
+echo "📥 Downloading installer..."
 curl -fsSL "$SETUP_URL" -o "$TEMP_SCRIPT"
 chmod +x "$TEMP_SCRIPT"
 
-echo "🔧 Running setup..."
+echo "🔧 Running setup (this may take a few minutes)..."
 bash "$TEMP_SCRIPT"
 
 # Cleanup
 rm -f "$TEMP_SCRIPT"
 
 echo ""
-echo "✅ Installation complete! Look for 'UX Audit Admin' on your Desktop."
+echo "✅ Done! Look for 'UX Audit Admin' on your Desktop."
