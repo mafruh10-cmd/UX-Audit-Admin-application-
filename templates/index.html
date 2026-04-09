@@ -1426,22 +1426,34 @@ function renderAuditGrid(audits) {
 }
 
 function buildAuditCard(a) {
+  // LAZY LOADING: Check if audit is loaded in memory
+  const isLoaded = a.is_loaded !== false; // Default to true for backwards compatibility
+  const clickToLoadBadge = !isLoaded 
+    ? `<span class="model-badge" style="background:rgba(245,158,11,.9);color:#fff;">Click to load</span>` 
+    : '';
+  
   const modelBadge = a.model_label
     ? `<span class="model-badge">${escHtml(a.model_label)}</span>` : '';
-  const thumbHtml = a.thumb_url
-    ? `<img class="card-thumb" src="${escHtml(a.thumb_url)}" alt="" loading="lazy" onerror="thumbErr(this)"/>${modelBadge}`
-    : `<div class="card-thumb-placeholder"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>${modelBadge}`;
+  
+  // LAZY LOADING: Show placeholder if not loaded, otherwise show thumbnail
+  const thumbHtml = !isLoaded
+    ? `<div class="card-thumb-placeholder" style="position:relative;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>${clickToLoadBadge}</div>`
+    : a.thumb_url
+      ? `<img class="card-thumb" src="${escHtml(a.thumb_url)}" alt="" loading="lazy" onerror="thumbErr(this)"/>${modelBadge}`
+      : `<div class="card-thumb-placeholder"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>${modelBadge}`;
 
   const isReady = a.status === 'ready';
   const sc = (label, done) => `<span class="schip ${done ? 'done' : 'pending'}">${label}</span>`;
-  const statusChips = `
+  const statusChips = isLoaded
+    ? `
     <div class="status-chips">
       ${sc('Report',   isReady)}
       ${sc('Prompt',   isReady)}
       ${sc('Script',   !!a.has_script)}
       ${sc('Dribbble', !!a.has_dribbble)}
       ${sc('Redesign', !!a.has_redesign)}
-    </div>`;
+    </div>`
+    : `<div class="status-chips"><span class="schip pending">Click to load details</span></div>`;
 
   const dateStr   = relativeDate(a.date);
   const createdBy = a.created_by ? escHtml(a.created_by) : '';

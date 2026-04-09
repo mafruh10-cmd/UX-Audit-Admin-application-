@@ -623,58 +623,75 @@ def _persist_audit(sid):
     _save_audit_meta(sid)
 
 def _load_sessions_from_db():
-    """Populate `sessions` dict from Supabase DB on startup."""
+    """Minimal startup load — only count audits, don't load data.
+    
+    LAZY LOADING ARCHITECTURE:
+    - Don't load audit data at startup
+    - Don't pre-warm caches
+    - Load individual audits on-demand when user clicks
+    """
     if not sb:
         return
     try:
-        res = sb.table("audits").select("*").execute()
-        rows = res.data or []
-        count = 0
-        for row in rows:
-            sid = row["sid"]
-            sessions[sid] = {
-                "image_b64":       "",
-                "media_type":      "image/jpeg",
-                "filename":        row.get("filename", ""),
-                "status":          "ready" if row.get("overall_score", 0) > 0 else "uploaded",
-                "analysis":        None,
-                "date":            row.get("date", ""),
-                "website_url":     row.get("website_url", ""),
-                "website_context": "",
-                "model_label":     row.get("model_label", ""),
-                "has_script":      row.get("has_script", False),
-                "has_dribbble":    row.get("has_dribbble", False),
-                "has_redesign":    row.get("has_redesign", False),
-            }
-            count += 1
-        print(f"[info] Loaded {count} audits from Supabase")
+        # Only count audits, don't load them
+        res = sb.table("audits").select("sid", count="exact", head=True).execute()
+        count = res.count if hasattr(res, 'count') else 0
+        print(f"[info] Lazy loading mode: {count} audits available (loaded on-demand)")
     except Exception as exc:
-        print(f"[db] _load_sessions_from_db failed: {exc}")
-        log_error("ERR-DB-001", exc, operation="load_sessions_from_db")
+        print(f"[db] _load_sessions_from_db count failed: {exc}")
+        log_error("ERR-DB-001", exc, operation="load_sessions_count")
 
+# Run minimal count at startup (fast, doesn't block)
 _load_sessions_from_db()
 
 
-def _prewarm_thumb_cache():
-    """Pre-generate signed URLs for the most recent audits at startup.
-    Capped at 30 to avoid socket floods on Railway. Detail files are now
-    served from _cached_storage_download and warm on first real request."""
+def _load_single_audit(sid):
+    """Load a single audit from Supabase into sessions (lazy loading).
+    
+    Called when user clicks on an audit thumbnail.
+    Returns True if loaded successfully, False otherwise.
+    """
     if not sb:
-        return
-    # Only warm the most recent 30 — older audits load on demand
-    sids = list(sessions.keys())[-30:]
-    print(f"[info] Pre-warming thumb cache for {len(sids)} recent audits…")
-    thumb_warmed = 0
-    for sid in sids:
-        for fname in ["annotated.jpg", "screenshot.jpg", "screenshot.png"]:
-            url = _storage_signed_url(sid, fname, expires=3600)
-            if url:
-                thumb_warmed += 1
-                break
-        time.sleep(0.02)   # 20 ms gap — enough to avoid socket flood
-    print(f"[info] Thumb cache: {thumb_warmed}/{len(sids)} ready")
+        return False
+    
+    # Already loaded?
+    if sid in sessions and sessions[sid].get("status") == "ready":
+        return True
+    
+    try:
+        res = sb.table("audits").select("*").eq("sid", sid).single().execute()
+        if not res.data:
+            return False
+        
+        row = res.data
+        sessions[sid] = {
+            "image_b64":       "",
+            "media_type":      "image/jpeg",
+            "filename":        row.get("filename", ""),
+            "status":          "ready" if row.get("overall_score", 0) > 0 else "uploaded",
+            "analysis":        None,  # Will be loaded from file on demand
+            "date":            row.get("date", ""),
+            "website_url":     row.get("website_url", ""),
+            "website_context": "",
+            "model_label":     row.get("model_label", ""),
+            "has_script":      row.get("has_script", False),
+            "has_dribbble":    row.get("has_dribbble", False),
+            "has_redesign":    row.get("has_redesign", False),
+            "loaded_from_db":  True,  # Mark as loaded
+        }
+        print(f"[lazy-load] Loaded audit {sid} into session")
+        return True
+    except Exception as exc:
+        print(f"[lazy-load] Failed to load audit {sid}: {exc}")
+        log_error("ERR-DB-004", exc, sid=sid, operation="load_single_audit")
+        return False
 
-threading.Thread(target=_prewarm_thumb_cache, daemon=True).start()
+
+# DISABLED: Pre-warming cache — not needed with lazy loading
+# def _prewarm_thumb_cache():
+#     ...
+# threading.Thread(target=_prewarm_thumb_cache, daemon=True).start()
+print("[info] Lazy loading: Thumb cache pre-warming disabled (URLs generated on-demand)")
 
 
 # ─── Training knowledge base ──────────────────────────────────────────────────
@@ -1499,11 +1516,28 @@ def audit_thumb(sid):
 @app.route("/api/audits")
 @auth_required
 def list_audits():
+    """List all audits with minimal data (lazy loading architecture).
+    
+    Returns only metadata needed to display thumbnails.
+    Full audit data is loaded on-demand when user clicks.
+    """
     try:
-        res = sb.table("audits").select("*").order("date", desc=True).execute()
+        # Select only fields needed for thumbnail display
+        res = sb.table("audits").select(
+            "sid", "product_name", "screen_name", "overall_score", 
+            "score_label", "date", "has_script", "has_dribbble", "has_redesign"
+        ).order("date", desc=True).execute()
+        
         result = res.data or []
         for item in result:
-            item["thumb_url"] = f"/api/audits/{item['sid']}/thumb"
+            sid = item["sid"]
+            # Check if this audit is already loaded in memory
+            is_loaded = sid in sessions and sessions[sid].get("loaded_from_db", False)
+            
+            item["thumb_url"] = f"/api/audits/{sid}/thumb"
+            item["is_loaded"] = is_loaded  # Frontend shows "Click to load" if False
+            item["detail_url"] = f"/api/audits/{sid}"
+            
         return jsonify(result)
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
@@ -1512,6 +1546,19 @@ def list_audits():
 @app.route("/api/audits/<sid>")
 @auth_required
 def get_audit_detail(sid):
+    """Get audit details — with lazy loading support.
+    
+    If audit is not in memory, loads it from Supabase on-demand.
+    This is called when user clicks a thumbnail.
+    """
+    # LAZY LOADING: Load audit into memory if not already loaded
+    if sid not in sessions or not sessions[sid].get("loaded_from_db", False):
+        print(f"[lazy-load] Loading audit {sid} on-demand...")
+        loaded = _load_single_audit(sid)
+        if not loaded:
+            return jsonify({"error": "Audit not found or failed to load"}), 404
+    
+    # Get from Supabase for full details
     try:
         res = sb.table("audits").select("*").eq("sid", sid).single().execute()
         if not res.data:
@@ -1520,6 +1567,10 @@ def get_audit_detail(sid):
     except Exception:
         return jsonify({"error": "Audit not found"}), 404
 
+    # Mark as loaded
+    result["is_loaded"] = True
+    result["loaded_on_demand"] = True
+    
     # Thumbnail — point to the thumb endpoint (handles all fallbacks)
     result["thumb_url"] = f"/api/audits/{sid}/thumb"
 
