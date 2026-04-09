@@ -1497,6 +1497,45 @@ function prependAuditCard(a) {
   badge.textContent = parseInt(badge.textContent || '0') + 1;
 }
 
+// ─── Refresh a single audit card after lazy loading ────────────────────────────
+
+function refreshAuditCard(sid, data) {
+  // Refresh a single audit card in the grid after it has been loaded.
+  // This updates the thumbnail from 'Click to load' placeholder to actual image,
+  // and shows the status chips (Report ✓, Prompt ✓, etc.).
+  const card = document.querySelector(`.audit-card[data-sid="${sid}"]`);
+  if (!card) return;
+  
+  // Build updated card HTML with loaded state
+  const updatedData = {
+    sid: sid,
+    screen_name: data.screen_name || data.filename || 'Untitled',
+    overall_score: data.overall_score || 0,
+    score_label: data.score_label || '',
+    date: data.date || new Date().toISOString(),
+    filename: data.filename || '',
+    website_url: data.website_url || '',
+    created_by: data.created_by || '',
+    model_label: data.model_label || '',
+    has_script: data.has_script || false,
+    has_dribbble: data.has_dribbble || false,
+    has_redesign: data.has_redesign || false,
+    thumb_url: data.thumb_url || `/api/audits/${sid}/thumb`,
+    is_loaded: true,  // Mark as loaded
+    status: 'ready'
+  };
+  
+  // Create new card HTML
+  const div = document.createElement('div');
+  div.innerHTML = buildAuditCard(updatedData);
+  const newCard = div.firstElementChild;
+  
+  // Replace old card with new one
+  card.replaceWith(newCard);
+  
+  console.log(`[refreshAuditCard] Updated card ${sid} to loaded state`);
+}
+
 // ─── New audit modal ──────────────────────────────────────────────────────────
 
 function openNewAuditModal() {
@@ -2068,7 +2107,14 @@ async function openDetailModal(sid) {
     if (!res.ok) throw new Error('Not found');
     const data = await res.json();
     _lsCache.set('d_' + sid, data);
+    
+    // Mark as loaded and refresh the card in the grid
+    data.is_loaded = true;
+    data.loaded_on_demand = true;
     _renderDetail(data);
+    
+    // Refresh the card thumbnail to show it's now loaded
+    refreshAuditCard(sid, data);
   } catch (e) {
     document.getElementById('detailTitle').textContent = 'Error loading audit';
     return;
