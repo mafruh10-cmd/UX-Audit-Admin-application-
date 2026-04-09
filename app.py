@@ -415,8 +415,9 @@ AUDIT_STEPS = [
 
 # ─── Persistent audit storage ─────────────────────────────────────────────────
 
-AUDITS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "audits")
-os.makedirs(AUDITS_DIR, exist_ok=True)
+# Use LOCAL_STORAGE_DIR for the local version (not AUDITS_DIR)
+# All audit files are stored in local_data/storage/{sid}/
+AUDITS_DIR = LOCAL_STORAGE_DIR  # For compatibility with existing code
 
 def _fix_json_escapes(text):
     # Valid JSON escapes: \" \\ \/ \b \f \n \r \t \uXXXX
@@ -1442,23 +1443,24 @@ def list_audits():
 def get_audit_detail(sid):
     """Get audit details — with lazy loading support.
     
-    If audit is not in memory, loads it from Supabase on-demand.
+    If audit is not in memory, loads it from local storage on-demand.
     This is called when user clicks a thumbnail.
     """
     # LAZY LOADING: Load audit into memory if not already loaded
-    if sid not in sessions or not sessions[sid].get("loaded_from_db", False):
+    if sid not in sessions or not sessions[sid].get("loaded_from_local", False):
         print(f"[lazy-load] Loading audit {sid} on-demand...")
         loaded = _load_single_audit(sid)
         if not loaded:
             return jsonify({"error": "Audit not found or failed to load"}), 404
     
-    # Get from Supabase for full details
+    # Get from local index for full details
     try:
-        res = sb.table("audits").select("*").eq("sid", sid).single().execute()
-        if not res.data:
+        audits = _load_audits_index()
+        result = next((a for a in audits if a.get("sid") == sid), None)
+        if not result:
             return jsonify({"error": "Audit not found"}), 404
-        result = dict(res.data)
-    except Exception:
+    except Exception as exc:
+        print(f"[error] get_audit_detail failed: {exc}")
         return jsonify({"error": "Audit not found"}), 404
 
     # Mark as loaded
