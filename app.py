@@ -29,6 +29,15 @@ else:
 from html.parser import HTMLParser
 
 from flask import Flask, Response, g, jsonify, redirect, render_template, request, send_file, stream_with_context
+
+# Mobbin Scraper controller (lazy import to avoid startup overhead)
+_mobbin_controller = None
+def _get_mobbin_controller():
+    global _mobbin_controller
+    if _mobbin_controller is None:
+        from mobbin_scraper_controller import get_controller
+        _mobbin_controller = get_controller()
+    return _mobbin_controller
 from flask_cors import CORS
 
 try:
@@ -2536,6 +2545,83 @@ def _build_report(analysis, image_b64, media_type):
 
         f'{REPORT_JS}'
         "</body></html>"
+    )
+
+
+# ─── Mobbin Scraper Routes ───────────────────────────────────────────────────
+
+@app.route("/api/mobbin/start", methods=["POST"])
+def mobbin_start():
+    data = request.get_json(force=True) or {}
+    url = data.get("url", "").strip()
+    if not url:
+        return jsonify({"ok": False, "error": "URL is required"}), 400
+    if not url.startswith("https://mobbin.com/"):
+        return jsonify({"ok": False, "error": "URL must be a mobbin.com link"}), 400
+
+    controller = _get_mobbin_controller()
+    try:
+        controller.start(
+            url=url,
+            app_name=data.get("appName", ""),
+            category=data.get("category", ""),
+        )
+        return jsonify({"ok": True})
+    except RuntimeError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 409
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
+@app.route("/api/mobbin/stop", methods=["POST"])
+def mobbin_stop():
+    controller = _get_mobbin_controller()
+    controller.stop()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/mobbin/command", methods=["POST"])
+def mobbin_command():
+    data = request.get_json(force=True) or {}
+    action = data.get("action")
+    if not action:
+        return jsonify({"ok": False, "error": "action is required"}), 400
+
+    controller = _get_mobbin_controller()
+    payload = {k: v for k, v in data.items() if k != "action"}
+    controller.send_command(action, **payload)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/mobbin/status", methods=["GET"])
+def mobbin_status():
+    controller = _get_mobbin_controller()
+    return jsonify({"ok": True, "status": controller.get_status()})
+
+
+@app.route("/api/mobbin/stream", methods=["GET"])
+def mobbin_stream():
+    controller = _get_mobbin_controller()
+
+    def generate():
+        last_frame = None
+        while True:
+            frame = controller.get_frame()
+            if frame and frame != last_frame:
+                last_frame = frame
+                yield f"data: {frame}\n\n"
+            else:
+                # SSE heartbeat to keep connection alive
+                yield "data: \n\n"
+            time.sleep(0.15)  # ~6-7 FPS effective
+
+    return Response(
+        generate(),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 
