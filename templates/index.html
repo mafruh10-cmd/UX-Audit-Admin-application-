@@ -51,6 +51,11 @@ body{
   color:#6B7280;background:#F3F4F6;
   padding:3px 10px;border-radius:20px;border:1px solid #E5E7EB;
 }
+.product-count-badge{
+  font-size:10px;font-weight:600;
+  color:#0D9488;background:#CCFBF1;
+  padding:3px 10px;border-radius:20px;border:1px solid #99F6E4;
+}
 
 /* ── Main ── */
 .main{padding:80px 32px 40px;min-height:100vh;}
@@ -601,6 +606,7 @@ body{
     {% endif %}
     <span class="header-badge">UX Audit</span>
     <span class="admin-badge">Admin</span>
+    <span class="product-count-badge">Based on {{ product_count }} real SaaS products</span>
   </div>
   <div style="display:flex;align-items:center;gap:10px;">
     <span id="headerUserEmail" style="font-size:12px;color:var(--muted);"></span>

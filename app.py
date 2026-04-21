@@ -604,23 +604,30 @@ print("[info] Lazy loading: Thumb cache pre-warming disabled (URLs generated on-
 # ─── Training knowledge base ──────────────────────────────────────────────────
 
 _TRAINING_FILES = {
-    "training_dmmt.md":       "Don't Make Me Think — Steve Krug",
-    "training_dui.md":        "Designing User Interfaces — Dmytro Malewicz",
-    "training_psych.md":      "Psych 101 — Paul Kleinman",
-    "training_psydesign.md":  "Psychology of Design: 106 Cognitive Biases",
-    "training_pui.md":        "Practical UI",
-    "training_refui.md":      "Refactoring UI — Adam Wathan & Steve Schoger",
-    "training_uitips.md":     "UI Design Tips",
-    "training_100things.md":  "100 More Things Every Designer Needs to Know About People",
-    "ux_rules_batch1.md":     "UX Component Rules (Part 1)",
-    "ux_rules_batch3.md":     "UX Component Rules (Part 3)",
-    "ux_rules_batch4.md":     "UX Component Rules (Part 4)",
-    "ux_rules_batch5.md":     "UX Component Rules (Part 5)",
-    "training_wcag22.md":     "WCAG 2.2 — Web Content Accessibility Guidelines",
-    "training_upd.md":        "Universal Principles of Design — Lidwell, Holden & Butler (200 Principles)",
-    "training_doet.md":       "The Design of Everyday Things — Don Norman (Revised Edition)",
-    "training_saasfactor_ai.md": "Saasfactor AI — Learned Patterns from 2,229 SaaS Screens",
+    # Unified SaaS benchmark knowledge (real products only)
+    "training_saasfactor_benchmarks.md": "Saasfactor AI — Layout & Flow Benchmarks",
+    "training_saasfactor_patterns.md":   "Saasfactor AI — Component & Layout Patterns",
+    "training_saasfactor_products.md":   "Saasfactor AI — Product Profiles",
+    "training_saasfactor_flows.md":      "Saasfactor AI — Flow Sequence Patterns",
 }
+
+# Book-based knowledge files kept in repo for future switch-back, but not loaded
+# training_dmmt.md, training_dui.md, training_psych.md, training_pui.md,
+# training_refui.md, training_uitips.md, training_100things.md,
+# ux_rules_batch1.md, ux_rules_batch3.md, ux_rules_batch4.md, ux_rules_batch5.md,
+# training_wcag22.md, training_upd.md, training_doet.md, training_saasfactor_ai.md
+
+_BENCHMARK_PATTERNS = (
+    "## ", "### ", "**", "- ", "> ",
+    "===", "---",
+)
+
+_BOOK_PATTERNS = (
+    "## ", "### ",
+    "**Core idea:**", "**UX implication:**", "**Why it matters:**",
+    "**Key fix:**", "**Key principle:**", "**Chapter:**",
+    "✅", "❌",
+)
 
 _PRINCIPLE_PATTERNS = (
     "## ", "### ",
@@ -635,8 +642,15 @@ def _extract_principles(path, max_chars=8000):
             lines = f.read().split("\n")
     except FileNotFoundError:
         return ""
+    # Use less aggressive filtering for benchmark files
+    fname = Path(path).name
+    if "saasfactor" in fname.lower():
+        patterns = _BENCHMARK_PATTERNS
+        max_chars = 24000
+    else:
+        patterns = _BOOK_PATTERNS
     out = [l.strip() for l in lines
-           if l.strip() and any(p in l for p in _PRINCIPLE_PATTERNS)]
+           if l.strip() and any(p in l for p in patterns)]
     return "\n".join(out)[:max_chars]
 
 
@@ -678,19 +692,18 @@ if KNOWLEDGE_BASE is None:
     KNOWLEDGE_BASE = _build_knowledge_base()
 
 
-AUDIT_PROMPT = """You are a senior UX and accessibility auditor. You have been trained on the Saasfactor UX curriculum AND the WCAG 2.2 accessibility guidelines AND Saasfactor AI learned patterns from 2,229 screens across 5 major SaaS products.
+AUDIT_PROMPT = """You are a senior UX auditor trained exclusively on real-world SaaS product data from the Saasfactor AI knowledge base.
 The training knowledge base is provided above. Use it to ground every finding.
 
 When analyzing, leverage Saasfactor AI benchmarks to contextualize your findings:
-- Compare dashboard layouts against the typical 25-35 element range
-- Flag lists with >20 items that lack search/filter functionality
-- Note when forms exceed the optimal 3-7 field range
-- Reference navigation patterns (71% of B2B SaaS use left sidebar)
-- Apply severity benchmarks (e.g., >50 elements = High severity)
+- Compare dashboard layouts against the typical element range from trained products
+- Flag lists with many items that lack search/filter functionality
+- Note when forms exceed the optimal field range observed across SaaS products
+- Reference navigation patterns observed across trained B2B and consumer SaaS
+- Apply severity benchmarks (e.g., dashboards with >50 elements = High severity)
+- Compare against specific product examples when relevant (Linear, Shopify, Duolingo, etc.)
 
-Analyze the UI screenshot below carefully. Produce a unified list of 7–10 findings that covers BOTH UX issues (usability, hierarchy, clarity, psychology) AND accessibility violations (WCAG 2.2 Level A/AA). Do NOT separate them — accessibility issues appear inline alongside UX issues in the same list, ordered by severity.
-
-For any finding that also violates a WCAG 2.2 criterion, add "wcag_criterion" and "wcag_level" fields to that issue. Pure UX issues that have no WCAG violation should omit those fields.
+Analyze the UI screenshot below carefully. Produce a unified list of 7–10 findings covering UX issues (usability, hierarchy, clarity, psychology, accessibility). Order by severity (High first).
 
 Return ONLY a valid JSON object — no markdown fences, no explanation, no extra text:
 {
@@ -707,16 +720,14 @@ Return ONLY a valid JSON object — no markdown fences, no explanation, no extra
       "severity": "High",
       "location": "Specific UI element visible in the screenshot",
       "problem": "2-3 sentence synopsis: what is wrong and how it directly hurts the user",
-      "critical_reason": "1-2 sentences: the psychological or cognitive principle that makes this a critical issue, citing the specific training source",
+      "critical_reason": "1-2 sentences: WHY this matters using a cognitive principle or benchmark from the knowledge base",
       "recommendation": "2-3 sentences: concrete actionable fix with implementation specifics",
-      "reference": "Nielsen's Heuristic #1: Visibility of System Status",
-      "wcag_criterion": "1.4.3",
-      "wcag_level": "AA",
+      "reference": "Saasfactor AI — Dashboard Layouts: typical range 25-35 UI elements",
       "annotation": {"x": 75, "y": 20, "w": 35, "h": 10}
     },
     {
       "id": "02",
-      "title": "Pure UX issue — no WCAG violation",
+      "title": "Another issue title",
       "severity": "Medium",
       "location": "Navigation bar",
       "problem": "...",
@@ -730,50 +741,29 @@ Return ONLY a valid JSON object — no markdown fences, no explanation, no extra
 
 Rules:
 - overall_score: 0–10 (one decimal). score_label: Poor / Fair / Good / Strong.
-- accessibility_score: 0–10 (one decimal) reflecting overall WCAG 2.2 compliance from what is visible.
+- accessibility_score: 0–10 (one decimal) reflecting overall accessibility compliance from what is visible.
 - severity: High / Medium / Low only. Order issues by severity (High first).
-- Include at least 3 issues that are WCAG 2.2 violations (with wcag_criterion + wcag_level). The rest are pure UX findings.
-- wcag_criterion: the WCAG 2.2 success criterion number (e.g. "1.4.3", "2.4.7", "1.1.1"). Only include if there is a real WCAG violation.
-- wcag_level: "A" or "AA" only. Only include alongside wcag_criterion.
 - problem: MAX 3 sentences. State what is wrong and the direct UX/accessibility impact.
-- critical_reason: MAX 2 sentences. Explain WHY this matters using a specific psychological or
-  cognitive science principle from the training data (e.g. cognitive load, Hick's Law,
-  Gestalt, working memory, loss aversion). Must cite the source. For WCAG issues, name the exact criterion violated.
+- critical_reason: MAX 2 sentences. Explain WHY this matters using a benchmark, pattern, or cognitive principle from the Saasfactor AI knowledge base above.
 - recommendation: MAX 3 sentences. Be concrete and actionable.
-- reference: cite the EXACT book title and specific principle/chapter/rule from the training knowledge
-  base above. For WCAG issues, reference the WCAG 2.2 guideline. Examples:
-  "Don't Make Me Think (Krug) — Billboard Design 101: users scan, not read",
-  "Refactoring UI — Use color to support hierarchy, not communicate it alone",
-  "Designing User Interfaces (Malewicz) — Contrast and visual hierarchy",
-  "Psychology of Design — Hick's Law: too many choices slows decisions",
-  "Practical UI — Spacing consistency: use a spacing scale",
-  "Psych 101 (Kleinman) — Gestalt: Law of Proximity",
-  "WCAG 2.2 — 1.4.3 Contrast Minimum (AA): normal text requires 4.5:1 contrast ratio",
-  "WCAG 2.2 — 2.4.7 Focus Visible (AA): keyboard focus indicator must be visible",
-  "Universal Principles of Design — Aesthetic-Usability Effect: beautiful things are perceived as easier to use",
-  "Universal Principles of Design — Fitts' Law: larger and closer targets are faster to click",
-  "Universal Principles of Design — Progressive Disclosure: show only what is needed at each step",
-  "Universal Principles of Design — Signal-to-Noise Ratio: maximise relevant information, minimise clutter",
-  "Universal Principles of Design — Visibility: system status and available actions must be visible",
-  "The Design of Everyday Things (Norman) — Affordance: element must communicate how it is used",
-  "The Design of Everyday Things (Norman) — Signifier: visible cues must indicate where to act",
-  "The Design of Everyday Things (Norman) — Gulf of Execution: user cannot figure out how to do what they want",
-  "The Design of Everyday Things (Norman) — Gulf of Evaluation: user cannot tell if their action worked",
-  "The Design of Everyday Things (Norman) — Feedback: every action must produce an immediate, clear response",
-  "The Design of Everyday Things (Norman) — Forcing Function: prevent irreversible actions with confirmation",
-  "Saasfactor AI — Dashboard Layouts: Typical range 25-35 UI elements",
-  "Saasfactor AI — List Screens: 67% include search/filter when displaying >20 items",
-  "Saasfactor AI — Navigation Patterns: Left sidebar navigation in 71% of B2B SaaS",
-  "Saasfactor AI — Form Patterns: 34% higher abandonment with >7 fields on single screen",
-  "Saasfactor AI — Severity Flags: Dashboards with >50 elements indicate information overload",
+- reference: cite the EXACT source from the training knowledge base. Examples:
+  "Saasfactor AI — Dashboard Layouts: typical range 25-35 UI elements"
+  "Saasfactor AI — List Screens: 67% include search/filter when displaying >20 items"
+  "Saasfactor AI — Navigation Patterns: Left sidebar navigation in 71% of B2B SaaS"
+  "Saasfactor AI — Form Patterns: 34% higher abandonment with >7 fields on single screen"
+  "Saasfactor AI — Severity Flags: Dashboards with >50 elements indicate information overload"
+  "Saasfactor AI — Product Profile (Linear): Progressive disclosure reduces element count"
+  "Saasfactor AI — Product Profile (Shopify): Settings grouped with visual cards"
+  "Saasfactor AI — Product Profile (Duolingo): Gamification on screen 1 increases completion"
+  "Saasfactor AI — Component Density: Average 6 buttons per screen across trained products"
   "Saasfactor AI — Accessibility Analysis: 10.5% of screens have contrast ratio violations"
-- Focus on visually detectable accessibility issues: contrast ratios, color-only information, missing labels,
+- Focus on visually detectable issues: contrast ratios, color-only information, missing labels,
   touch target sizes, focus indicator absence, images of text, heading structure, icon-only buttons,
   placeholder-only form fields, error states without text labels.
 - annotation: approximate center of the issue on the screenshot as percentages (x=0 left, x=100 right,
   y=0 top, y=100 bottom). w and h are width/height as percentages.
   Be specific — do not default to x=50, y=50 for all issues.
-- Do NOT reference Mobbin or any other third-party design gallery. If you need to cite a pattern source, reference Saasfactor.
+- Do NOT reference Mobbin or any other third-party design gallery. If you need to cite a pattern source, reference Saasfactor AI.
 """
 
 
@@ -932,9 +922,24 @@ Generate three assets. Return ONLY a valid JSON object, no markdown, no explanat
 
 # ─── Routes ───────────────────────────────────────────────────────────────────
 
+def _get_product_count():
+    """Read the number of trained products from training_product_count.md."""
+    try:
+        path = os.path.join(BASE_DIR, "training_data", "training_product_count.md")
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except Exception:
+        return "26"
+
+
 @app.route("/")
 def index():
-    return render_template("index.html", logo_dark=LOGO_DARK_B64, logo_white=LOGO_WHITE_B64)
+    return render_template(
+        "index.html",
+        logo_dark=LOGO_DARK_B64,
+        logo_white=LOGO_WHITE_B64,
+        product_count=_get_product_count(),
+    )
 
 
 @app.route("/favicon.ico")
