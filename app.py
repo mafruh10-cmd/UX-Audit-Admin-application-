@@ -17,7 +17,7 @@ import subprocess
 import threading
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import urllib.request as _urllib_req
@@ -101,7 +101,7 @@ class ErrorTracker:
             "message": str(exc),
             "type": exc.__class__.__name__,
             "context": context or {},
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "traceback": traceback.format_exc() if exc else None
         }
         
@@ -460,7 +460,7 @@ def _save_audit_meta(sid):
     
     meta = {
         "sid": sid,
-        "date": s.get("date", datetime.utcnow().isoformat() + "Z"),
+        "date": s.get("date", datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")),
         "product_name": analysis.get("product_name", ""),
         "screen_name": analysis.get("screen_name", s.get("filename", "Unknown")),
         "overall_score": analysis.get("overall_score", 0),
@@ -824,7 +824,7 @@ STRUCTURE (strict):
 
 TARGET: 480-550 words total. At 140 wpm TTS that is 3.5-4 minutes exactly.
 
-For every issue, explicitly name the source: "Steve Krug, in Don't Make Me Think..." or "Don Norman's concept of the missing signifier..." or "Hick's Law, from the Universal Principles of Design..." or "Growth.design calls this signifier blindness."
+For every issue, explicitly name the source using Saasfactor AI benchmarks: "Saasfactor AI — Dashboard Layouts benchmark shows..." or "Saasfactor AI — Navigation Patterns indicates..." or "Across 26 trained SaaS products, the typical range is..." or "Linear's approach to this pattern demonstrates..."
 """
 
 def _build_youtube_script(analysis):
@@ -900,7 +900,7 @@ Generate three assets. Return ONLY a valid JSON object, no markdown, no explanat
 
 {{
   "title": "string — max 80 characters including spaces. Must use '{product_name}' as the product name (not a generic description). Must include the word 'Redesign' and the word 'UX'. Punchy, specific, no filler words.",
-  "description": "string — 1500 to 2000 characters. Rich text using markdown headings (# ## ###). Structure: # Opening hook (one sentence naming {product_name} and the core issue). ## The Problem (2-3 sentences on the UX friction — cite at least 2 specific sources from the list above by name, e.g. 'Steve Krug in Don't Make Me Think calls this...' or 'Don Norman's concept of the missing signifier...'). ## Impact on Users (1-2 sentences on the real cost to users). ## What We Changed (bullet points — each fix tied back to a principle or source). ## The Result (1-2 sentences). SEO-optimised, natural language, no corporate jargon, no em-dashes.",
+  "description": "string — 1500 to 2000 characters. Rich text using markdown headings (# ## ###). Structure: # Opening hook (one sentence naming {product_name} and the core issue). ## The Problem (2-3 sentences on the UX friction — cite at least 2 specific sources from the Saasfactor AI benchmarks by name, e.g. 'Saasfactor AI — Dashboard Layouts benchmark shows...' or 'Saasfactor AI — Navigation Patterns indicates...'). ## Impact on Users (1-2 sentences on the real cost to users). ## What We Changed (bullet points — each fix tied back to a principle or benchmark). ## The Result (1-2 sentences). SEO-optimised, natural language, no corporate jargon, no em-dashes.",
   "tags": "string — exactly 10 tags separated by commas, no # symbol. Mix of: {product_name.lower().replace(' ', '-')}, product-specific tags, AI, SaaS, UX design, UI design, web app design, product design, interaction design, usability, accessibility."
 }}"""
 
@@ -1036,7 +1036,7 @@ def upload():
             ext = "jpg" if "jpeg" in media_type else "png"
             _storage_upload(sid, f"screenshot.{ext}", data, media_type, cache_control="public, max-age=86400")
             with _lock:
-                sessions[sid]["date"] = datetime.utcnow().isoformat() + "Z"
+                sessions[sid]["date"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
             _save_audit_meta(sid)
         except Exception as exc:
             print(f"[upload] storage save error: {exc}")
@@ -1353,7 +1353,7 @@ def download_report(sid):
     ann_b64, ann_type = annotate_image(image_b64, media_type, analysis.get("issues", []))
     html  = _build_report(analysis, ann_b64, ann_type)
     slug  = re.sub(r"[^\w\-]", "_", analysis.get("screen_name", "screen").lower())
-    fname = f"ux_audit_{slug}_{datetime.utcnow().strftime('%Y%m%d')}.html"
+    fname = f"ux_audit_{slug}_{datetime.now(timezone.utc).strftime('%Y%m%d')}.html"
 
     return Response(
         html,
@@ -1374,7 +1374,7 @@ def download_prompt(sid):
 
     prompt = _build_redesign_prompt(analysis)
     slug   = re.sub(r"[^\w\-]", "_", analysis.get("screen_name", "screen").lower())
-    fname  = f"claude_redesign_prompt_{slug}_{datetime.utcnow().strftime('%Y%m%d')}.txt"
+    fname  = f"claude_redesign_prompt_{slug}_{datetime.now(timezone.utc).strftime('%Y%m%d')}.txt"
 
     return Response(
         prompt,
@@ -1893,8 +1893,6 @@ def _build_redesign_prompt(analysis):
             lines.append(f"       Problem:          {iss.get('problem','')}")
             lines.append(f"       What to implement: {iss.get('recommendation','')}")
             lines.append(f"       Affects:          {iss.get('location','')}")
-            if iss.get("wcag_criterion"):
-                lines.append(f"       WCAG:             {iss['wcag_criterion']} Level {iss.get('wcag_level','')}")
             lines.append("")
 
     if medium_issues:
@@ -1906,8 +1904,6 @@ def _build_redesign_prompt(analysis):
             lines.append(f"       Problem:          {iss.get('problem','')}")
             lines.append(f"       What to implement: {iss.get('recommendation','')}")
             lines.append(f"       Affects:          {iss.get('location','')}")
-            if iss.get("wcag_criterion"):
-                lines.append(f"       WCAG:             {iss['wcag_criterion']} Level {iss.get('wcag_level','')}")
             lines.append("")
 
     if low_issues:
@@ -1997,7 +1993,7 @@ def _build_redesign_prompt(analysis):
         f"FULL AUDIT REPORT  —  {screen_name}",
         "=" * 68,
         f"Overall Score:        {score}/10  —  {score_label}",
-        f"Accessibility Score:  {a_score}/10  (WCAG 2.2 AA)",
+        f"Accessibility Score:  {a_score}/10",
         f"Issues Found:         {len(issues)}  ({h} High · {m} Medium · {l} Low)",
         "",
         "EXECUTIVE SUMMARY",
@@ -2015,8 +2011,6 @@ def _build_redesign_prompt(analysis):
         lines.append(f"     Fix:       {iss.get('recommendation','')}")
         if iss.get("reference"):
             lines.append(f"     Source:    {iss['reference']}")
-        if iss.get("wcag_criterion"):
-            lines.append(f"     WCAG:      {iss['wcag_criterion']}  Level {iss.get('wcag_level','')}")
         lines.append("")
 
     lines += [
@@ -2077,16 +2071,6 @@ def _badge(sev):
     )
 
 
-def _wcag_badge(level):
-    colors = {"A": ("#DBEAFE", "#1D4ED8"), "AA": ("#EDE9FE", "#6D28D9")}
-    bg, fg = colors.get(level, ("#F3F4F6", "#6B7280"))
-    return (
-        f'<span style="background:{bg};color:{fg};font-size:9px;font-weight:800;'
-        f'letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:20px;'
-        f'margin-left:6px;">WCAG {level}</span>'
-    )
-
-
 def _build_report(analysis, image_b64, media_type):
     issues              = analysis.get("issues", [])
     score               = analysis.get("overall_score", 0)
@@ -2094,7 +2078,7 @@ def _build_report(analysis, image_b64, media_type):
     accessibility_score = analysis.get("accessibility_score", None)
     screen_name         = analysis.get("screen_name", "Screen")
     summary             = analysis.get("summary", "")
-    today               = datetime.utcnow().strftime("%B %d, %Y")
+    today               = datetime.now(timezone.utc).strftime("%B %d, %Y")
 
     h = sum(1 for i in issues if i.get("severity") == "High")
     m = sum(1 for i in issues if i.get("severity") == "Medium")
@@ -2165,12 +2149,6 @@ def _build_report(analysis, image_b64, media_type):
     for idx, iss in enumerate(sorted_issues):
         sev = iss.get("severity", "Low")
         _, _, border = _SEV_COLORS.get(sev, _SEV_COLORS["Low"])
-        criterion = iss.get("wcag_criterion", "")
-        wcag_mini = (
-            f'<span style="background:#EDE9FE;color:#6D28D9;font-size:9px;font-weight:800;'
-            f'padding:1px 6px;border-radius:20px;margin-left:5px;letter-spacing:.04em;">'
-            f'WCAG {criterion}</span>'
-        ) if criterion else ""
         delay = idx * 80
         glance_cards += (
             f'<div class="glance-card" style="background:#fff;border-radius:10px;padding:14px 16px;'
@@ -2178,7 +2156,7 @@ def _build_report(analysis, image_b64, media_type):
             f'transition-delay:{delay}ms;">'
             f'<div style="font-size:10px;font-weight:700;color:#9CA3AF;letter-spacing:.08em;'
             f'text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;">'
-            f'{iss.get("id","--")}{wcag_mini}</div>'
+            f'{iss.get("id","--")}</div>'
             f'<div style="font-size:12px;font-weight:600;color:#1A1A1A;line-height:1.4;">'
             f'{iss.get("title","")}</div>'
             f'<div style="margin-top:8px;">{_badge(sev)}</div>'
@@ -2190,8 +2168,6 @@ def _build_report(analysis, image_b64, media_type):
         sev = iss.get("severity", "Low")
         _, _, border = _SEV_COLORS.get(sev, _SEV_COLORS["Low"])
         ref = iss.get("reference", "")
-        criterion  = iss.get("wcag_criterion", "")
-        wcag_level = iss.get("wcag_level", "")
         ref_html = (
             f'<div style="margin-top:14px;padding:10px 14px;background:#F8F9FA;border-radius:8px;'
             f'border-left:3px solid #E5E5E5;font-size:12px;color:#6B7280;">'
@@ -2203,11 +2179,6 @@ def _build_report(analysis, image_b64, media_type):
             f'font-size:11px;color:#92400E;line-height:1.5;">'
             f'<span style="font-weight:700;letter-spacing:.02em;">Why critical: </span>{critical}</div>'
         ) if critical else ""
-        wcag_tag = (
-            f'<span style="background:#EDE9FE;color:#6D28D9;font-size:9px;font-weight:800;'
-            f'letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:20px;'
-            f'margin-left:6px;">WCAG {criterion} · {wcag_level}</span>'
-        ) if criterion else ""
         delay = idx * 60
         detail_cards += (
             f'<div class="detail-card fade-section" style="background:#fff;border-radius:14px;overflow:hidden;'
@@ -2218,7 +2189,7 @@ def _build_report(analysis, image_b64, media_type):
             f'<div>'
             f'<div style="font-size:11px;font-weight:700;color:#9CA3AF;letter-spacing:.1em;'
             f'text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;">'
-            f'Issue {iss.get("id","")}{wcag_tag}</div>'
+            f'Issue {iss.get("id","")}</div>'
             f'<div style="font-size:17px;font-weight:700;color:#1A1A1A;">{iss.get("title","")}</div>'
             f'<div style="font-size:12px;color:#6B7280;margin-top:4px;">📍 {iss.get("location","")}</div>'
             f'</div>{_badge(sev)}</div>'
@@ -2258,32 +2229,38 @@ def _build_report(analysis, image_b64, media_type):
             f' font-size="9" fill="#9CA3AF">/10</text>'
             f'</svg>'
             f'<div style="font-size:11px;font-weight:700;color:#6D28D9;">Accessibility</div>'
-            f'<div style="font-size:10px;color:#9CA3AF;margin-top:1px;">WCAG 2.2 AA</div>'
+            f'<div style="font-size:10px;color:#9CA3AF;margin-top:1px;">Visual Compliance</div>'
             f'</div>'
         )
 
-    book_cards = [
-        ("Don't Make Me Think",                        "Steve Krug",                   "Usability & web UX fundamentals"),
-        ("Designing User Interfaces",                  "Dmytro Malewicz (2021)",        "UI components, layouts & visual design"),
-        ("Refactoring UI",                             "Adam Wathan & Steve Schoger",   "Practical UI design decisions"),
-        ("Practical UI",                               "",                              "Hands-on interface design techniques"),
-        ("Psychology of Design: 106 Cognitive Biases", "",                             "Cognitive biases that affect UX decisions"),
-        ("Psych 101",                                  "Paul Kleinman",                 "Psychological principles behind behaviour"),
-        ("UI Design Tips",                             "",                              "Quick-reference design improvement patterns"),
-        ("WCAG 2.2",                                   "W3C Web Accessibility Initiative", "Accessibility guidelines — Level A & AA compliance"),
-        ("Universal Principles of Design",             "Lidwell, Holden & Butler",         "200 cross-disciplinary design principles"),
-        ("The Design of Everyday Things",              "Don Norman",                       "Affordances, signifiers, feedback, mappings"),
+    benchmark_cards = [
+        ("Real-World SaaS Benchmarks",    "Saasfactor AI",  "Flow & layout stats from 3,319 screens across 26 products"),
+        ("Component & Layout Patterns",   "Saasfactor AI",  "Navigation, tab, and layout patterns distilled from trained products"),
+        ("Product Profiles",              "Saasfactor AI",  "26 equal product profiles including Airbnb, Linear, Shopify, Duolingo & more"),
+        ("Flow Sequence Patterns",        "Saasfactor AI",  "End-to-end flow sequences: onboarding, dashboard, settings, checkout, profile"),
     ]
-    book_card_html = ""
-    for title, author, desc in book_cards:
-        by_line = f"<div style='font-size:11px;color:#9CA3AF;margin-bottom:2px;'>{author}</div>" if author else ""
-        book_card_html += (
+    benchmark_card_html = ""
+    for title, source, desc in benchmark_cards:
+        benchmark_card_html += (
             f'<div style="padding:12px 14px;background:#F9FAFB;border-radius:8px;">'
             f'<div style="font-size:12px;font-weight:600;color:#1A1A1A;margin-bottom:2px;">{title}</div>'
-            f'{by_line}'
+            f"<div style='font-size:11px;color:#9CA3AF;margin-bottom:2px;'>{source}</div>"
             f'<div style="font-size:11px;color:#6B7280;">{desc}</div>'
             f'</div>'
         )
+
+    trained_products = [
+        "Airbnb", "Apollo", "Attio", "Buffer", "ChatGPT", "Chatbase",
+        "Copy.ai", "Duolingo", "Jira", "Linear", "Manus", "Navattic",
+        "OpenAI Platform", "Peec AI", "Perplexity", "Replit", "Revolut",
+        "Runway", "Sana AI", "Shop", "Shopify", "Todoist", "Vapi",
+        "Visual Electric", "WRITER", "Wrangle"
+    ]
+    product_tags = "".join(
+        f'<span style="display:inline-block;padding:4px 10px;background:#F3F4F6;border-radius:6px;'
+        f'font-size:11px;font-weight:500;color:#374151;margin:3px;">{p}</span>'
+        for p in trained_products
+    )
 
     sources_section = (
         '<div class="fade-section" style="background:#fff;border-radius:14px;padding:28px 32px;margin-bottom:20px;'
@@ -2291,10 +2268,15 @@ def _build_report(analysis, image_b64, media_type):
         '<div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;'
         'color:#9CA3AF;margin-bottom:16px;">Sources &amp; Methodology</div>'
         '<div style="font-size:13px;color:#4B5563;line-height:1.7;margin-bottom:16px;">'
-        'This audit is grounded in the Saasfactor UX training curriculum. Each finding is '
-        'mapped to a specific principle, chapter, or concept from the following books:'
+        'This audit is grounded in real-world SaaS product data from the Saasfactor AI knowledge base — '
+        '3,319 screens analyzed across 26 trained SaaS applications. Each finding is mapped to a '
+        'specific benchmark, pattern, or product example from the training corpus.'
         '</div>'
-        f'<div class="sources-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">{book_card_html}</div>'
+        f'<div class="sources-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;">{benchmark_card_html}</div>'
+        '<div style="font-size:11px;font-weight:600;color:#6B7280;margin-bottom:8px;">'
+        f'Trained Products ({len(trained_products)})'
+        '</div>'
+        f'<div style="line-height:1.4;">{product_tags}</div>'
         '</div>'
     )
 
