@@ -885,7 +885,10 @@ def _build_dribbble_details(analysis):
 
     references_text = "\n".join(f"- {r}" for r in references)
 
-    prompt = f"""You are writing Dribbble shot metadata for a UX redesign case study.
+    prompt = f"""=== SAASFACTOR AI KNOWLEDGE BASE ===
+{KNOWLEDGE_BASE}
+
+You are writing Dribbble shot metadata for a UX redesign case study.
 
 AUDIT CONTEXT:
 Product name: {product_name}
@@ -1862,6 +1865,7 @@ def _build_redesign_prompt(analysis):
     l = sum(1 for i in issues if i.get("severity") == "Low")
 
     high_issues   = [i for i in issues if i.get("severity") == "High"]
+
     medium_issues = [i for i in issues if i.get("severity") == "Medium"]
     low_issues    = [i for i in issues if i.get("severity") == "Low"]
 
@@ -2059,7 +2063,8 @@ def _build_redesign_prompt(analysis):
         "- Do NOT reference Mobbin or any third-party design gallery. Use Saasfactor if needed.",
     ]
 
-    return "\n".join(lines)
+    knowledge_header = "=== SAASFACTOR AI KNOWLEDGE BASE ===\n" + KNOWLEDGE_BASE + "\n\n"
+    return knowledge_header + "\n".join(lines)
 
 
 # ─── Report builder ───────────────────────────────────────────────────────────
