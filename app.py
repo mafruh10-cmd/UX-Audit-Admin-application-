@@ -1111,6 +1111,10 @@ def audit_stream(sid):
 
                     # ── Step 2: Opus reasons about the findings ────────────────
                     reasoning_content = []
+                    reasoning_content.append({
+                        "type": "text",
+                        "text": "=== SAASFACTOR AI KNOWLEDGE BASE ===\n" + KNOWLEDGE_BASE + "\n\n",
+                    })
                     if session.get("website_context"):
                         reasoning_content.append({
                             "type": "text",
@@ -1147,6 +1151,10 @@ def audit_stream(sid):
                 else:
                     # ── Single-model path (fallback) ───────────────────────────
                     user_content = []
+                    user_content.append({
+                        "type": "text",
+                        "text": "=== SAASFACTOR AI KNOWLEDGE BASE ===\n" + KNOWLEDGE_BASE + "\n\n",
+                    })
                     if session.get("website_context"):
                         user_content.append({
                             "type": "text",
